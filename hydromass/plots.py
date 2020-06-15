@@ -88,11 +88,11 @@ def rads_more(Mhyd, nmore=5):
 
     if Mhyd.rout_x is not None:
 
-        index_x = np.where(np.in1d(rin_more, Mhyd.rref_x))
+        index_x = np.where(np.in1d(rout_more, Mhyd.rref_x))
 
     if Mhyd.rout_sz is not None:
 
-        index_sz = np.where(np.in1d(rin_more, Mhyd.rref_sz))
+        index_sz = np.where(np.in1d(rout_more, Mhyd.rref_sz))
 
     return rin_more, rout_more, index_x, index_sz
 
