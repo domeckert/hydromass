@@ -54,7 +54,7 @@ def gnfw_np(xout, pars):
 
     fgnfw = p0mul / t1 / t2
 
-    return fgnfw
+    return fgnfw.T
 
 # Pressure gradient from GNFW function
 def der_lnP_np(xout, pars):
@@ -90,7 +90,7 @@ def der_lnP_np(xout, pars):
 
     fder = - (gammamul + t1 / t2)
 
-    return  fder
+    return  fder.T
 
 
 def kt_forw_from_samples(Mhyd, Forward, nmore=5):
@@ -203,19 +203,17 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
     nvalm = len(rin_m)
 
-    vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
-
-    vol_x = vx.deproj_vol().T
-
     dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 
     der_lnP = Forward.func_der(rout_m, Mhyd.samppar)
 
-    mass = - der_lnP * rout_m / (dens_m * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg / Msun
+    rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
 
-    mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+    mass = - der_lnP * rout_mul / (dens_m * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg / Msun
+
+    mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     # Matrix containing integration volumes
     volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
@@ -232,7 +230,7 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
     mg, mgl, mgh = np.percentile(mgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-    fgas = mgas / mass.T
+    fgas = mgas / mass
 
     fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
@@ -366,9 +364,9 @@ class Forward:
 
         self.limits = limits
 
-        self.func_np = gnfw_pm
+        self.func_np = gnfw_np
 
-        self.func_pm = gnfw_np
+        self.func_pm = gnfw_pm
 
         self.func_der = der_lnP_np
 
