@@ -11,7 +11,7 @@ import pymc3 as pm
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
-                   p0_prior=None, tune=500, dmonly=False, mstar=None):
+                   p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3
@@ -186,6 +186,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
                                    upper=np.log(P0_est) + err_P0_est / P0_est)
 
+        for RV in hydro_model.basic_RVs:
+            print(RV.name, RV.logp(hydro_model.test_point))
+
         press00 = np.exp(logp0)
 
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
@@ -257,9 +260,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     with hydro_model:
 
-        start = pm.find_MAP()
+        if find_map:
 
-        trace = pm.sample(nmcmc, start=start, tune=tune)
+            start = pm.find_MAP()
+
+            trace = pm.sample(nmcmc, start=start, tune=tune)
+
+        else:
+
+            trace = pm.sample(nmcmc, tune=tune)
 
     print('Done.')
 
@@ -578,7 +587,7 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True):
 
         if model is None:
 
@@ -600,12 +609,13 @@ class Mhyd:
                        p0_prior=p0_prior,
                        tune=tune,
                        dmonly=dmonly,
-                       mstar=mstar)
+                       mstar=mstar,
+                       find_map=find_map)
 
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
-            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500):
+            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
 
         if forward is None:
 
@@ -625,4 +635,5 @@ class Mhyd:
                           nbetas=nbetas,
                           min_beta=min_beta,
                           nmore=nmore,
-                          tune=tune)
+                          tune=tune,
+                          find_map=find_map)
