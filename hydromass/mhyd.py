@@ -1,13 +1,9 @@
-from __future__ import print_function
-
-import numpy as np
-import matplotlib.pyplot as plt
-#plt.switch_backend('agg')
 from .deproject import *
 from .emissivity import *
 from .functions import *
 from .plots import *
 from .constants import *
+from .forward import *
 from astropy.io import fits
 import os
 import pymc3 as pm
@@ -192,7 +188,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         press00 = np.exp(logp0)
 
-        dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in 1e-3 cm-3
+        dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
         # Evaluate mass model
         mass = Mhyd.mfact * model.func_pm(rout_m, *pmod, delta=model.delta) / Mhyd.mfact0
@@ -608,3 +604,25 @@ class Mhyd:
 
 
 
+    def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
+            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500):
+
+        if forward is None:
+
+            print('Error no forward model provided')
+
+            return
+
+
+        Run_Forward_PyMC3(self,
+                          Forward=forward,
+                          bkglim=bkglim,
+                          nmcmc=nmcmc,
+                          fit_bkg=fit_bkg,
+                          back=back,
+                          samplefile=samplefile,
+                          nrc=nrc,
+                          nbetas=nbetas,
+                          min_beta=min_beta,
+                          nmore=nmore,
+                          tune=tune)
