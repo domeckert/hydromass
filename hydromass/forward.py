@@ -374,7 +374,7 @@ class Forward:
 
 def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
-                   tune=500):
+                   tune=500, find_map=True):
     """
 
     :param Mhyd:
@@ -524,9 +524,16 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
                                                 lower=lim[0], upper=lim[1]) #Gaussian prior on other parameters
             else:
 
-                modpar = pm.ConstantDist(name, Forward.start[i])
+                dummy = pm.Normal('dummy'+name, mu=0., sd=1.)
+
+                dummy_param = 0 * dummy + Forward.start[i]
+
+                modpar = pm.Deterministic(name, dummy_param)
 
             allpmod.append(modpar)
+
+        for RV in hydro_model.basic_RVs:
+            print(RV.name, RV.logp(hydro_model.test_point))
 
         pmod = pm.math.stack(allpmod, axis=0)
 
@@ -572,9 +579,15 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         with hydro_model:
 
-            start = pm.find_MAP()
+            if find_map:
 
-            trace = pm.sample(nmcmc, start=start, tune=tune)
+                start = pm.find_MAP()
+
+                trace = pm.sample(nmcmc, start=start, tune=tune)
+
+            else:
+
+                trace = pm.sample(nmcmc, tune=tune)
 
         print('Done.')
 
