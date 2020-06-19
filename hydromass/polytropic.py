@@ -67,7 +67,7 @@ def func_poly_dens_pm(x, pars, dens, grad_dens):
 
     logne = pm.math.log(dens)
 
-    poly_index = Gamma0 * (1. + scale * tt_arctan((logne - logn0) / trans)) / 2.
+    poly_index = Gamma0 * (1. + scale * tt_arctan((logne - logn0) / trans))
 
     p3d = p0 * pm.math.exp(poly_index * (logne - logn0))
 
@@ -100,7 +100,7 @@ def func_poly_dens_np(xout, pars, dens, grad_dens):
 
     scalemul = np.repeat(scale, npt).reshape(npars, npt)
 
-    poly_index = Gamma0mul * (1. + scalemul * np.arctan((np.log(dens.T) - logn0mul) / transmul)) / 2.
+    poly_index = Gamma0mul * (1. + scalemul * np.arctan((np.log(dens.T) - logn0mul) / transmul))
 
     p3d = p0mul * np.exp(poly_index * (np.log(dens.T) - logn0mul))
 
@@ -132,9 +132,9 @@ def gradP_gamman(xout, pars, dens, grad_dens):
 
     scalemul = np.repeat(scale, npt).reshape(npars, npt)
 
-    poly_index = Gamma0mul * (1. + scalemul * np.arctan((logne - logn0mul) / transmul)) / 2.
+    poly_index = Gamma0mul * (1. + scalemul * np.arctan((logne - logn0mul) / transmul))
 
-    gamma_grad = Gamma0mul / 2. * scalemul / transmul * (1. + ((logne -logn0mul) / transmul) ** 2) ** (-1)
+    gamma_grad = Gamma0mul * scalemul / transmul * (1. + ((logne -logn0mul) / transmul) ** 2) ** (-1)
 
     dpdn = (logne - logn0mul) * gamma_grad + poly_index
 
@@ -347,7 +347,7 @@ def mass_poly_from_samples(Mhyd, Polytropic, plot=False, nmore=5):
 
 class Polytropic:
 
-    def __init__(self, model, start=None, sd=None, limits=None, fix=None):
+    def __init__(self, model, start=None, sd=None, limits=None, fix=None, redshift=None, cosmo=None):
 
 
         if model == 'GammaR':
@@ -430,8 +430,22 @@ class Polytropic:
 
             self.parnames = ['p0', 'logn0', 'trans', 'Gamma0', 'scale']
 
+            if redshift is not None:
+
+                if cosmo is None:
+
+                    from astropy.cosmology import Planck15 as cosmo
+
+                eofz = cosmo.efunc(redshift)
+
+                logn0 = -6.3299699 + 2. * np.log(eofz)
+
+            else:
+
+                logn0 = -6.3299699
+
             if start is None:
-                self.start = [ 0.02, -6.3299699 ,  1.02003952,  1.98334525, -0.152564  ] #best-fit parameters to X-COP Gamma(n), for P500 ~ 3e-3
+                self.start = [ 0.02, logn0 ,  1.02003952,  0.99, -0.152564  ] #best-fit parameters to X-COP Gamma(n), for P500 ~ 3e-3
 
             else:
                 try:
@@ -443,7 +457,7 @@ class Polytropic:
                 self.start = start
 
             if sd is None:
-                self.sd = [0.02, 0.5, 0.1, 0.2, 0.05]
+                self.sd = [0.02, 0.5, 0.1, 0.1, 0.05]
 
             else:
 
