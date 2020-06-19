@@ -6,3 +6,4 @@ from .plots import *
 from .constants import *
 from .delta import *
 from .forward import *
+from .polytropic import *
