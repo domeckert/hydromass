@@ -233,55 +233,35 @@ def calc_density_operator(rad, pars, kpcp, withbkg=True):
 
     return Ktot
 
+# Function to compute d(log n)/d(log r)
+def calc_grad_operator(rad, pars, kpcp, withbkg=True):
+    # Select values in the source region
+    rfit = rad * kpcp
+    npt = len(rfit)
+    npars = len(pars[:, 0])
 
-# def list_params_density(rad,sourcereg,z,nrc=None,nbetas=6,min_beta=0.6):
-#     rfit=rad[sourcereg]
-#     npfit=len(rfit)
-#     #kpcp=cosmo.kpc_proper_per_arcmin(z).value
-#     if nrc is None:
-#         nrc = np.max([int(npfit/nsh),1])
-#     #allrc=np.logspace(np.log10(rfit[2]),np.log10(rfit[npfit-1]/2.),nrc)*kpcp
-#     allrc = np.logspace(np.log10(rfit[2]), np.log10(rfit[npfit - 1] / 2.), nrc)
-#     #allbetas=np.linspace(0.5,3.,6)
-#     allbetas = np.linspace(min_beta, 3., nbetas)
-#     nrc=len(allrc)
-#     nbetas=len(allbetas)
-#     rc=allrc.repeat(nbetas)
-#     betas=np.tile(allbetas,nrc)
-#     ptot=np.empty((nrc*nbetas,2))
-#     ptot[:,0]=betas
-#     ptot[:,1]=rc
-#     return ptot
-#
-# # Linear operator to transform parameters into density
-#
-# def calc_density_operator(rad,sourcereg,pars,withbkg=True):
-#     # Select values in the source region
-#     rfit=rad[sourcereg]
-#     npt=len(rfit)
-#     npars=len(pars[:,0])
-#
-#     # Compute linear combination of basis functions in the source region
-#     beta=np.repeat(pars[:,0],npt).reshape(npars,npt)
-#     rc=np.repeat(pars[:,1],npt).reshape(npars,npt)
-#     base=1.+np.power(rfit/rc,2)
-#     expon=-3.*beta
-#     func_base=np.power(base,expon)
-#     cfact=gamma(3*beta)/gamma(3*beta-0.5)/np.sqrt(np.pi)/rc
-#     fng=func_base*cfact
-#
-#     # Recast into full matrix and add column for background
-#     if withbkg:
-#         nptot=len(rfit)
-#         Ktot=np.zeros((nptot,npars+1))
-#         Ktot[0:npt,0:npars]=fng.T
-#         Ktot[:,npars]=0.0
-#
-#     else:
-#         Ktot = fng.T
-#
-#     return Ktot
+    # Compute linear combination of basis functions in the source region
+    beta = np.repeat(pars[:, 0], npt).reshape(npars, npt)
+    rc = np.repeat(pars[:, 1], npt).reshape(npars, npt)
+    base = 1. + np.power(rfit / rc, 2)
+    expon = -3. * beta
+    func_base = np.power(base, expon)
+    cfact = gamma(3 * beta) / gamma(3 * beta - 0.5) / np.sqrt(np.pi) / rc
+    n2 = func_base * cfact
+    dlogn2dlogr = - 6. * beta * (rfit / rc) ** 2 / base
+    grad = n2 * dlogn2dlogr
 
+    # Recast into full matrix and add column for background
+    if withbkg:
+        nptot=len(rfit)
+        Ktot=np.zeros((nptot,npars+1))
+        Ktot[0:npt,0:npars]=grad.T
+        Ktot[:,npars]=0.0
+
+    else:
+        Ktot = grad.T
+
+    return Ktot
 
 
 class MyDeprojVol:

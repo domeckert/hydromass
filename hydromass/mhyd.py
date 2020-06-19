@@ -4,6 +4,7 @@ from .functions import *
 from .plots import *
 from .constants import *
 from .forward import *
+from .polytropic import *
 from astropy.io import fits
 import os
 import pymc3 as pm
@@ -626,6 +627,30 @@ class Mhyd:
 
         Run_Forward_PyMC3(self,
                           Forward=forward,
+                          bkglim=bkglim,
+                          nmcmc=nmcmc,
+                          fit_bkg=fit_bkg,
+                          back=back,
+                          samplefile=samplefile,
+                          nrc=nrc,
+                          nbetas=nbetas,
+                          min_beta=min_beta,
+                          nmore=nmore,
+                          tune=tune,
+                          find_map=find_map)
+
+    def run_polytropic(self, polytropic=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
+            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
+
+        if polytropic is None:
+
+            print('Error no polytropic model provided')
+
+            return
+
+
+        Run_Polytropic_PyMC3(self,
+                          Polytropic=polytropic,
                           bkglim=bkglim,
                           nmcmc=nmcmc,
                           fit_bkg=fit_bkg,
