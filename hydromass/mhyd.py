@@ -5,6 +5,7 @@ from .plots import *
 from .constants import *
 from .forward import *
 from .polytropic import *
+from .pnt_files import *
 from astropy.io import fits
 import os
 import pymc3 as pm
@@ -142,6 +143,16 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     hydro_model = pm.Model()
 
     cf = Mhyd.ccf
+
+    if pnt:
+
+        file_means = _get_data_file_path('pnt_mean.dat')
+
+        file_cov = _get_data_file_path('pnt_covmat.dat')
+
+        pnt_mean = np.loadtxt(file_means)
+
+        pnt_cov = np.loadtxt(file_cov)
 
     with hydro_model:
         # Priors for unknown model parameters
