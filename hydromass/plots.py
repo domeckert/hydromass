@@ -38,23 +38,23 @@ def rads_more(Mhyd, nmore=5):
     :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Default = 20.
     :return: rin, rout, index_x, index_sz, with rin, rout the grids of fine binning, and index_x, index_sz the indices corresponding to the actual input values
     """
-    if Mhyd.rout_x is not None and Mhyd.rout_sz is None:
+    if Mhyd.spec_data is not None and Mhyd.sz_data is None:
 
-        rout_joint = Mhyd.rout_x
+        rout_joint = Mhyd.spec_data.rout_x
 
-        rref_joint = Mhyd.rref_x
+        rref_joint = Mhyd.spec_data.rref_x
 
-    elif Mhyd.rout_x is None and Mhyd.rout_sz is not None:
+    elif Mhyd.spec_data is None and Mhyd.sz_data is not None:
 
-        rout_joint = Mhyd.rout_sz
+        rout_joint = Mhyd.sz_data.rout_sz
 
-        rref_joint = Mhyd.rref_sz
+        rref_joint = Mhyd.sz_data.rref_sz
 
-    elif Mhyd.rout_x is not None and Mhyd.rout_sz is not None:
+    elif Mhyd.spec_data is not None and Mhyd.sz_data is not None:
 
-        rout_joint = np.sort(np.append(Mhyd.rout_x, Mhyd.rout_sz))
+        rout_joint = np.sort(np.append(Mhyd.spec_data.rout_x, Mhyd.sz_data.rout_sz))
 
-        rref_joint = np.sort(np.append(Mhyd.rref_x, Mhyd.rref_sz))
+        rref_joint = np.sort(np.append(Mhyd.spec_data.rref_x, Mhyd.sz_data.rref_sz))
 
     else:
 
@@ -86,15 +86,33 @@ def rads_more(Mhyd, nmore=5):
 
     index_x, index_sz = None, None
 
-    if Mhyd.rout_x is not None:
+    if Mhyd.spec_data is not None:
 
-        index_x = np.where(np.in1d(rout_more, Mhyd.rref_x))
+        index_x = np.where(np.in1d(rout_more, Mhyd.spec_data.rref_x))
 
-    if Mhyd.rout_sz is not None:
+    if Mhyd.sz_data is not None:
 
-        index_sz = np.where(np.in1d(rout_more, Mhyd.rref_sz))
+        index_sz = np.where(np.in1d(rout_more, Mhyd.sz_data.rref_sz))
 
-    return rin_more, rout_more, index_x, index_sz
+    sum_mat = None
+
+    if Mhyd.spec_data is not None:
+
+        ntot = len(rout_more)
+
+        nx = len(Mhyd.spec_data.rref_x)
+
+        sum_mat = np.zeros((nx, ntot))
+
+        for i in range(nx):
+
+            ix = np.where(np.logical_and(rin_more < Mhyd.spec_data.rout_x[i], rin_more >= Mhyd.spec_data.rin_x[i]))
+
+            nval = len(ix[0])
+
+            sum_mat[i, :][ix] = 1. / nval
+
+    return rin_more, rout_more, index_x, index_sz, sum_mat
 
 
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
@@ -135,7 +153,7 @@ def kt_from_samples(Mhyd, model, nmore=5):
     :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile
     """
 
-    if Mhyd.temp_x is None:
+    if Mhyd.spec_data is None:
 
         print('No spectral data provided')
 
@@ -143,13 +161,23 @@ def kt_from_samples(Mhyd, model, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
     vol_x = vx.deproj_vol().T
 
-    npx = len(Mhyd.rref_x)
+    if Mhyd.spec_data.psfmat is not None:
+
+        mat1 = np.dot(Mhyd.spec_data.psfmat.T, sum_mat)
+
+        proj_mat = np.dot(mat1, vol_x)
+
+    else:
+
+        proj_mat = np.dot(sum_mat, vol_x)
+
+    npx = len(Mhyd.spec_data.rref_x)
 
     dens_m, press_out = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
@@ -159,26 +187,24 @@ def kt_from_samples(Mhyd, model, nmore=5):
     ei = dens_m ** 2 * t3d ** (-0.75)
 
     # Temperature projection
-    flux = np.dot(vol_x, ei)
+    flux = np.dot(proj_mat, ei)
 
-    tproj = np.dot(vol_x, t3d * ei) / flux
+    tproj = np.dot(proj_mat, t3d * ei) / flux
 
-    tfit_proj, t3d_or = np.empty((npx, nsamp)), np.empty((npx, nsamp))
+    t3d_or = np.empty((npx, nsamp))
 
     for i in range(nsamp):
 
-        tfit_proj[:, i] = tproj[:, i][index_x]
-
         t3d_or[:, i] = t3d[:, i][index_x]
 
-    tmed, tlo, thi = np.percentile(tfit_proj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+    tmed, tlo, thi = np.percentile(tproj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     t3do, t3dl, t3dh = np.percentile(t3d_or,[50., 50. - 68.3 / 2. , 50. + 68.3 / 2.] , axis=1)
 
     dict = {
-        "R_IN": Mhyd.rin_x,
-        "R_OUT": Mhyd.rout_x,
-        "R_REF": Mhyd.rref_x,
+        "R_IN": Mhyd.spec_data.rin_x,
+        "R_OUT": Mhyd.spec_data.rout_x,
+        "R_REF": Mhyd.spec_data.rref_x,
         "T3D": t3do,
         "T3D_LO": t3dl,
         "T3D_HI": t3dh,
@@ -200,7 +226,7 @@ def P_from_samples(Mhyd, model, nmore=5):
     :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile
     """
 
-    if Mhyd.pres_sz is None:
+    if Mhyd.sz_data is None:
 
         print('No SZ data provided')
 
@@ -208,9 +234,9 @@ def P_from_samples(Mhyd, model, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
-    npx = len(Mhyd.rref_sz)
+    npx = len(Mhyd.sz_data.rref_sz)
 
     dens_m, press_sz = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
@@ -235,7 +261,7 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
     :return: Median mass [in M_sun], Lower 1-sigma percentile, Upper 1-sigma percentile, Median Mgas, Lower, Upper, Median Fgas, Lower, Upper
     """
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, model.delta) * 1e13
 
@@ -333,9 +359,7 @@ def prof_hires(Mhyd, model, nmore=5):
     :return:
     """
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
-
-    nhires = len(rin_m)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -424,7 +448,7 @@ def PlotMgas(Mhyd, plot=False, outfile=None, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     nvalm = len(rin_m)
 

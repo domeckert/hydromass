@@ -103,7 +103,7 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
     :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile
     """
 
-    if Mhyd.temp_x is None:
+    if Mhyd.spec_data is None:
 
         print('No spectral data provided')
 
@@ -111,13 +111,23 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
     vol_x = vx.deproj_vol().T
 
-    npx = len(Mhyd.rref_x)
+    if Mhyd.spec_data.psfmat is not None:
+
+        mat1 = np.dot(Mhyd.spec_data.psfmat.T, sum_mat)
+
+        proj_mat = np.dot(mat1, vol_x)
+
+    else:
+
+        proj_mat = np.dot(sum_mat, vol_x)
+
+    npx = len(Mhyd.spec_data.rref_x)
 
     dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
 
@@ -129,26 +139,24 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
     ei = dens_m ** 2 * t3d ** (-0.75)
 
     # Temperature projection
-    flux = np.dot(vol_x, ei)
+    flux = np.dot(proj_mat, ei)
 
-    tproj = np.dot(vol_x, t3d * ei) / flux
+    tproj = np.dot(proj_mat, t3d * ei) / flux
 
-    tfit_proj, t3d_or = np.empty((npx, nsamp)), np.empty((npx, nsamp))
+    t3d_or = np.empty((npx, nsamp))
 
     for i in range(nsamp):
 
-        tfit_proj[:, i] = tproj[:, i][index_x]
-
         t3d_or[:, i] = t3d[:, i][index_x]
 
-    tmed, tlo, thi = np.percentile(tfit_proj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+    tmed, tlo, thi = np.percentile(tproj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     t3do, t3dl, t3dh = np.percentile(t3d_or,[50., 50. - 68.3 / 2. , 50. + 68.3 / 2.] , axis=1)
 
     dict = {
-        "R_IN": Mhyd.rin_x,
-        "R_OUT": Mhyd.rout_x,
-        "R_REF": Mhyd.rref_x,
+        "R_IN": Mhyd.spec_data.rin_x,
+        "R_OUT": Mhyd.spec_data.rout_x,
+        "R_REF": Mhyd.spec_data.rref_x,
         "T3D": t3do,
         "T3D_LO": t3dl,
         "T3D_HI": t3dh,
@@ -170,7 +178,7 @@ def P_forw_from_samples(Mhyd, Forward, nmore=5):
     :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile
     """
 
-    if Mhyd.pres_sz is None:
+    if Mhyd.sz_data is None:
 
         print('No SZ data provided')
 
@@ -178,9 +186,9 @@ def P_forw_from_samples(Mhyd, Forward, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
-    npx = len(Mhyd.rref_sz)
+    npx = len(Mhyd.sz_data.rref_sz)
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 
@@ -199,7 +207,7 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     nvalm = len(rin_m)
 
@@ -459,13 +467,25 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
         Kdens = calc_density_operator(rad, pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     nptmore = len(rout_m)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
     vol = vx.deproj_vol().T
+
+    if Mhyd.spec_data is not None:
+
+        if Mhyd.spec_data.psfmat is not None:
+
+            mat1 = np.dot(Mhyd.spec_data.psfmat.T, sum_mat)
+
+            proj_mat = np.dot(mat1, vol)
+
+        else:
+
+            proj_mat = np.dot(sum_mat, vol)
 
     if fit_bkg:
 
@@ -541,17 +561,6 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         p3d = Forward.func_pm(rout_m, *pmod)
 
-        # Model temperature
-        t3d = p3d / dens_m
-
-        # Mazzotta weights
-        ei = dens_m ** 2 * t3d ** (-0.75)
-
-        # Temperature projection
-        flux = pm.math.dot(vol, ei)
-
-        tproj = pm.math.dot(vol, t3d * ei) / flux
-
         # Density Likelihood
         if fit_bkg:
 
@@ -562,16 +571,26 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
             sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb)  # Sx likelihood
 
         # Temperature model and likelihood
-        if Mhyd.temp_x is not None:
-            tfit_proj = tproj[index_x]
+        if Mhyd.spec_data is not None:
 
-            T_obs = pm.Normal('kt', mu=tfit_proj, observed=Mhyd.temp_x, sd=Mhyd.errt_x)  # temperature likelihood
+            # Model temperature
+            t3d = p3d / dens_m
+
+            # Mazzotta weights
+            ei = dens_m ** 2 * t3d ** (-0.75)
+
+            # Temperature projection
+            flux = pm.math.dot(proj_mat, ei)
+
+            tproj = pm.math.dot(proj_mat, t3d * ei) / flux
+
+            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sd=Mhyd.spec_data.errt_x)  # temperature likelihood
 
         # SZ pressure model and likelihood
-        if Mhyd.pres_sz is not None:
+        if Mhyd.sz_data is not None:
             pfit = p3d[index_sz]
 
-            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.pres_sz, cov=Mhyd.covmat_sz)  # SZ pressure likelihood
+            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
         tinit = time.time()
 
@@ -672,7 +691,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
         Mhyd.transf = transf
         Mhyd.Kdens_m = Kdens_m
 
-        if Mhyd.temp_x is not None:
+        if Mhyd.spec_data is not None:
             kt_mod = kt_forw_from_samples(Mhyd, Forward, nmore=nmore)
             Mhyd.ktmod = kt_mod['TSPEC']
             Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
@@ -681,7 +700,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
             Mhyd.kt3d_lo = kt_mod['T3D_LO']
             Mhyd.kt3d_hi = kt_mod['T3D_HI']
 
-        if Mhyd.pres_sz is not None:
+        if Mhyd.sz_data is not None:
             pmed, plo, phi = P_forw_from_samples(Mhyd, Forward, nmore=nmore)
             Mhyd.pmod = pmed
             Mhyd.pmod_lo = plo

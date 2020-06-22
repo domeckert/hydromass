@@ -12,7 +12,8 @@ import pymc3 as pm
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
-                   p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True):
+                   p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
+                   pnt=False):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3
@@ -99,7 +100,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Kdens = calc_density_operator(rad, pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
     if dmonly and mstar is not None:
 
@@ -116,6 +117,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
     vol = vx.deproj_vol().T
+
+    if Mhyd.spec_data is not None:
+
+        if Mhyd.spec_data.psfmat is not None:
+
+            mat1 = np.dot(Mhyd.spec_data.psfmat.T, sum_mat)
+
+            proj_mat = np.dot(mat1, vol)
+
+        else:
+
+            proj_mat = np.dot(sum_mat, vol)
+
 
     if fit_bkg:
 
@@ -219,17 +233,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
 
-        # Model temperature
-        t3d = press_out / dens_m
-
-        # Mazzotta weights
-        ei = dens_m ** 2 * t3d ** (-0.75)
-
-        # Temperature projection
-        flux = pm.math.dot(vol, ei)
-
-        tproj = pm.math.dot(vol, t3d * ei) / flux
-
         # Density Likelihood
         if fit_bkg:
 
@@ -240,18 +243,27 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb) #Sx likelihood
 
         # Temperature model and likelihood
-        if Mhyd.temp_x is not None:
+        if Mhyd.spec_data is not None:
 
-            tfit_proj = tproj[index_x]
+            # Model temperature
+            t3d = press_out / dens_m
 
-            T_obs = pm.Normal('kt', mu=tfit_proj, observed=Mhyd.temp_x, sd=Mhyd.errt_x)  # temperature likelihood
+            # Mazzotta weights
+            ei = dens_m ** 2 * t3d ** (-0.75)
+
+            # Temperature projection
+            flux = pm.math.dot(proj_mat, ei)
+
+            tproj = pm.math.dot(proj_mat, t3d * ei) / flux
+
+            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sd=Mhyd.spec_data.errt_x)  # temperature likelihood
 
         # SZ pressure model and likelihood
-        if Mhyd.pres_sz is not None:
+        if Mhyd.sz_data is not None:
 
             pfit = press_out[index_sz]
 
-            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.pres_sz, cov=Mhyd.covmat_sz)  # SZ pressure likelihood
+            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
 
 
@@ -353,7 +365,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.transf = transf
     Mhyd.Kdens_m = Kdens_m
 
-    if Mhyd.temp_x is not None:
+    if Mhyd.spec_data is not None:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
         Mhyd.ktmod = kt_mod['TSPEC']
         Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
@@ -362,7 +374,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.kt3d_lo = kt_mod['T3D_LO']
         Mhyd.kt3d_hi = kt_mod['T3D_HI']
 
-    if Mhyd.pres_sz is not None:
+    if Mhyd.sz_data is not None:
         pmed, plo, phi = P_from_samples(Mhyd, model, nmore=nmore)
         Mhyd.pmod = pmed
         Mhyd.pmod_lo = plo
@@ -376,12 +388,12 @@ class Mhyd:
 
     """
 
-    def __init__(self, profile=None, spec_data=None, sz_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
         """
 
         Constructor from class Mhyd
 
-        :param profile: (pyproffit.Profile) Object including the surface brightness data
+        :param sbprofile: (pyproffit.Profile) Object including the surface brightness data
         :param spec_data: (string) Path to FITS file including results of surface brightness reconstruction
         :param directory: (string) Name of output file directory (default='mhyd')
         :param redshift: (float) Source redshift
@@ -421,12 +433,13 @@ class Mhyd:
 
         self.dir = directory
 
-        if profile is None:
+        if sbprofile is None:
 
-            print('Error: no surface brightness profile provided, please provide one with the "profile=" option')
+            print('Error: no surface brightness profile provided, please provide one with the "sbprofile=" option')
+
             return
 
-        self.sbprof = profile
+        self.sbprof = sbprofile
 
         if redshift is None:
 
@@ -461,106 +474,29 @@ class Mhyd:
 
             return
 
-        self.temp_x, self.templ, self.temph, self.rin_x, self.rout_x, self.volume_x, self.errt_x, self.rref_x, self.rref_x_am = \
-            None, None, None, None, None, None, None, None, None
+        if spec_data is None and sz_data is None:
 
-        if spec_data is not None:
-
-            if not os.path.exists(spec_data):
-
-                print('Spectral data file not found in path, skipping')
-
-            else:
-
-                print('Reading spectral data from file '+spec_data)
-
-                ftx = fits.open(spec_data)
-
-                dtx = ftx[1].data
-
-                cols = ftx[1].columns
-
-                colnames = cols.names
-
-                if 'RIN' in colnames:
-
-                    rin_x = dtx['RIN']
-
-                    rout_x = dtx['ROUT']
-
-                elif 'RADIUS' in colnames:
-
-                    rx = dtx['RADIUS']
-
-                    erx = dtx['WIDTH']
-
-                    rin_x = rx - erx
-
-                    rout_x = rx + erx
-
-                else:
-
-                    print('No appropriate data found in input FITS table')
-
-                    return
-
-                self.temp_x = dtx['KT']
-
-                self.templ = dtx['KT_LO']
-
-                self.temph = dtx['KT_HI']
-
-                ftx.close()
-
-                self.rin_x = rin_x * self.amin2kpc
-
-                self.rout_x = rout_x * self.amin2kpc
-
-                x = MyDeprojVol(rin_x, rout_x)
-
-                self.volume_x = x.deproj_vol()
-
-                self.errt_x = (self.temph + self.templ) / 2.
-
-                self.rref_x = ((self.rin_x ** 1.5 + self.rout_x ** 1.5) / 2.) ** (2. / 3)
-
-                self.rref_x_am = self.rref_x / self.amin2kpc
-
-        self.pres_sz, self.errp_sz, self.rref_sz, self.rin_sz, self.rout_sz, self.covmat_sz = None, None, None, None, None, None
-
-        if sz_data is not None:
-
-            if not os.path.exists(sz_data):
-
-                print('SZ data file not found in path, skipping')
-
-            else:
-
-                print('Reading SZ data file '+sz_data)
-
-                hdulist = fits.open(sz_data)
-
-                self.pres_sz = hdulist[4].data['FLUX'].reshape(-1)
-
-                self.errp_sz = hdulist[4].data['ERRFLUX'].reshape(-1)
-
-                self.rref_sz = hdulist[4].data['RW'].reshape(-1)
-
-                self.rin_sz = hdulist[4].data['RIN'].reshape(-1)
-
-                self.rout_sz = hdulist[4].data['ROUT'].reshape(-1)
-
-                self.covmat_sz = hdulist[4].data['COVMAT'].reshape(len(self.rref_sz), len(self.rref_sz)).astype(np.float32)
-
-        if self.temp_x is None and self.pres_sz is None:
-
-            print('No valid spectral data or SZ data could be found, cannot continue')
+            print('Error: no spectral data file or SZ data file provided, please provide at least one with the "spec_data=" or "sz_data=" options')
 
             return
 
-        rho_cz = cosmo.critical_density(self.redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
+        if spec_data is not None:
 
-        # rho_cz = 3. * (cosmo.H(self.redshift).value * 1e5) ** 2 / (8. * np.pi * Msun * cgsG) * cgsMpc
+            self.spec_data = spec_data
+
+        else:
+
+            self.spec_data = None
+
+        if sz_data is not None:
+
+            self.sz_data = sz_data
+
+        else:
+
+            self.sz_data = None
+
+        rho_cz = cosmo.critical_density(self.redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
 
         self.mfact = 4. * np.pi * rho_cz * 1e-22
 
@@ -571,7 +507,7 @@ class Mhyd:
 
     def emissivity(self, nh, rmf, Z=0.3, elow=0.5, ehigh=2.0, arf=None):
 
-        kt = np.average(self.temp_x, weights=1. / self.errt_x ** 2)
+        kt = np.average(self.spec_data.temp_x, weights=1. / self.spec_data.errt_x ** 2)
 
         print('Mean cluster temperature:',kt,' keV')
 
