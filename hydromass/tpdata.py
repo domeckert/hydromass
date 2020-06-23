@@ -297,9 +297,9 @@ class SZData:
 
                 self.rref_sz = hdulist[4].data['RW'].reshape(-1)
 
-                self.rin = hdulist[4].data['RIN'].reshape(-1)
+                rin = hdulist[4].data['RIN'].reshape(-1)
 
-                self.rout = hdulist[4].data['ROUT'].reshape(-1)
+                rout = hdulist[4].data['ROUT'].reshape(-1)
 
                 self.covmat_sz = hdulist[4].data['COVMAT'].reshape(len(self.rref_sz), len(self.rref_sz)).astype(
                     np.float32)
@@ -318,21 +318,21 @@ class SZData:
 
             self.errp_sz = np.sqrt(np.diag(covmat_sz))
 
-            if cosmo is None:
+        if cosmo is None:
 
-                from astropy.cosmology import Planck15 as cosmo
+            from astropy.cosmology import Planck15 as cosmo
 
-            amin2kpc = cosmo.kpc_proper_per_arcmin(redshift).value
+        amin2kpc = cosmo.kpc_proper_per_arcmin(redshift).value
 
-            self.rin_sz = rin * amin2kpc
+        self.rin_sz = rin
 
-            self.rout_sz = rout * amin2kpc
+        self.rout_sz = rout
 
-            self.rin_sz_am = rin
+        self.rin_sz_am = rin / amin2kpc
 
-            self.rout_sz_am = rout
+        self.rout_sz_am = rout / amin2kpc
 
-            self.rref_sz = (self.rin_sz + self.rout_sz) / 2.
+        self.rref_sz = (self.rin_sz + self.rout_sz) / 2.
 
 
 
