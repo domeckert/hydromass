@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .deproject import *
 from .constants import *
+from .pnt import *
 from scipy.interpolate import interp1d
 
 def cumsum_mat(nval):
@@ -140,7 +141,17 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     press_out = press00 - np.dot(int_mat, dpres.T)
 
-    return  dens_m, press_out
+    if Mhyd.pnt:
+
+        alpha_turb = alpha_turb_np(rout_m, Mhyd.samppar, Mhyd.redshift, Mhyd.pnt_pars)
+
+        pth = press_out * (1. - alpha_turb)
+
+    else:
+
+        pth = press_out
+
+    return  dens_m, press_out, pth
 
 
 def kt_from_samples(Mhyd, model, nmore=5):
@@ -179,9 +190,9 @@ def kt_from_samples(Mhyd, model, nmore=5):
 
     npx = len(Mhyd.spec_data.rref_x)
 
-    dens_m, press_out = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
+    dens_m, press_out, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
-    t3d = press_out / dens_m
+    t3d = pth / dens_m
 
     # Mazzotta weights
     ei = dens_m ** 2 * t3d ** (-0.75)
@@ -238,13 +249,13 @@ def P_from_samples(Mhyd, model, nmore=5):
 
     npx = len(Mhyd.sz_data.rref_sz)
 
-    dens_m, press_sz = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
+    dens_m, press_tot, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
     pfit = np.empty((npx, nsamp))
 
     for i in range(nsamp):
 
-        pfit[:, i] = press_sz[:, i][index_sz]
+        pfit[:, i] = pth[:, i][index_sz]
 
     pmed, plo, phi = np.percentile(pfit, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
@@ -365,9 +376,9 @@ def prof_hires(Mhyd, model, nmore=5):
 
     vol_x = vx.deproj_vol().T
 
-    dens_m, p3d = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
+    dens_m, p3d, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
-    t3d = p3d / dens_m
+    t3d = pth / dens_m
 
     # Mazzotta weights
     ei = dens_m ** 2 * t3d ** (-0.75)
@@ -379,7 +390,9 @@ def prof_hires(Mhyd, model, nmore=5):
 
     K3d = t3d * dens_m ** (- 2. / 3.)
 
-    mp, mpl, mph = np.percentile(p3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+    mptot, mptotl, mptoth = np.percentile(p3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mp, mpl, mph = np.percentile(pth, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     mt3d, mt3dl, mt3dh = np.percentile(t3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
@@ -389,12 +402,25 @@ def prof_hires(Mhyd, model, nmore=5):
 
     mK, mKl, mKh = np.percentile(K3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+    if Mhyd.pnt:
+
+        pnt_all = p3d - pth
+
+        mpnt, mpntl, mpnth = np.percentile(pnt_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    else:
+
+        mpnt, mpntl, mpnth = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
+
     dict={
         "R_IN": rin_m,
         "R_OUT": rout_m,
-        "P": mp,
-        "P_LO": mpl,
-        "P_HI": mph,
+        "P_TOT": mptot,
+        "P_TOT_LO": mptotl,
+        "P_TOT_HI": mptoth,
+        "P_TH": mp,
+        "P_TH_LO": mpl,
+        "P_TH_HI": mph,
         "T3D": mt3d,
         "T3D_LO": mt3dl,
         "T3D_HI": mt3dh,
@@ -406,7 +432,10 @@ def prof_hires(Mhyd, model, nmore=5):
         "NE_HI": mneh,
         "K": mK,
         "K_LO": mKl,
-        "K_HI": mKh
+        "K_HI": mKh,
+        "P_NT": mpnt,
+        "P_NT_LO": mpntl,
+        "P_NT_HI": mpnth
     }
 
     return dict

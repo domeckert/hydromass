@@ -5,7 +5,7 @@ from .plots import *
 from .constants import *
 from .forward import *
 from .polytropic import *
-from .pnt_files import *
+from .pnt import *
 from astropy.io import fits
 import os
 import pymc3 as pm
@@ -146,13 +146,25 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     if pnt:
 
-        file_means = _get_data_file_path('pnt_mean.dat')
+        if model.massmod != 'NFW':
 
-        file_cov = _get_data_file_path('pnt_covmat.dat')
+            print('Non-thermal pressure correction is currently implemented only for the NFW model, reverting to thermal only')
 
-        pnt_mean = np.loadtxt(file_means)
+            pnt = False
 
-        pnt_cov = np.loadtxt(file_cov)
+        else:
+
+            file_means = get_data_file_path('pnt_mean.dat')
+
+            file_cov = get_data_file_path('pnt_covmat.dat')
+
+            #pnt_mean = np.loadtxt(file_means).astype(np.float32)
+
+            pnt_mean = np.array([[0.15288539, 1.07588625, 0.05624287]])
+
+            #pnt_cov = np.loadtxt(file_cov).astype(np.float32)
+
+            pnt_cov = np.array([[ 0.00400375, -0.0199079, -0.0022997 ], [-0.0199079, 0.54718882, 0.02912699],[-0.0022997, 0.02912699, 0.00343748]])
 
     with hydro_model:
         # Priors for unknown model parameters
@@ -212,6 +224,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
                                    upper=np.log(P0_est) + err_P0_est / P0_est)
 
+        if pnt:
+
+            pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+
         for RV in hydro_model.basic_RVs:
             print(RV.name, RV.logp(hydro_model.test_point))
 
@@ -244,6 +260,20 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
 
+        if pnt:
+
+            c200 = pmod[0]
+
+            r200c = pmod[1]
+
+            alpha_turb = alpha_turb_pm(rout_m, r200c, c200, Mhyd.redshift, pnt_pars)
+
+            pth = press_out * (1. - alpha_turb)
+
+        else:
+
+            pth = press_out
+
         # Density Likelihood
         if fit_bkg:
 
@@ -257,7 +287,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         if Mhyd.spec_data is not None:
 
             # Model temperature
-            t3d = press_out / dens_m
+            t3d = pth / dens_m
 
             # Mazzotta weights
             ei = dens_m ** 2 * t3d ** (-0.75)
@@ -272,7 +302,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
 
-            pfit = press_out[index_sz]
+            pfit = pth[index_sz]
 
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
@@ -351,6 +381,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.fit_bkg = fit_bkg
     Mhyd.dmonly = dmonly
     Mhyd.mstar = mstar
+    Mhyd.pnt = pnt
+    if pnt:
+        Mhyd.pnt_pars = trace.get_values('Pnt')[:, 0]
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) / cf * transf)
     pmc = np.median(alldens, axis=1)
@@ -535,7 +568,7 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False):
 
         if model is None:
 
@@ -558,7 +591,8 @@ class Mhyd:
                        tune=tune,
                        dmonly=dmonly,
                        mstar=mstar,
-                       find_map=find_map)
+                       find_map=find_map,
+                       pnt=pnt)
 
 
 
