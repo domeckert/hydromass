@@ -247,7 +247,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             # Add stellar mass if provided
             if mstar is not None:
 
-                mbar = mgas + mstar_m
+                mbar = mgas + mstar_m / Mhyd.mfact0 / 1e13
 
             else:
 
@@ -544,7 +544,7 @@ class Mhyd:
 
         self.mfact = 4. * np.pi * rho_cz * 1e-22
 
-        self.mfact0 = kev2erg * cgsMpc / 1e3 / (cgsG * cgsamu * self.mup) / Msun / 1e13
+        self.mfact0 = kev2erg * cgskpc / (cgsG * cgsamu * self.mup) / Msun / 1e13
 
         self.mgas_fact = cgsamu * self.mu_e / Msun
 

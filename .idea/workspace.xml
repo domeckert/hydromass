@@ -3,7 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/../.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/../hydromass/tpdata.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/../hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/../hydromass/plots.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -13,11 +14,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../hydromass/mhyd.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="235">
-              <caret line="385" column="51" selection-start-line="385" selection-start-column="51" selection-end-line="385" selection-end-column="51" />
+            <state relative-caret-position="-261">
+              <caret line="111" column="55" lean-forward="true" selection-start-line="111" selection-start-column="55" selection-end-line="111" selection-end-column="55" />
               <folding>
                 <element signature="e#0#24#0" expanded="true" />
               </folding>
@@ -28,7 +29,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
+            <state relative-caret-position="29">
               <caret line="11" selection-start-line="11" selection-end-line="11" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
@@ -40,8 +41,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/pnt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="48" lean-forward="true" selection-start-line="48" selection-end-line="48" />
+            <state relative-caret-position="1187">
+              <caret line="48" selection-start-line="48" selection-end-line="48" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -52,7 +53,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/polytropic.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="9555">
+            <state relative-caret-position="18473">
               <caret line="640" selection-start-line="640" selection-end-line="640" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -64,8 +65,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/delta.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="675">
-              <caret line="189" column="31" selection-start-line="189" selection-start-column="31" selection-end-line="189" selection-end-column="31" />
+            <state relative-caret-position="762">
+              <caret line="105" lean-forward="true" selection-start-line="105" selection-end-line="105" />
               <folding>
                 <element signature="e#0#24#0" expanded="true" />
               </folding>
@@ -88,7 +89,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/functions.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="458">
+            <state relative-caret-position="3416">
               <caret line="209" selection-start-line="209" selection-end-line="209" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -97,11 +98,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/tpdata.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="518">
-              <caret line="334" column="56" lean-forward="true" selection-start-line="334" selection-start-column="56" selection-end-line="334" selection-end-column="56" />
+              <caret line="334" column="56" selection-start-line="334" selection-start-column="56" selection-end-line="334" selection-end-column="56" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -112,7 +113,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../temp_deproj/deproj_temp.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3420">
+            <state relative-caret-position="6612">
               <caret line="230" column="13" selection-start-line="230" selection-start-column="13" selection-end-line="230" selection-end-column="13" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
@@ -124,8 +125,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../hydromass/plots.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="801">
-              <caret line="437" column="24" selection-start-line="437" selection-start-column="24" selection-end-line="437" selection-end-column="24" />
+            <state relative-caret-position="11774">
+              <caret line="406" column="24" lean-forward="true" selection-start-line="406" selection-start-column="24" selection-end-line="406" selection-end-column="24" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -215,9 +216,9 @@
         <option value="$PROJECT_DIR$/../hydromass/pnt_files.py" />
         <option value="$PROJECT_DIR$/../hydromass/__init__.py" />
         <option value="$PROJECT_DIR$/../hydromass/pnt.py" />
+        <option value="$PROJECT_DIR$/../hydromass/tpdata.py" />
         <option value="$PROJECT_DIR$/../hydromass/mhyd.py" />
         <option value="$PROJECT_DIR$/../hydromass/plots.py" />
-        <option value="$PROJECT_DIR$/../hydromass/tpdata.py" />
       </list>
     </option>
   </component>
@@ -328,13 +329,21 @@
       <option name="project" value="LOCAL" />
       <updated>1592905358216</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="fixed bug when reading SZ data from file">
+      <created>1592936193007</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1592936193007</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="364" y="190" width="1652" height="1011" extended-state="0" />
+    <frame x="465" y="60" width="2877" height="2030" extended-state="0" />
+    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.29650092" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16801977" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -364,7 +373,8 @@
     <MESSAGE value="using Deterministic to fix parameters in forward" />
     <MESSAGE value="added checks of parameters before running" />
     <MESSAGE value="added option to account for P_NT using the Angelinelli+20 NT pressure model" />
-    <option name="LAST_COMMIT_MESSAGE" value="added option to account for P_NT using the Angelinelli+20 NT pressure model" />
+    <MESSAGE value="fixed bug when reading SZ data from file" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed bug when reading SZ data from file" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/../mhyd/projection.py" />
@@ -403,12 +413,62 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../hydromass/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="29">
+          <caret line="11" selection-start-line="11" selection-end-line="11" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../hydromass/polytropic.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="9555">
+        <state relative-caret-position="18473">
           <caret line="640" selection-start-line="640" selection-end-line="640" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../temp_deproj/deproj_temp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6612">
+          <caret line="230" column="13" selection-start-line="230" selection-start-column="13" selection-end-line="230" selection-end-column="13" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../hydromass/tpdata.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="518">
+          <caret line="334" column="56" selection-start-line="334" selection-start-column="56" selection-end-line="334" selection-end-column="56" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../hydromass/functions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3416">
+          <caret line="209" selection-start-line="209" selection-end-line="209" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../hydromass/pnt.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1187">
+          <caret line="48" selection-start-line="48" selection-end-line="48" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -423,50 +483,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../temp_deproj/deproj_temp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3420">
-          <caret line="230" column="13" selection-start-line="230" selection-start-column="13" selection-end-line="230" selection-end-column="13" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../hydromass/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" selection-start-line="11" selection-end-line="11" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../hydromass/delta.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="675">
-          <caret line="189" column="31" selection-start-line="189" selection-start-column="31" selection-end-line="189" selection-end-column="31" />
-          <folding>
-            <element signature="e#0#24#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../hydromass/functions.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="458">
-          <caret line="209" selection-start-line="209" selection-end-line="209" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../hydromass/mhyd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="235">
-          <caret line="385" column="51" selection-start-line="385" selection-start-column="51" selection-end-line="385" selection-end-column="51" />
+        <state relative-caret-position="762">
+          <caret line="105" lean-forward="true" selection-start-line="105" selection-end-line="105" />
           <folding>
             <element signature="e#0#24#0" expanded="true" />
           </folding>
@@ -475,30 +495,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../hydromass/plots.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="801">
-          <caret line="437" column="24" selection-start-line="437" selection-start-column="24" selection-end-line="437" selection-end-column="24" />
+        <state relative-caret-position="11774">
+          <caret line="406" column="24" lean-forward="true" selection-start-line="406" selection-start-column="24" selection-end-line="406" selection-end-column="24" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../hydromass/pnt.py">
+    <entry file="file://$PROJECT_DIR$/../hydromass/mhyd.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="48" lean-forward="true" selection-start-line="48" selection-end-line="48" />
+        <state relative-caret-position="-261">
+          <caret line="111" column="55" lean-forward="true" selection-start-line="111" selection-start-column="55" selection-end-line="111" selection-end-column="55" />
           <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../hydromass/tpdata.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="518">
-          <caret line="334" column="56" lean-forward="true" selection-start-line="334" selection-start-column="56" selection-end-line="334" selection-end-column="56" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#0#24#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -132,6 +132,39 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     rin_mul = np.tile(rin_m, nsamp).reshape(nsamp, nvalm)
 
+    # Adding baryonic mass contribution in case of DM-only fit
+    if Mhyd.dmonly:
+        # Matrix containing integration volumes
+        volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
+
+        # Compute Mgas profile as cumulative sum over the volume
+
+        nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
+
+        ones_mat = np.ones((nvalm, nvalm))
+
+        cs_mat = np.tril(ones_mat)
+
+        mgas = np.dot(cs_mat, dens_m * nhconv * volmat) / 1e13 / Mhyd.mfact0
+
+        if Mhyd.mstar is not None:
+
+            r_mstar = Mhyd.mstar[:, 0]
+
+            cum_mstar = Mhyd.mstar[:, 1]
+
+            mstar_m = np.interp(rout_m, r_mstar, cum_mstar)
+
+            mstar_mul = np.repeat(mstar_m, nsamp).reshape(nvalm, nsamp)
+
+            mbar = mgas + mstar_mul / Mhyd.mfact0 / 1e13
+
+        else:
+
+            mbar = mgas
+
+        mass = mass + mbar.T
+
     # Pressure gradient
     dpres = - mass / rout_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
 
@@ -303,6 +336,18 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
     fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+    if Mhyd.mstar is not None:
+
+        r_mstar = Mhyd.mstar[:, 0]
+
+        cum_mstar = Mhyd.mstar[:, 1]
+
+        mstar_m = np.interp(rout_m, r_mstar, cum_mstar)
+
+    else:
+
+        mstar_m = np.zeros(nvalm)
+
     dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
@@ -314,7 +359,8 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
         "MGAS_HI": mgh,
         "FGAS": fg,
         "FGAS_LO": fgl,
-        "FGAS_HI": fgh
+        "FGAS_HI": fgh,
+        "M_STAR": mstar_m
     }
 
     if plot:
@@ -348,9 +394,15 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
         plt.fill_between(rout_m, mlo, mhi, color='red', alpha=0.4)
 
+        if Mhyd.mstar is not None:
+
+            plt.plot(rout_m, mstar_m, color='green', label='$M_{\star}$')
+
         plt.xlabel('Radius [kpc]', fontsize=40)
 
         plt.ylabel('$M(<R) [M_\odot]$', fontsize=40)
+
+        plt.legend(fontsize = 22)
 
         return dict, fig
 
