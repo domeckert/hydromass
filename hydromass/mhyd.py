@@ -6,6 +6,7 @@ from .constants import *
 from .forward import *
 from .polytropic import *
 from .pnt import *
+from .nonparametric import *
 from astropy.io import fits
 import os
 import pymc3 as pm
@@ -549,9 +550,20 @@ class Mhyd:
         self.mgas_fact = cgsamu * self.mu_e / Msun
 
 
-    def emissivity(self, nh, rmf, Z=0.3, elow=0.5, ehigh=2.0, arf=None):
+    def emissivity(self, nh, rmf, kt=None, Z=0.3, elow=0.5, ehigh=2.0, arf=None):
 
-        kt = np.average(self.spec_data.temp_x, weights=1. / self.spec_data.errt_x ** 2)
+        if kt is None:
+
+            if self.spec_data.temp_x is not None:
+
+                kt = np.average(self.spec_data.temp_x, weights=1. / self.spec_data.errt_x ** 2)
+
+            else:
+
+                print('Error: no temperature provided, cannot proceed')
+
+                return
+
 
         print('Mean cluster temperature:',kt,' keV')
 
@@ -643,3 +655,25 @@ class Mhyd:
                           nmore=nmore,
                           tune=tune,
                           find_map=find_map)
+
+
+    def run_GP(self, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
+            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
+            bin_fact=1.0, smin=None, smax=None, ngauss=100):
+
+        Run_NonParametric_PyMC3(self,
+                                bkglim=bkglim,
+                                nmcmc=nmcmc,
+                                fit_bkg=fit_bkg,
+                                back=back,
+                                samplefile=samplefile,
+                                nrc=nrc,
+                                nbetas=nbetas,
+                                min_beta=min_beta,
+                                nmore=nmore,
+                                tune=tune,
+                                find_map=find_map,
+                                bin_fact=bin_fact,
+                                smin=smin,
+                                smax=smax,
+                                ngauss=ngauss)

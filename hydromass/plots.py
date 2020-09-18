@@ -235,15 +235,11 @@ def kt_from_samples(Mhyd, model, nmore=5):
 
     tproj = np.dot(proj_mat, t3d * ei) / flux
 
-    t3d_or = np.empty((npx, nsamp))
-
-    for i in range(nsamp):
-
-        t3d_or[:, i] = t3d[:, i][index_x]
-
     tmed, tlo, thi = np.percentile(tproj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-    t3do, t3dl, t3dh = np.percentile(t3d_or,[50., 50. - 68.3 / 2. , 50. + 68.3 / 2.] , axis=1)
+    t3dot, t3dlt, t3dht = np.percentile(t3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    t3do, t3dl, t3dh = t3dot[index_x], t3dlt[index_x], t3dht[index_x]
 
     dict = {
         "R_IN": Mhyd.spec_data.rin_x,
@@ -276,21 +272,13 @@ def P_from_samples(Mhyd, model, nmore=5):
 
         return
 
-    nsamp = len(Mhyd.samples)
-
     rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
-
-    npx = len(Mhyd.sz_data.rref_sz)
 
     dens_m, press_tot, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
-    pfit = np.empty((npx, nsamp))
+    pmt, plot, phit = np.percentile(pth, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-    for i in range(nsamp):
-
-        pfit[:, i] = pth[:, i][index_sz]
-
-    pmed, plo, phi = np.percentile(pfit, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+    pmed, plo, phi = pmt[index_sz], plot[index_sz], phit[index_sz]
 
     return pmed, plo, phi
 
@@ -386,11 +374,11 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
         plt.yscale('log')
 
-        plt.plot(rout_m, mg, color='blue', label='$M_{\rm gas}$')
+        plt.plot(rout_m, mg, color='blue', label='$M_{gas}$')
 
         plt.fill_between(rout_m, mgl, mgh, color='blue', alpha=0.4)
 
-        plt.plot(rout_m, mmed, color='red', label='$M_{\rm Hyd}$')
+        plt.plot(rout_m, mmed, color='red', label='$M_{Hyd}$')
 
         plt.fill_between(rout_m, mlo, mhi, color='red', alpha=0.4)
 

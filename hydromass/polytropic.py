@@ -844,7 +844,7 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
         Mhyd.Kdens_m = Kdens_m
         Mhyd.Kdens_grad = Kdens_grad
 
-        if Mhyd.spec_data.temp_x is not None:
+        if Mhyd.spec_data is not None:
             kt_mod = kt_poly_from_samples(Mhyd, Polytropic, nmore=nmore)
             Mhyd.ktmod = kt_mod['TSPEC']
             Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
@@ -853,7 +853,7 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
             Mhyd.kt3d_lo = kt_mod['T3D_LO']
             Mhyd.kt3d_hi = kt_mod['T3D_HI']
 
-        if Mhyd.sz_data.pres_sz is not None:
+        if Mhyd.sz_data is not None:
             pmed, plo, phi = P_poly_from_samples(Mhyd, Polytropic, nmore=nmore)
             Mhyd.pmod = pmed
             Mhyd.pmod_lo = plo
