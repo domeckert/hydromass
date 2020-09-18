@@ -1,64 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="" />
-    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
-  </component>
-  <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../../hydromass/nonparametric.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="484">
-              <caret line="506" column="35" lean-forward="true" selection-start-line="506" selection-start-column="35" selection-end-line="506" selection-end-column="35" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../hydromass/forward.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="495">
-              <caret line="143" column="45" selection-start-line="143" selection-start-column="45" selection-end-line="143" selection-end-column="45" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../hydromass/plots.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="555">
-              <caret line="247" column="20" lean-forward="true" selection-start-line="247" selection-start-column="20" selection-end-line="247" selection-end-column="20" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../../hydromass/mhyd.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="8115">
-              <caret line="552" column="8" selection-start-line="552" selection-start-column="8" selection-end-line="552" selection-end-column="8" />
-              <folding>
-                <element signature="e#0#24#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
@@ -104,56 +55,7 @@
     </replaceStrings>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
-  </component>
-  <component name="IdeDocumentHistory">
-    <option name="CHANGED_PATHS">
-      <list>
-        <option value="$PROJECT_DIR$/setup.py" />
-        <option value="$PROJECT_DIR$/mhyd/MyMhyd.py" />
-        <option value="$PROJECT_DIR$/mhyd/functions.py" />
-        <option value="$PROJECT_DIR$/mhyd/__init__.py" />
-        <option value="$PROJECT_DIR$/mhyd/projection.py" />
-        <option value="$PROJECT_DIR$/mhyd/mhyd.py" />
-        <option value="$PROJECT_DIR$/mhyd/emissivity.py" />
-        <option value="$PROJECT_DIR$/../mhyd/emissivity.py" />
-        <option value="$PROJECT_DIR$/../mhyd/__init__.py" />
-        <option value="$PROJECT_DIR$/../mhyd/deproject.py" />
-        <option value="$PROJECT_DIR$/../mhyd/functions.py" />
-        <option value="$PROJECT_DIR$/../mhyd/mhyd.py" />
-        <option value="$PROJECT_DIR$/../setup.py" />
-        <option value="$PROJECT_DIR$/functions.py" />
-        <option value="$PROJECT_DIR$/emissivity.py" />
-        <option value="$PROJECT_DIR$/deproject.py" />
-        <option value="$PROJECT_DIR$/constants.py" />
-        <option value="$PROJECT_DIR$/__init__.py" />
-        <option value="$PROJECT_DIR$/delta.py" />
-        <option value="$PROJECT_DIR$/mhyd.py" />
-        <option value="$PROJECT_DIR$/plots.py" />
-        <option value="$PROJECT_DIR$/hydromass/plots.py" />
-        <option value="$PROJECT_DIR$/hydromass/__init__.py" />
-        <option value="$PROJECT_DIR$/hydromass/forward.py" />
-        <option value="$PROJECT_DIR$/hydromass/mhyd.py" />
-        <option value="$PROJECT_DIR$/deproject.py" />
-        <option value="$PROJECT_DIR$/forward.py" />
-        <option value="$PROJECT_DIR$/pnt_files.py" />
-        <option value="$PROJECT_DIR$/__init__.py" />
-        <option value="$PROJECT_DIR$/pnt.py" />
-        <option value="$PROJECT_DIR$/tpdata.py" />
-        <option value="$PROJECT_DIR$/../plots.py" />
-        <option value="$PROJECT_DIR$/mhyd.py" />
-        <option value="$PROJECT_DIR$/polytropic.py" />
-        <option value="$PROJECT_DIR$/nonparametric.py" />
-        <option value="$PROJECT_DIR$/plots.py" />
-        <option value="$PROJECT_DIR$/../hydromass/mhyd.py" />
-        <option value="$PROJECT_DIR$/../hydromass/forward.py" />
-        <option value="$PROJECT_DIR$/../hydromass/plots.py" />
-        <option value="$PROJECT_DIR$/../hydromass/nonparametric.py" />
-        <option value="$PROJECT_DIR$/../../hydromass/forward.py" />
-        <option value="$PROJECT_DIR$/../../hydromass/plots.py" />
-        <option value="$PROJECT_DIR$/../../hydromass/nonparametric.py" />
-      </list>
-    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="72" />
@@ -161,46 +63,16 @@
     <option name="width" value="1848" />
     <option name="height" value="1136" />
   </component>
+  <component name="ProjectId" id="1hgAphKf3qQevm5AFfGvkJ0OmNX" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
-  <component name="ProjectView">
-    <navigator currentView="Scope" currentSubView="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope" proportions="" version="1">
-      <foldersAlwaysOnTop value="true" />
-    </navigator>
-    <panes>
-      <pane id="ProjectPane" />
-      <pane id="Scope">
-        <subPane subId="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope">
-          <expand>
-            <path>
-              <item name="." type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-            </path>
-            <path>
-              <item name="." type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="hydromass" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
-    </panes>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../temp_deproj/deproj_temp.py" />
     <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Mappings" />
-  </component>
-  <component name="RunDashboard">
-    <option name="ruleStates">
-      <list>
-        <RuleState>
-          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
-        </RuleState>
-        <RuleState>
-          <option name="name" value="StatusDashboardGroupingRule" />
-        </RuleState>
-      </list>
-    </option>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -276,36 +148,21 @@
       <option name="project" value="LOCAL" />
       <updated>1592994463090</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="speed up profile computation">
+      <created>1600422441067</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1600422441067</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
-  </component>
-  <component name="ToolWindowManager">
-    <frame x="72" y="63" width="1848" height="1136" extended-state="0" />
-    <editor active="true" />
-    <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.26246575" />
-      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Version Control" order="7" weight="0.3297975" />
-      <window_info anchor="bottom" id="Terminal" order="8" />
-      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="10" />
-      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-    </layout>
   </component>
   <component name="VcsManagerConfiguration">
     <ignored-roots>
       <path value="$PROJECT_DIR$/../.." />
       <path value="$USER_HOME$/hydromass" />
+      <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
     <MESSAGE value="iml" />
     <MESSAGE value="fixed evaluation of profiles at rref_x" />
@@ -316,82 +173,13 @@
     <MESSAGE value="added option to account for P_NT using the Angelinelli+20 NT pressure model" />
     <MESSAGE value="fixed bug when reading SZ data from file" />
     <MESSAGE value="fixed mstar modeling in DM-only fit" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed mstar modeling in DM-only fit" />
+    <MESSAGE value="speed up profile computation" />
+    <option name="LAST_COMMIT_MESSAGE" value="speed up profile computation" />
   </component>
-  <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../mhyd/projection.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd/MyMhyd.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd/emissivity.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd/functions.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd/deproject.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd/mhyd.py" />
-    <entry file="file://$USER_HOME$/setup.py" />
-    <entry file="file://$PROJECT_DIR$/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/deproject.py" />
-    <entry file="file://$PROJECT_DIR$/emissivity.py" />
-    <entry file="file://$PROJECT_DIR$/functions.py" />
-    <entry file="file://$PROJECT_DIR$/delta.py" />
-    <entry file="file://$PROJECT_DIR$/polytopic.py" />
-    <entry file="file://$PROJECT_DIR$/../forward.py" />
-    <entry file="file://$PROJECT_DIR$/../__init__.py" />
-    <entry file="file://$PROJECT_DIR$/../pnt.py" />
-    <entry file="file://$PROJECT_DIR$/../polytropic.py" />
-    <entry file="file://$PROJECT_DIR$/../tpdata.py" />
-    <entry file="file://$PROJECT_DIR$/../functions.py" />
-    <entry file="file://$PROJECT_DIR$/../deproject.py" />
-    <entry file="file://$PROJECT_DIR$/../delta.py" />
-    <entry file="file://$PROJECT_DIR$/../plots.py" />
-    <entry file="file://$PROJECT_DIR$/../mhyd.py" />
-    <entry file="file://$PROJECT_DIR$/constants.py" />
-    <entry file="file://$PROJECT_DIR$/../../temp_deproj/deproj_temp.py" />
-    <entry file="file://$PROJECT_DIR$/forward.py" />
-    <entry file="file://$PROJECT_DIR$/polytropic.py" />
-    <entry file="file://$PROJECT_DIR$/mhyd.py" />
-    <entry file="file://$PROJECT_DIR$/plots.py" />
-    <entry file="file://$PROJECT_DIR$/nonparametric.py" />
-    <entry file="file://$USER_HOME$/hydromass/hydromass/nonparametric.py" />
-    <entry file="file://$USER_HOME$/hydromass/hydromass/mhyd.py" />
-    <entry file="file://$USER_HOME$/hydromass/hydromass/functions.py" />
-    <entry file="file://$PROJECT_DIR$/../../hydromass/mhyd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8115">
-          <caret line="552" column="8" selection-start-line="552" selection-start-column="8" selection-end-line="552" selection-end-column="8" />
-          <folding>
-            <element signature="e#0#24#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../hydromass/forward.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="495">
-          <caret line="143" column="45" selection-start-line="143" selection-start-column="45" selection-end-line="143" selection-end-column="45" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../hydromass/plots.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="555">
-          <caret line="247" column="20" lean-forward="true" selection-start-line="247" selection-start-column="20" selection-end-line="247" selection-end-column="20" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../hydromass/nonparametric.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="484">
-          <caret line="506" column="35" lean-forward="true" selection-start-line="506" selection-start-column="35" selection-end-line="506" selection-end-column="35" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+  <component name="WindowStateProjectService">
+    <state x="485" y="266" width="1022" height="737" key="SettingsEditor" timestamp="1600422583651">
+      <screen x="72" y="27" width="1848" height="1173" />
+    </state>
+    <state x="485" y="266" width="1022" height="737" key="SettingsEditor/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422583651" />
   </component>
 </project>
