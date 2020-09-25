@@ -285,6 +285,71 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
         return dict
 
+def prof_forw_hires(Mhyd, Forward, nmore=5):
+    """
+    Compute best-fitting profiles and error envelopes from fitted data
+
+    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction
+    :param model:
+    :param nmore:
+    :return:
+    """
+
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+
+    vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
+
+    vol_x = vx.deproj_vol().T
+
+    p3d = Forward.func_np(rout_m, Mhyd.samppar)
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+
+    t3d = p3d / dens_m
+
+    # Mazzotta weights
+    ei = dens_m ** 2 * t3d ** (-0.75)
+
+    # Temperature projection
+    flux = np.dot(vol_x, ei)
+
+    tproj = np.dot(vol_x, t3d * ei) / flux
+
+    K3d = t3d * dens_m ** (- 2. / 3.)
+
+    mptot, mptotl, mptoth = np.percentile(p3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mt3d, mt3dl, mt3dh = np.percentile(t3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mtp, mtpl, mtph = np.percentile(tproj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mne, mnel, mneh = np.percentile(dens_m, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mK, mKl, mKh = np.percentile(K3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    dict={
+        "R_IN": rin_m,
+        "R_OUT": rout_m,
+        "P_TOT": mptot,
+        "P_TOT_LO": mptotl,
+        "P_TOT_HI": mptoth,
+        "T3D": mt3d,
+        "T3D_LO": mt3dl,
+        "T3D_HI": mt3dh,
+        "TSPEC": mtp,
+        "TSPEC_LO": mtpl,
+        "TSPEC_HI": mtph,
+        "NE": mne,
+        "NE_LO": mnel,
+        "NE_HI": mneh,
+        "K": mK,
+        "K_LO": mKl,
+        "K_HI": mKh,
+    }
+
+    return dict
+
+
 
 class Forward:
     """

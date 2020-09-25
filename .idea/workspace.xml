@@ -2,66 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="FindInProjectRecents">
-    <findStrings>
-      <find>rad</find>
-      <find>nhconv</find>
-      <find>interp1d</find>
-      <find>Mpc</find>
-      <find>kpc</find>
-      <find>cgsMpc/1e3</find>
-      <find>cgsMpc</find>
-      <find>msun</find>
-      <find>mh</find>
-      <find>PSF</find>
-      <find>profile</find>
-      <find>testval</find>
-      <find>rout_x</find>
-      <find>Mhyd.rr</find>
-      <find>rref</find>
-      <find>rref_x</find>
-      <find>rref_sz</find>
-      <find>Mhyd</find>
-      <find>rads_more</find>
-      <find>pixsize</find>
-      <find>densout</find>
-      <find>npt</find>
-      <find>GPgrad</find>
-      <find>samppar</find>
-      <find>transf</find>
-      <find>cf</find>
-      <find>index_sz</find>
-      <find>emissivit</find>
-      <find>calc_gp</find>
-      <find>calc_gp_op</find>
-    </findStrings>
-    <replaceStrings>
-      <replace>'rdelta'</replace>
-      <replace>nmore=5</replace>
-      <replace>cgsMpc</replace>
-      <replace>cgskpc</replace>
-      <replace>Msun</replace>
-      <replace>cgsamu</replace>
-      <replace>Polytropic</replace>
-    </replaceStrings>
-  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="72" />
-    <option name="y" value="63" />
-    <option name="width" value="1848" />
-    <option name="height" value="1136" />
   </component>
   <component name="ProjectId" id="1hgAphKf3qQevm5AFfGvkJ0OmNX" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -74,6 +24,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../temp_deproj/deproj_temp.py" />
     <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Mappings" />
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -155,7 +106,14 @@
       <option name="project" value="LOCAL" />
       <updated>1600422441067</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="added non-parametric Gaussian Process reconstruction">
+      <created>1600422938743</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1600422938743</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -174,12 +132,21 @@
     <MESSAGE value="fixed bug when reading SZ data from file" />
     <MESSAGE value="fixed mstar modeling in DM-only fit" />
     <MESSAGE value="speed up profile computation" />
-    <option name="LAST_COMMIT_MESSAGE" value="speed up profile computation" />
+    <MESSAGE value="added non-parametric Gaussian Process reconstruction" />
+    <option name="LAST_COMMIT_MESSAGE" value="added non-parametric Gaussian Process reconstruction" />
   </component>
   <component name="WindowStateProjectService">
+    <state x="535" y="179" width="912" height="910" key="CommitChangelistDialog2" timestamp="1600422938588">
+      <screen x="72" y="27" width="1848" height="1173" />
+    </state>
+    <state x="535" y="179" width="912" height="910" key="CommitChangelistDialog2/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422938588" />
     <state x="485" y="266" width="1022" height="737" key="SettingsEditor" timestamp="1600422583651">
       <screen x="72" y="27" width="1848" height="1173" />
     </state>
     <state x="485" y="266" width="1022" height="737" key="SettingsEditor/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422583651" />
+    <state x="591" y="367" width="800" height="535" key="Vcs.Push.Dialog.v2" timestamp="1600422947934">
+      <screen x="72" y="27" width="1848" height="1173" />
+    </state>
+    <state x="591" y="367" width="800" height="535" key="Vcs.Push.Dialog.v2/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422947934" />
   </component>
 </project>
