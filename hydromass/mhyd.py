@@ -684,13 +684,6 @@ class Mhyd:
                   model,
                   outfile)
 
-    def SaveModel(self, model, outfile=None):
-
-        SaveModel(self,
-                  model,
-                  outfile)
-
-
     def SaveGP(self, outfile=None):
 
         SaveGP(self,
