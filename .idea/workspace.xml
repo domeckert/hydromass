@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="added saving/reloading options">
+      <change afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,6 +26,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../temp_deproj/deproj_temp.py" />
+    <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
     <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Mappings" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -113,7 +118,14 @@
       <option name="project" value="LOCAL" />
       <updated>1600422938743</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="added high-resolution profile calculation to Forward">
+      <created>1601043848891</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1601043848891</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -133,20 +145,27 @@
     <MESSAGE value="fixed mstar modeling in DM-only fit" />
     <MESSAGE value="speed up profile computation" />
     <MESSAGE value="added non-parametric Gaussian Process reconstruction" />
-    <option name="LAST_COMMIT_MESSAGE" value="added non-parametric Gaussian Process reconstruction" />
+    <MESSAGE value="added high-resolution profile calculation to Forward" />
+    <option name="LAST_COMMIT_MESSAGE" value="added high-resolution profile calculation to Forward" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="535" y="179" width="912" height="910" key="CommitChangelistDialog2" timestamp="1600422938588">
-      <screen x="72" y="27" width="1848" height="1173" />
+    <state x="734" y="404" width="520" height="306" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1601288778670">
+      <screen x="72" y="27" width="1848" height="1053" />
     </state>
+    <state x="734" y="404" width="520" height="306" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/72.27.1848.1053@72.27.1848.1053" timestamp="1601288778670" />
+    <state x="535" y="153" width="916" height="817" key="CommitChangelistDialog2" timestamp="1601288802800">
+      <screen x="72" y="27" width="1848" height="1053" />
+    </state>
+    <state x="535" y="153" width="916" height="817" key="CommitChangelistDialog2/72.27.1848.1053@72.27.1848.1053" timestamp="1601288802800" />
     <state x="535" y="179" width="912" height="910" key="CommitChangelistDialog2/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422938588" />
     <state x="485" y="266" width="1022" height="737" key="SettingsEditor" timestamp="1600422583651">
       <screen x="72" y="27" width="1848" height="1173" />
     </state>
     <state x="485" y="266" width="1022" height="737" key="SettingsEditor/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422583651" />
-    <state x="591" y="367" width="800" height="535" key="Vcs.Push.Dialog.v2" timestamp="1600422947934">
-      <screen x="72" y="27" width="1848" height="1173" />
+    <state x="591" y="327" width="800" height="535" key="Vcs.Push.Dialog.v2" timestamp="1601043865345">
+      <screen x="72" y="27" width="1848" height="1053" />
     </state>
+    <state x="591" y="327" key="Vcs.Push.Dialog.v2/72.27.1848.1053@72.27.1848.1053" timestamp="1601043865345" />
     <state x="591" y="367" width="800" height="535" key="Vcs.Push.Dialog.v2/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422947934" />
   </component>
 </project>

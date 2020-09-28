@@ -631,6 +631,10 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         Mhyd.GPop = GPop
         Mhyd.GPgrad = GPgrad
+        Mhyd.smin = smin
+        Mhyd.smax = smax
+        Mhyd.bin_fact = bin_fact
+        Mhyd.ngauss = ngauss
 
         Mhyd.K = K
         Mhyd.Kdens = Kdens

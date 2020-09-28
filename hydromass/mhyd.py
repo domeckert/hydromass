@@ -10,7 +10,7 @@ from .nonparametric import *
 from astropy.io import fits
 import os
 import pymc3 as pm
-
+from .save import *
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
@@ -677,3 +677,27 @@ class Mhyd:
                                 smin=smin,
                                 smax=smax,
                                 ngauss=ngauss)
+
+    def SaveModel(self, model, outfile=None):
+
+        SaveModel(self,
+                  model,
+                  outfile)
+
+    def SaveModel(self, model, outfile=None):
+
+        SaveModel(self,
+                  model,
+                  outfile)
+
+
+    def SaveGP(self, outfile=None):
+
+        SaveGP(self,
+               outfile)
+
+    def SaveForward(self, Forward, outfile=None):
+
+        SaveForward(self,
+                    Forward,
+                    outfile)
