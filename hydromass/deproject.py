@@ -361,8 +361,8 @@ def OP(deproj,nmc=1000):
     # Projection volumes
     if deproj.z is not None and deproj.cf is not None:
         amin2kpc = cosmo.kpc_proper_per_arcmin(deproj.z).value
-        rin_cm = (prof.bins - prof.ebins)*amin2kpc*cgskpc
-        rout_cm = (prof.bins + prof.ebins)*amin2kpc*cgskpc
+        rin_cm = rinam * amin2kpc * cgskpc
+        rout_cm = routam * amin2kpc * cgskpc
         x=MyDeprojVol(rin_cm,rout_cm)
         vol=np.transpose(x.deproj_vol())
         dlum=cosmo.luminosity_distance(deproj.z).value*cgsMpc
@@ -382,6 +382,7 @@ def OP(deproj,nmc=1000):
     # Deproject and propagate error using Monte Carlo
     emres = np.repeat(e_em0,nmc).reshape(nbin,nmc) * np.random.randn(nbin,nmc) + np.repeat(em0,nmc).reshape(nbin,nmc)
     ct = np.repeat(corr,nmc).reshape(nbin,nmc)
+    print(ct)
     allres = np.linalg.solve(vol, emres * (1. - ct))
     ev0 = np.std(allres,axis=1)
     v0 = np.median(allres,axis=1)
