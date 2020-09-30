@@ -18,7 +18,7 @@ def calc_gp_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
     if smin is None or smax is None:
 
         # Sigma logarithmically spaced between min and max bin size
-        sig = np.logspace(np.log10(np.min(bin_fact * width)), np.log10(np.max(bin_fact * width)),npt)
+        sig = np.logspace(np.log10(bin_fact * rmin), np.log10(np.max(bin_fact * width)),npt)
 
     else:
 
@@ -55,7 +55,7 @@ def calc_gp_grad_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=No
     if smin is None or smax is None:
 
         # Sigma logarithmically spaced between min and max bin size
-        sig = np.logspace(np.log10(np.min(bin_fact * width)), np.log10(np.max(bin_fact * width)), npt)
+        sig = np.logspace(np.log10(bin_fact * rmin), np.log10(np.max(bin_fact * width)), npt)
 
     else:
 
