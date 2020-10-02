@@ -645,116 +645,116 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
-        tinit = time.time()
+    tinit = time.time()
 
-        print('Running MCMC...')
+    print('Running MCMC...')
 
-        with hydro_model:
+    with hydro_model:
 
-            if find_map:
+        if find_map:
 
-                start = pm.find_MAP()
+            start = pm.find_MAP()
 
-                trace = pm.sample(nmcmc, start=start, tune=tune)
-
-            else:
-
-                trace = pm.sample(nmcmc, tune=tune)
-
-        print('Done.')
-
-        tend = time.time()
-
-        print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
-
-        Mhyd.trace = trace
-
-        # Get chains and save them to file
-        sampc = trace.get_values('coefs')
-
-        if fit_bkg:
-
-            sampb = trace.get_values('bkg')
-
-            samples = np.append(sampc, sampb, axis=1)
+            trace = pm.sample(nmcmc, start=start, tune=tune)
 
         else:
-            samples = sampc
 
-        Mhyd.samples = samples
+            trace = pm.sample(nmcmc, tune=tune)
 
-        if samplefile is not None:
-            np.savetxt(samplefile, samples)
-            np.savetxt(samplefile + '.par', np.array([pars.shape[0] / nbetas, nbetas, min_beta, nmcmc]), header='pymc3')
+    print('Done.')
 
-        # Compute output deconvolved brightness profile
+    tend = time.time()
 
-        if fit_bkg:
-            Ksb = calc_sb_operator(rad, sourcereg, pars)
+    print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
 
-            allsb = np.dot(Ksb, np.exp(samples.T))
+    Mhyd.trace = trace
 
-            bfit = np.median(np.exp(samples[:, npt]))
+    # Get chains and save them to file
+    sampc = trace.get_values('coefs')
 
-            Mhyd.bkg = bfit
+    if fit_bkg:
+
+        sampb = trace.get_values('bkg')
+
+        samples = np.append(sampc, sampb, axis=1)
+
+    else:
+        samples = sampc
+
+    Mhyd.samples = samples
+
+    if samplefile is not None:
+        np.savetxt(samplefile, samples)
+        np.savetxt(samplefile + '.par', np.array([pars.shape[0] / nbetas, nbetas, min_beta, nmcmc]), header='pymc3')
+
+    # Compute output deconvolved brightness profile
+
+    if fit_bkg:
+        Ksb = calc_sb_operator(rad, sourcereg, pars)
+
+        allsb = np.dot(Ksb, np.exp(samples.T))
+
+        bfit = np.median(np.exp(samples[:, npt]))
+
+        Mhyd.bkg = bfit
+
+    else:
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        allsb = np.dot(Ksb, np.exp(samples.T))
+
+    pmc = np.median(allsb, axis=1)
+    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb = pmc
+    Mhyd.sb_lo = pmcl
+    Mhyd.sb_hi = pmch
+
+    Mhyd.nrc = nrc
+    Mhyd.nbetas = nbetas
+    Mhyd.min_beta = min_beta
+    Mhyd.nmore = nmore
+    Mhyd.pardens = pardens
+    Mhyd.fit_bkg = fit_bkg
+
+    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) / cf * transf)
+    pmc = np.median(alldens, axis=1)
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    Mhyd.dens = pmc
+    Mhyd.dens_lo = pmcl
+    Mhyd.dens_hi = pmch
+
+    samppar = np.empty((len(samples), Forward.npar))
+    for i in range(Forward.npar):
+
+        name = Forward.parnames[i]
+
+        if name == 'p0':
+
+            samppar[:, i] = np.exp(trace.get_values(name))
 
         else:
-            Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+            samppar[:, i] = trace.get_values(name)
+    Mhyd.samppar = samppar
 
-            allsb = np.dot(Ksb, np.exp(samples.T))
+    Mhyd.K = K
+    Mhyd.Kdens = Kdens
+    Mhyd.Ksb = Ksb
+    Mhyd.transf = transf
+    Mhyd.Kdens_m = Kdens_m
 
-        pmc = np.median(allsb, axis=1)
-        pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
-        pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
-        Mhyd.sb = pmc
-        Mhyd.sb_lo = pmcl
-        Mhyd.sb_hi = pmch
+    if Mhyd.spec_data is not None:
+        kt_mod = kt_forw_from_samples(Mhyd, Forward, nmore=nmore)
+        Mhyd.ktmod = kt_mod['TSPEC']
+        Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
+        Mhyd.ktmod_hi = kt_mod['TSPEC_HI']
+        Mhyd.kt3d = kt_mod['T3D']
+        Mhyd.kt3d_lo = kt_mod['T3D_LO']
+        Mhyd.kt3d_hi = kt_mod['T3D_HI']
 
-        Mhyd.nrc = nrc
-        Mhyd.nbetas = nbetas
-        Mhyd.min_beta = min_beta
-        Mhyd.nmore = nmore
-        Mhyd.pardens = pardens
-        Mhyd.fit_bkg = fit_bkg
-
-        alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) / cf * transf)
-        pmc = np.median(alldens, axis=1)
-        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
-        Mhyd.dens = pmc
-        Mhyd.dens_lo = pmcl
-        Mhyd.dens_hi = pmch
-
-        samppar = np.empty((len(samples), Forward.npar))
-        for i in range(Forward.npar):
-
-            name = Forward.parnames[i]
-
-            if name == 'p0':
-
-                samppar[:, i] = np.exp(trace.get_values(name))
-
-            else:
-                samppar[:, i] = trace.get_values(name)
-        Mhyd.samppar = samppar
-
-        Mhyd.K = K
-        Mhyd.Kdens = Kdens
-        Mhyd.Ksb = Ksb
-        Mhyd.transf = transf
-        Mhyd.Kdens_m = Kdens_m
-
-        if Mhyd.spec_data is not None:
-            kt_mod = kt_forw_from_samples(Mhyd, Forward, nmore=nmore)
-            Mhyd.ktmod = kt_mod['TSPEC']
-            Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
-            Mhyd.ktmod_hi = kt_mod['TSPEC_HI']
-            Mhyd.kt3d = kt_mod['T3D']
-            Mhyd.kt3d_lo = kt_mod['T3D_LO']
-            Mhyd.kt3d_hi = kt_mod['T3D_HI']
-
-        if Mhyd.sz_data is not None:
-            pmed, plo, phi = P_forw_from_samples(Mhyd, Forward, nmore=nmore)
-            Mhyd.pmod = pmed
-            Mhyd.pmod_lo = plo
-            Mhyd.pmod_hi = phi
+    if Mhyd.sz_data is not None:
+        pmed, plo, phi = P_forw_from_samples(Mhyd, Forward, nmore=nmore)
+        Mhyd.pmod = pmed
+        Mhyd.pmod_lo = plo
+        Mhyd.pmod_hi = phi

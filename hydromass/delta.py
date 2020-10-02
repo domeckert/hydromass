@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import brentq
 import matplotlib.pyplot as plt
 from .deproject import calc_density_operator
+from .plots import rads_more
 
 def delta_func(r, Mhyd, model, pars):
     """
@@ -11,9 +12,9 @@ def delta_func(r, Mhyd, model, pars):
     :param r: Radii in kpc
     :type r: numpy.ndarray or float
     :param Mhyd: Mhyd object containing mass reconstruction
-    :type Mhyd: class hydromass.Mhyd
+    :type Mhyd: class Mhyd
     :param model:Model object containing the definition of the mass model
-    :type model: class hydromass.Model
+    :type model: class Model
     :param pars:Parameter vector to be passed to the mass model
     :type pars: numpy.ndarray
     :return: Overdensity as a function of radius
@@ -22,6 +23,28 @@ def delta_func(r, Mhyd, model, pars):
 
     mass = Mhyd.mfact * model.func_np(r, pars, delta=model.delta) * 1e13 * Msun
 
+    vol = 4. / 3. * np.pi * r ** 3 * cgskpc ** 3
+
+    rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
+
+    return mass / vol / rhoc
+
+
+def delta_func_GP(r, Mhyd, mass):
+    """
+    Return profile of overdensity Delta with respect to critical density for a given input mass model
+
+    :param r: Radii in kpc
+    :type r: numpy.ndarray or float
+    :param Mhyd: Mhyd object containing mass reconstruction
+    :type Mhyd: class Mhyd
+    :param model:Model object containing the definition of the mass model
+    :type model: class Model
+    :param pars:Parameter vector to be passed to the mass model
+    :type pars: numpy.ndarray
+    :return: Overdensity as a function of radius
+    :rtype: numpy.ndarray
+    """
     vol = 4. / 3. * np.pi * r ** 3 * cgskpc ** 3
 
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
@@ -38,7 +61,7 @@ def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False):
     :param coefs: Coefficients describing the density profile
     :type coefs: numpy.ndarray
     :param Mhyd: Mhyd object containing reconstruction
-    :type Mhyd: class hydromass.Mhyd
+    :type Mhyd: class Mhyd
     :return: Gas mass evaluated exactly at rdelta
     :rtype: numpy.ndarray
     """
@@ -74,7 +97,7 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False):
     :param coefs: Coefficients describing the density profile
     :type coefs: numpy.ndarray
     :param Mhyd: Mhyd object containing reconstruction
-    :type Mhyd: class hydromass.Mhyd
+    :type Mhyd: class Mhyd
     :return: Radius, Overdensity of Mgas
     :rtype: numpy.ndarray, numpy.ndarray
     """
@@ -134,9 +157,9 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
     :param delta: Overdensity with respect to critical
     :type float
     :param Mhyd: Mhyd object containing the results of mass reconstruction run
-    :type Mhyd: class hydromass.Mhyd
+    :type Mhyd: class Mhyd
     :param model: Model object defining the mass model
-    :type model: class hydromass.Model
+    :type model: class Model
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
@@ -225,14 +248,232 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
         return dict
 
 
+from scipy.optimize import brentq
+
+
+def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
+    """
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+
+    :param delta: Overdensity with respect to critical
+    :type float
+    :param Mhyd: Mhyd object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.Mhyd`
+    :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
+    :type plot: bool
+    :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
+    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
+    """
+
+    nsamp = len(Mhyd.samppar)
+
+    mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
+
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    nvalm = len(rin_m)
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+
+    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / Mhyd.ccf * Mhyd.transf
+
+    t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
+
+    rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
+
+    grad_t3d = rout_mul / cgskpc / t3d * np.dot(Mhyd.GPgrad, Mhyd.samppar.T)
+
+    mass = - rout_mul * t3d / (cgsG * cgsamu * Mhyd.mup) * (
+                grad_t3d + grad_dens) * kev2erg
+
+    vol = 4. / 3. * np.pi * rout_m ** 3 * cgskpc ** 3
+
+    rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
+
+    delta_prof = mass.T / vol / rhoc
+
+    for i in range(nsamp):
+        temp_func = lambda x: np.interp(x, rout_m, delta_prof[i, :]) - delta
+
+        rdelta[i] = brentq(temp_func, rmin, rmax)
+
+        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
+            Mhyd.redshift).value / Msun
+
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg)
+
+        fgdelta[i] = mgdelta[i] / mdelta[i]
+
+    rd, rdlo, rdhi = np.percentile(rdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    md, mdlo, mdhi = np.percentile(mdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    mgd, mgdlo, mgdhi = np.percentile(mgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    fgd, fgdlo, fgdhi = np.percentile(fgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    dict = {
+        "R_DELTA": rd,
+        "R_DELTA_LO": rdlo,
+        "R_DELTA_HI": rdhi,
+        "M_DELTA": md,
+        "M_DELTA_LO": mdlo,
+        "M_DELTA_HI": mdhi,
+        "MGAS_DELTA": mgd,
+        "MGAS_DELTA_LO": mgdlo,
+        "MGAS_DELTA_HI": mgdhi,
+        "FGAS_DELTA": fgd,
+        "FGAS_DELTA_LO": fgdlo,
+        "FGAS_DELTA_HI": fgdhi
+    }
+
+    if plot:
+
+        plt.clf()
+
+        fig = plt.figure(figsize=(13, 10))
+
+        ax_size = [0.14, 0.12,
+                   0.85, 0.85]
+
+        ax = fig.add_axes(ax_size)
+
+        ax.minorticks_on()
+
+        ax.tick_params(length=20, width=1, which='major', direction='in', right=True, top=True)
+
+        ax.tick_params(length=10, width=1, which='minor', direction='in', right=True, top=True)
+
+        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(22)
+
+        plt.hist(mdelta, bins=30, density=True)
+
+        plt.xlabel('$M_{\Delta} [M_\odot]$', fontsize=40)
+
+        plt.ylabel('Frequency', fontsize=40)
+
+        return dict, fig
+
+    else:
+
+        return dict
+
+def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax=4000.):
+    """
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+
+    :param delta: Overdensity with respect to critical
+    :type float
+    :param Mhyd: Mhyd object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.Mhyd`
+    :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
+    :type plot: bool
+    :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
+    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
+    """
+
+    nsamp = len(Mhyd.samppar)
+
+    mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
+
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    nvalm = len(rin_m)
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+
+    p3d = Forward.func_np(rout_m, Mhyd.samppar)
+
+    der_lnP = Forward.func_der(rout_m, Mhyd.samppar)
+
+    rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
+
+    mass = - der_lnP * rout_mul / (dens_m * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
+
+    vol = 4. / 3. * np.pi * rout_m ** 3 * cgskpc ** 3
+
+    rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
+
+    delta_prof = mass.T / vol / rhoc
+
+    for i in range(nsamp):
+        temp_func = lambda x: np.interp(x, rout_m, delta_prof[i, :]) - delta
+
+        rdelta[i] = brentq(temp_func, rmin, rmax)
+
+        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
+            Mhyd.redshift).value / Msun
+
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg)
+
+        fgdelta[i] = mgdelta[i] / mdelta[i]
+
+    rd, rdlo, rdhi = np.percentile(rdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    md, mdlo, mdhi = np.percentile(mdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    mgd, mgdlo, mgdhi = np.percentile(mgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    fgd, fgdlo, fgdhi = np.percentile(fgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    dict = {
+        "R_DELTA": rd,
+        "R_DELTA_LO": rdlo,
+        "R_DELTA_HI": rdhi,
+        "M_DELTA": md,
+        "M_DELTA_LO": mdlo,
+        "M_DELTA_HI": mdhi,
+        "MGAS_DELTA": mgd,
+        "MGAS_DELTA_LO": mgdlo,
+        "MGAS_DELTA_HI": mgdhi,
+        "FGAS_DELTA": fgd,
+        "FGAS_DELTA_LO": fgdlo,
+        "FGAS_DELTA_HI": fgdhi
+    }
+
+    if plot:
+
+        plt.clf()
+
+        fig = plt.figure(figsize=(13, 10))
+
+        ax_size = [0.14, 0.12,
+                   0.85, 0.85]
+
+        ax = fig.add_axes(ax_size)
+
+        ax.minorticks_on()
+
+        ax.tick_params(length=20, width=1, which='major', direction='in', right=True, top=True)
+
+        ax.tick_params(length=10, width=1, which='minor', direction='in', right=True, top=True)
+
+        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(22)
+
+        plt.hist(mdelta, bins=30, density=True)
+
+        plt.xlabel('$M_{\Delta} [M_\odot]$', fontsize=40)
+
+        plt.ylabel('Frequency', fontsize=40)
+
+        return dict, fig
+
+    else:
+
+        return dict
+
+
+
 def write_all_mdelta(Mhyd, model, outfile=None):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
     :param Mhyd: Mhyd object containing the result of mass reconstruction run
-    :type Mhyd: class hydromass.Mhyd
+    :type Mhyd: class Mhyd
     :param model: Model object defining the mass model
-    :type model: class hydromass.Model
+    :type model: class Model
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
     :return: None
@@ -258,13 +499,82 @@ def write_all_mdelta(Mhyd, model, outfile=None):
 
     fout.write('p0  %.3e (%.3e , %.3e)\n' % (medp0, p0l, p0h) )
 
-    fout.write("Delta       M_delta      R_delta       Mgas     fgas\n")
+    fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas\n")
 
     delta_vals = [2500, 1000, 500, 200]
 
     for delta in delta_vals:
 
         res = calc_rdelta_mdelta(delta, Mhyd, model)
+
+        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
+        delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
+        res['MGAS_DELTA'], res['MGAS_DELTA_LO'], res['MGAS_DELTA_HI'], res['FGAS_DELTA'], res['FGAS_DELTA_LO'], res['FGAS_DELTA_HI']) )
+
+    fout.close()
+
+def write_all_mdelta_GP(Mhyd, outfile=None):
+    """
+    Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
+
+    :param Mhyd: Mhyd object containing the result of mass reconstruction run
+    :type Mhyd: class Mhyd
+    :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
+    :type outfile: str
+    :return: None
+    """
+
+    if outfile is None:
+
+        outfile = Mhyd.dir + '/GP.jou'
+
+    if Mhyd.GPop is None:
+
+        print('No GP reconstruction found in structure, skipping')
+
+        return
+
+    fout = open(outfile, 'w')
+
+    fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas\n")
+
+    delta_vals = [2500, 1000, 500, 200]
+
+    for delta in delta_vals:
+
+        res = calc_rdelta_mdelta_GP(delta, Mhyd)
+
+        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
+        delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
+        res['MGAS_DELTA'], res['MGAS_DELTA_LO'], res['MGAS_DELTA_HI'], res['FGAS_DELTA'], res['FGAS_DELTA_LO'], res['FGAS_DELTA_HI']) )
+
+    fout.close()
+
+
+def write_all_mdelta_forward(Mhyd, Forward, outfile=None):
+    """
+    Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
+
+    :param Mhyd: Mhyd object containing the result of mass reconstruction run
+    :type Mhyd: class Mhyd
+    :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
+    :type outfile: str
+    :return: None
+    """
+
+    if outfile is None:
+
+        outfile = Mhyd.dir + '/FORW.jou'
+
+    fout = open(outfile, 'w')
+
+    fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas\n")
+
+    delta_vals = [2500, 1000, 500, 200]
+
+    for delta in delta_vals:
+
+        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],

@@ -607,7 +607,6 @@ class Mhyd:
                        pnt=pnt)
 
 
-
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
 
