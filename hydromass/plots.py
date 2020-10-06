@@ -297,8 +297,6 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
     mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, model.delta) * 1e13
 
-    mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
-
     nsamp = len(Mhyd.samppar)
 
     nvalm = len(rin_m)
@@ -320,10 +318,6 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
     mg, mgl, mgh = np.percentile(mgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-    fgas = mgas / mass.T
-
-    fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
-
     if Mhyd.mstar is not None:
 
         r_mstar = Mhyd.mstar[:, 0]
@@ -336,12 +330,37 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
         mstar_m = np.zeros(nvalm)
 
+    if Mhyd.dmonly:
+
+        mtot = mass + mgas.T + mstar_m.T
+
+        fgas = mgas / mtot.T
+
+    else:
+
+        fgas = mgas / mass.T
+
+    fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+
+    if Mhyd.dmonly:
+
+        mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+
+    else:
+
+        mtotm, mtotlo, mtothi = mmed, mlo, mhi
+
     dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
-        "MASS": mmed,
-        "MASS_LO": mlo,
-        "MASS_HI": mhi,
+        "MASS": mtotm,
+        "MASS_LO": mtotlo,
+        "MASS_HI": mtothi,
+        "M_DM": mmed,
+        "M_DM_LO": mlo,
+        "M_DM_HI": mhi,
         "MGAS": mg,
         "MGAS_LO": mgl,
         "MGAS_HI": mgh,
