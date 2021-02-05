@@ -636,3 +636,28 @@ def ReloadForward(Mhyd, infile):
 
     return mod
 
+def SaveProfiles(prof_hires, outfile=None):
+
+    if outfile is None:
+
+        print('Error: output file name must be provided')
+
+    hdus = fits.HDUList(hdus=[fits.PrimaryHDU()])
+
+    cols = []
+
+    for key, value in prof_hires.items():
+
+        col = fits.Column(name=key, format='E', array=value)
+
+        cols.append(col)
+
+    coldefs = fits.ColDefs(cols)
+
+    modhdu = fits.BinTableHDU.from_columns(coldefs)
+
+    modhdu.name = 'THERMODYNAMIC PROFILES'
+
+    hdus.append(modhdu)
+
+    hdus.writeto(outfile, overwrite=True)
