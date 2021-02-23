@@ -120,6 +120,33 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     vol = vx.deproj_vol().T
 
+    Mhyd.cf_prof = None
+
+    try:
+        nn = len(Mhyd.ccf)
+
+    except TypeError:
+
+        print('Single conversion factor provided, we will assume it is constant throughout the radial range')
+
+        cf = Mhyd.ccf
+
+    else:
+
+        if len(Mhyd.ccf) != len(rad):
+
+            print('The provided conversion factor has a different length as the input radial binning. Adopting the mean value.')
+
+            cf = np.mean(Mhyd.ccf)
+
+        else:
+
+            print('Interpolating conversion factor profile onto the radial grid')
+
+            cf = np.interp(rout_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+            Mhyd.cf_prof = cf
+
     if Mhyd.spec_data is not None:
 
         if Mhyd.spec_data.psfmat is not None:
@@ -142,8 +169,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc, withbkg=False)
 
     hydro_model = pm.Model()
-
-    cf = Mhyd.ccf
 
     if pnt:
 
@@ -386,10 +411,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     if pnt:
         Mhyd.pnt_pars = trace.get_values('Pnt')[:, 0]
 
-    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) / cf * transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
+    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch

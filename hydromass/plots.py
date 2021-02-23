@@ -124,7 +124,15 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     nvalm = len(rin_m)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
 
     mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
@@ -301,7 +309,15 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
     nvalm = len(rin_m)
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    alldens = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     # Matrix containing integration volumes
     volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
@@ -540,7 +556,15 @@ def PlotMgas(Mhyd, plot=False, outfile=None, nmore=5):
 
     nvalm = len(rin_m)
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    alldens = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     # Matrix containing integration volumes
     volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)

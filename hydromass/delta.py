@@ -52,7 +52,7 @@ def delta_func_GP(r, Mhyd, mass):
     return mass / vol / rhoc
 
 
-def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False):
+def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False, rout_m=None):
     """
     Compute Mgas at an input R_delta
 
@@ -74,7 +74,15 @@ def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False):
 
     Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
 
-    dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None and rout_m is not None:
+
+        cfp = np.interp(rout, rout_m, Mhyd.cf_prof)
+
+    else:
+
+        cfp = Mhyd.ccf
+
+    dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / cfp * Mhyd.transf)
 
     # Matrix containing integration volumes
     volmat = 4. / 3. * np.pi * (rout ** 3 - rin ** 3)
@@ -88,7 +96,7 @@ def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False):
     return mgas_d
 
 
-def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False):
+def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     """
     Compute overdensity of baryonic mass with respect to critical
 
@@ -112,7 +120,15 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False):
 
     Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
 
-    dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None and rout_m is not None:
+
+        cfp = np.interp(rout, rout_m, Mhyd.cf_prof)
+
+    else:
+
+        cfp = Mhyd.ccf
+
+    dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / cfp * Mhyd.transf)
 
     # Matrix containing integration volumes
     volmat = 4. / 3. * np.pi * (rout ** 3 - rin ** 3)
@@ -170,12 +186,13 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     for i in range(nsamp):
 
         if Mhyd.dmonly:
 
-            r_mbar, mbar_ov = mbar_overdens(rmax, Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg)
+            r_mbar, mbar_ov = mbar_overdens(rmax, Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
 
             temp_func = lambda x: delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) + np.interp(x, r_mbar, mbar_ov) - delta
 
@@ -187,7 +204,7 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(Mhyd.redshift).value / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg)
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
 
         fgdelta[i] = mgdelta[i] / mdelta[i]
 
@@ -273,9 +290,17 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
 
     nvalm = len(rin_m)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
 
-    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / Mhyd.ccf * Mhyd.transf
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+
+    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / cf_prof * Mhyd.transf
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
@@ -300,7 +325,7 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
             Mhyd.redshift).value / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg)
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
         fgdelta[i] = mgdelta[i] / mdelta[i]
 
@@ -381,7 +406,15 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
 
     nvalm = len(rin_m)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 
@@ -405,7 +438,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
             Mhyd.redshift).value / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg)
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
         fgdelta[i] = mgdelta[i] / mdelta[i]
 

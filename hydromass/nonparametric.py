@@ -110,9 +110,17 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
         proj_mat = np.dot(sum_mat, vol_x)
 
-    npx = len(Mhyd.spec_data.rref_x)
+    nvalm = len(rin_m)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
@@ -164,7 +172,19 @@ def P_GP_from_samples(Mhyd, nmore=5):
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    nsamp = len(Mhyd.samples)
+
+    nvalm = len(rin_m)
+
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     p3d = t3d * dens_m
 
@@ -183,9 +203,17 @@ def mass_GP_from_samples(Mhyd, plot=False, nmore=5):
 
     nvalm = len(rin_m)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
 
-    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / Mhyd.ccf * Mhyd.transf
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+
+    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / cf_prof * Mhyd.transf
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
@@ -288,7 +316,19 @@ def prof_GP_hires(Mhyd, nmore=5):
 
     vol_x = vx.deproj_vol().T
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    nsamp = len(Mhyd.samples)
+
+    nvalm = len(rin_m)
+
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
@@ -433,6 +473,33 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     vol = vx.deproj_vol().T
 
+    Mhyd.cf_prof = None
+
+    try:
+        nn = len(Mhyd.ccf)
+
+    except TypeError:
+
+        print('Single conversion factor provided, we will assume it is constant throughout the radial range')
+
+        cf = Mhyd.ccf
+
+    else:
+
+        if len(Mhyd.ccf) != len(rad):
+
+            print('The provided conversion factor has a different length as the input radial binning. Adopting the mean value.')
+
+            cf = np.mean(Mhyd.ccf)
+
+        else:
+
+            print('Interpolating conversion factor profile onto the radial grid')
+
+            cf = np.interp(rout_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+            Mhyd.cf_prof = cf
+
     if Mhyd.spec_data is not None:
 
         if Mhyd.spec_data.psfmat is not None:
@@ -478,8 +545,6 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     GPgrad = calc_gp_grad_operator(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
 
     hydro_model = pm.Model()
-
-    cf = Mhyd.ccf
 
     with hydro_model:
         # Priors for unknown model parameters
@@ -617,10 +682,10 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     Mhyd.pardens = pardens
     Mhyd.fit_bkg = fit_bkg
 
-    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) / cf * transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
+    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
