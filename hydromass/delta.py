@@ -499,7 +499,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
 
 
 
-def write_all_mdelta(Mhyd, model, outfile=None):
+def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=2000.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
@@ -538,7 +538,7 @@ def write_all_mdelta(Mhyd, model, outfile=None):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta(delta, Mhyd, model)
+        res = calc_rdelta_mdelta(delta, Mhyd, model, rmin=rmin, rmax=rmax)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -546,7 +546,7 @@ def write_all_mdelta(Mhyd, model, outfile=None):
 
     fout.close()
 
-def write_all_mdelta_GP(Mhyd, outfile=None):
+def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=2000.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
@@ -575,7 +575,7 @@ def write_all_mdelta_GP(Mhyd, outfile=None):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_GP(delta, Mhyd)
+        res = calc_rdelta_mdelta_GP(delta, Mhyd, rmin=100., rmax=2000.)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -584,7 +584,7 @@ def write_all_mdelta_GP(Mhyd, outfile=None):
     fout.close()
 
 
-def write_all_mdelta_forward(Mhyd, Forward, outfile=None):
+def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=2000.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
@@ -607,7 +607,7 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward)
+        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, rmin=100., rmax=2000.)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
