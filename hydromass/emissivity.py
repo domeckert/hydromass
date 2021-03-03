@@ -78,9 +78,9 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, Z=0.3, elow=0.5, ehigh=2.0, arf=None)
 
     fsim.write('10000, 1\n')
 
-    fsim.write('ign **-%g\n' % (elow))
+    fsim.write('ign **-%1.2lf\n' % (elow))
 
-    fsim.write('ign %g-**\n' % (ehigh))
+    fsim.write('ign %1.2lf-**\n' % (ehigh))
 
     fsim.write('log sim.txt\n')
 
