@@ -636,7 +636,7 @@ def ReloadForward(Mhyd, infile):
 
     return mod
 
-def SaveProfiles(prof_hires, outfile=None):
+def SaveProfiles(prof_hires, outfile=None, extname='THERMODYNAMIC PROFILES'):
 
     if outfile is None:
 
@@ -656,7 +656,7 @@ def SaveProfiles(prof_hires, outfile=None):
 
     modhdu = fits.BinTableHDU.from_columns(coldefs)
 
-    modhdu.name = 'THERMODYNAMIC PROFILES'
+    modhdu.name = extname
 
     hdus.append(modhdu)
 
