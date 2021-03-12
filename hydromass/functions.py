@@ -80,7 +80,7 @@ def f_ein3_pm(xout, c200, r200, mu, delta=200.):
 
     dr[0] = xout[0]
 
-    x = xout / r200
+    x = (xout - dr / 2.) / r200
 
     n0 = 2. * mu
 
