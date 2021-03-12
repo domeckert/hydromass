@@ -497,6 +497,121 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
 
         return dict
 
+def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, rmin=100., rmax=4000.):
+    """
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+
+    :param delta: Overdensity with respect to critical
+    :type float
+    :param Mhyd: Mhyd object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.Mhyd`
+    :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
+    :type plot: bool
+    :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
+    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
+    """
+
+    nsamp = len(Mhyd.samppar)
+
+    mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
+
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    nvalm = len(rin_m)
+
+    if Mhyd.cf_prof is not None:
+
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+
+    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / Mhyd.ccf * Mhyd.transf
+
+    p3d = Polytropic.func_np(rout_m, Mhyd.samppar, dens_m, grad_dens)
+
+    der_lnP = Polytropic.func_der(rout_m, Mhyd.samppar, dens_m, grad_dens)
+
+    rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
+
+    mass = - der_lnP * rout_mul / (dens_m * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
+
+    vol = 4. / 3. * np.pi * rout_m ** 3 * cgskpc ** 3
+
+    rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
+
+    delta_prof = mass.T / vol / rhoc
+
+    for i in range(nsamp):
+        temp_func = lambda x: np.interp(x, rout_m, delta_prof[i, :]) - delta
+
+        rdelta[i] = brentq(temp_func, rmin, rmax)
+
+        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
+            Mhyd.redshift).value / Msun
+
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
+
+        fgdelta[i] = mgdelta[i] / mdelta[i]
+
+    rd, rdlo, rdhi = np.percentile(rdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    md, mdlo, mdhi = np.percentile(mdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    mgd, mgdlo, mgdhi = np.percentile(mgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    fgd, fgdlo, fgdhi = np.percentile(fgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    dict = {
+        "R_DELTA": rd,
+        "R_DELTA_LO": rdlo,
+        "R_DELTA_HI": rdhi,
+        "M_DELTA": md,
+        "M_DELTA_LO": mdlo,
+        "M_DELTA_HI": mdhi,
+        "MGAS_DELTA": mgd,
+        "MGAS_DELTA_LO": mgdlo,
+        "MGAS_DELTA_HI": mgdhi,
+        "FGAS_DELTA": fgd,
+        "FGAS_DELTA_LO": fgdlo,
+        "FGAS_DELTA_HI": fgdhi
+    }
+
+    if plot:
+
+        plt.clf()
+
+        fig = plt.figure(figsize=(13, 10))
+
+        ax_size = [0.14, 0.12,
+                   0.85, 0.85]
+
+        ax = fig.add_axes(ax_size)
+
+        ax.minorticks_on()
+
+        ax.tick_params(length=20, width=1, which='major', direction='in', right=True, top=True)
+
+        ax.tick_params(length=10, width=1, which='minor', direction='in', right=True, top=True)
+
+        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(22)
+
+        plt.hist(mdelta, bins=30, density=True)
+
+        plt.xlabel('$M_{\Delta} [M_\odot]$', fontsize=40)
+
+        plt.ylabel('Frequency', fontsize=40)
+
+        return dict, fig
+
+    else:
+
+        return dict
+
 
 
 def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=2000.):
