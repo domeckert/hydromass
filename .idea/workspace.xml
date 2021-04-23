@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added option to account for variation of the emissivity conversion factor across the radial range">
+      <change afterPath="$PROJECT_DIR$/hydromass/data/coolfunc_table.fits" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -164,7 +168,70 @@
       <option name="project" value="LOCAL" />
       <updated>1601647531150</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="added a function to output resulting profiles to FITS file">
+      <created>1612512609425</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1612512609425</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Added option to account for variation of the emissivity conversion factor across the radial range">
+      <created>1614095258053</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1614095258053</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Fixed bug in emissivity calculation">
+      <created>1614777289925</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1614777289925</updated>
+    </task>
+    <task id="LOCAL-00022" summary="added option to tune the minimum and maximum radius when computing rdelta">
+      <created>1614790875454</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1614790875454</updated>
+    </task>
+    <task id="LOCAL-00023" summary="fixed very important bug with PSF correction when fitting the surface brightness instead of the counts">
+      <created>1615555858445</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1615555858445</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Added function to plot the profiles from the polytropic reconstruction">
+      <created>1615555904554</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1615555904554</updated>
+    </task>
+    <task id="LOCAL-00025" summary="added option to set the name of the extension in SaveProfiles">
+      <created>1615555939163</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1615555939163</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Added function to compute overdensity radii from polytropic reconstruction">
+      <created>1615555984225</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1615555984225</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Modified numerical integration of Einasto profile to make it more accurate">
+      <created>1615567441658</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1615567441658</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -173,8 +240,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="iml" />
-    <MESSAGE value="fixed evaluation of profiles at rref_x" />
     <MESSAGE value="added forward pressure model" />
     <MESSAGE value="fixed bugs in mass_forw_from_samples" />
     <MESSAGE value="using Deterministic to fix parameters in forward" />
@@ -191,26 +256,31 @@
     <MESSAGE value="clean-up OP function" />
     <MESSAGE value="add reloading options" />
     <MESSAGE value="added calculation of overdensity radii and masses for GP and Forward" />
-    <option name="LAST_COMMIT_MESSAGE" value="added calculation of overdensity radii and masses for GP and Forward" />
+    <MESSAGE value="added a function to output resulting profiles to FITS file" />
+    <MESSAGE value="Added option to account for variation of the emissivity conversion factor across the radial range" />
+    <MESSAGE value="Fixed bug in emissivity calculation" />
+    <MESSAGE value="added option to tune the minimum and maximum radius when computing rdelta" />
+    <MESSAGE value="fixed very important bug with PSF correction when fitting the surface brightness instead of the counts" />
+    <MESSAGE value="Added function to plot the profiles from the polytropic reconstruction" />
+    <MESSAGE value="added option to set the name of the extension in SaveProfiles" />
+    <MESSAGE value="Added function to compute overdensity radii from polytropic reconstruction" />
+    <MESSAGE value="Modified numerical integration of Einasto profile to make it more accurate" />
+    <option name="LAST_COMMIT_MESSAGE" value="Modified numerical integration of Einasto profile to make it more accurate" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="734" y="404" width="520" height="306" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1601288778670">
+    <state x="569" y="131" width="916" height="682" key="CommitChangelistDialog2" timestamp="1615567441517">
       <screen x="72" y="27" width="1848" height="1053" />
     </state>
-    <state x="734" y="404" width="520" height="306" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/72.27.1848.1053@72.27.1848.1053" timestamp="1601288778670" />
-    <state x="535" y="123" width="916" height="817" key="CommitChangelistDialog2" timestamp="1601647530992">
+    <state x="569" y="131" width="916" height="682" key="CommitChangelistDialog2/72.27.1848.1053@72.27.1848.1053" timestamp="1615567441517" />
+    <state x="778" y="185" width="916" height="915" key="CommitChangelistDialog2/72.27.2488.1413@72.27.2488.1413" timestamp="1612512609118" />
+    <state x="639" y="259" width="800" height="540" key="Vcs.Push.Dialog.v2" timestamp="1615567464233">
       <screen x="72" y="27" width="1848" height="1053" />
     </state>
-    <state x="535" y="123" width="916" height="817" key="CommitChangelistDialog2/72.27.1848.1053@72.27.1848.1053" timestamp="1601647530992" />
-    <state x="535" y="179" width="912" height="910" key="CommitChangelistDialog2/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422938588" />
-    <state x="485" y="266" width="1022" height="737" key="SettingsEditor" timestamp="1600422583651">
-      <screen x="72" y="27" width="1848" height="1173" />
-    </state>
-    <state x="485" y="266" width="1022" height="737" key="SettingsEditor/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422583651" />
-    <state x="591" y="327" width="800" height="535" key="Vcs.Push.Dialog.v2" timestamp="1601043865345">
+    <state x="639" y="259" width="800" height="540" key="Vcs.Push.Dialog.v2/72.27.1848.1053@72.27.1848.1053" timestamp="1615567464233" />
+    <state x="836" y="372" width="800" height="540" key="Vcs.Push.Dialog.v2/72.27.2488.1413@72.27.2488.1413" timestamp="1612512618331" />
+    <state x="747" y="428" width="427" height="182" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1614842018254">
       <screen x="72" y="27" width="1848" height="1053" />
     </state>
-    <state x="591" y="327" key="Vcs.Push.Dialog.v2/72.27.1848.1053@72.27.1848.1053" timestamp="1601043865345" />
-    <state x="591" y="367" width="800" height="535" key="Vcs.Push.Dialog.v2/72.27.1848.1173/72.27.1848.1173@72.27.1848.1173" timestamp="1600422947934" />
+    <state x="747" y="428" width="427" height="182" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/72.27.1848.1053@72.27.1848.1053" timestamp="1614842018254" />
   </component>
 </project>

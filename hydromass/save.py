@@ -642,6 +642,8 @@ def SaveProfiles(prof_hires, outfile=None, extname='THERMODYNAMIC PROFILES'):
 
         print('Error: output file name must be provided')
 
+        return
+
     hdus = fits.HDUList(hdus=[fits.PrimaryHDU()])
 
     cols = []

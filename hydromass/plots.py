@@ -5,6 +5,61 @@ from .constants import *
 from .pnt import *
 from scipy.interpolate import interp1d
 
+def get_coolfunc(Z):
+    """
+    Retrieve the cooling function data from the internal data archive and return the cooling function profile for a given input metallicity
+
+    :param Z: Metallicity (relative to Anders & Grevesse; defaults to 0.3)
+    :type Z: float
+    :return: Cooling function profile and temperature grid
+    :rtype: numpy.ndarray
+    """
+    Z_grid = np.array([0., 0.02, 0.05, 0.08, 0.12, 0.16, 0.20, 0.25, 0.30, 0.35, 0.40, 0.48, 0.58, 0.70, 0.85, 1.0])
+
+    file_cf = get_data_file_path('coolfunc_table.fits')
+
+    fcf = fits.open(file_cf)
+
+    ind = np.searchsorted(Z_grid, Z, side='left')
+
+    if Z_grid[ind] < Z:
+
+        Zlow = Z_grid[ind]
+
+        Zhigh = Z_grid[ind + 1]
+
+    elif Z_grid[ind] > Z:
+
+        Zlow = Z_grid[ind - 1]
+
+        Zhigh = Z_grid[ind]
+
+    else:
+
+        Zlow = Z
+
+        Zhigh = Z
+
+    if Zlow != Zhigh:
+
+        hdulow = fcf['COOLFUNC_Z%1.2lf' % (Zlow)]
+
+        lambdalow = hdulow.data['LAMBDA']
+
+        hduhigh = fcf['COOLFUNC_Z%1.2lf' % (Zhigh)]
+
+        lambdahigh = hduhigh.data['LAMBDA']
+
+        lambda_interp = lambdalow + (Z - Zlow) * (lambdahigh - lambdalow) / (Zhigh - Zlow)
+
+    else:
+
+        thdu = fcf['COOLFUNC_Z%1.2lf' % (Z)]
+
+        lambda_interp = thdu.data['LAMBDA']
+
+    return lambda_interp
+
 def cumsum_mat(nval):
     """
 
@@ -435,7 +490,7 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
 
 
-def prof_hires(Mhyd, model, nmore=5):
+def prof_hires(Mhyd, model, nmore=5, Z=0.3):
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
@@ -477,6 +532,16 @@ def prof_hires(Mhyd, model, nmore=5):
 
     mK, mKl, mKh = np.percentile(K3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+    coolfunc, ktgrid = get_coolfunc(Z)
+
+    lambda3d = np.interp(t3d, ktgrid, coolfunc)
+
+    tcool = 3./2. * dens_m * (1. + 1./Mhyd.nhc) * t3d * kev2erg / (lambda3d * dens_m **2 / Mhyd.nhc)
+
+    mtc, mtcl, mtch = np.percentile(tcool, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mcf, mcfl, mcfh = np.percentile(lambda3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
     if Mhyd.pnt:
 
         pnt_all = p3d - pth
@@ -510,7 +575,13 @@ def prof_hires(Mhyd, model, nmore=5):
         "K_HI": mKh,
         "P_NT": mpnt,
         "P_NT_LO": mpntl,
-        "P_NT_HI": mpnth
+        "P_NT_HI": mpnth,
+        "T_COOL": mtc,
+        "T_COOL_LO": mtcl,
+        "T_COOL_HI": mtch,
+        "LAMBDA": mcf,
+        "LAMBDA_LO": mcfl,
+        "LAMBDA_HI": mcfh
     }
 
     return dict

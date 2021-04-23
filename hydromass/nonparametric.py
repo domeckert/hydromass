@@ -1,6 +1,6 @@
 import numpy as np
 from .deproject import *
-from .plots import rads_more
+from .plots import rads_more, get_coolfunc
 
 # Function to compute linear operator transforming norms of GP model into radial profile
 
@@ -354,6 +354,16 @@ def prof_GP_hires(Mhyd, nmore=5):
 
     mK, mKl, mKh = np.percentile(K3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+    coolfunc, ktgrid = get_coolfunc(Z)
+
+    lambda3d = np.interp(t3d, ktgrid, coolfunc)
+
+    tcool = 3./2. * dens_m * (1. + 1./Mhyd.nhc) * t3d * kev2erg / (lambda3d * dens_m **2 / Mhyd.nhc)
+
+    mtc, mtcl, mtch = np.percentile(tcool, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+    mcf, mcfl, mcfh = np.percentile(lambda3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
     dict={
         "R_IN": rin_m,
         "R_OUT": rout_m,
@@ -371,7 +381,13 @@ def prof_GP_hires(Mhyd, nmore=5):
         "NE_HI": mneh,
         "K": mK,
         "K_LO": mKl,
-        "K_HI": mKh
+        "K_HI": mKh,
+        "T_COOL": mtc,
+        "T_COOL_LO": mtcl,
+        "T_COOL_HI": mtch,
+        "LAMBDA": mcf,
+        "LAMBDA_LO": mcfl,
+        "LAMBDA_HI": mcfh
     }
 
     return dict
