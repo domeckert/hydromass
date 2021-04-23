@@ -3,10 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/constants.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -258,7 +256,14 @@
       <option name="project" value="LOCAL" />
       <updated>1619170646974</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Set unit of cooling time to year">
+      <created>1619172465208</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1619172465208</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -267,7 +272,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="added option to account for P_NT using the Angelinelli+20 NT pressure model" />
     <MESSAGE value="fixed bug when reading SZ data from file" />
     <MESSAGE value="fixed mstar modeling in DM-only fit" />
     <MESSAGE value="speed up profile computation" />
@@ -292,6 +296,7 @@
     <MESSAGE value="Import package data" />
     <MESSAGE value="Added build" />
     <MESSAGE value="Fixed bug in get_coolfunc" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed bug in get_coolfunc" />
+    <MESSAGE value="Set unit of cooling time to year" />
+    <option name="LAST_COMMIT_MESSAGE" value="Set unit of cooling time to year" />
   </component>
 </project>

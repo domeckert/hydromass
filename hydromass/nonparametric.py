@@ -300,7 +300,7 @@ def mass_GP_from_samples(Mhyd, plot=False, nmore=5):
         return dict
 
 
-def prof_GP_hires(Mhyd, nmore=5):
+def prof_GP_hires(Mhyd, nmore=5, Z=0.3):
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
