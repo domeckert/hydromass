@@ -2,9 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/data/coolfunc_table.fits" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/data/pnt_covmat.dat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/data/pnt_mean.dat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/nonparametric.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/pnt.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/save.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/hydromass/tpdata.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -234,7 +241,14 @@
       <option name="project" value="LOCAL" />
       <updated>1619166377660</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Import package data">
+      <created>1619166835264</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1619166835264</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -243,7 +257,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="fixed bugs in mass_forw_from_samples" />
     <MESSAGE value="using Deterministic to fix parameters in forward" />
     <MESSAGE value="added checks of parameters before running" />
     <MESSAGE value="added option to account for P_NT using the Angelinelli+20 NT pressure model" />
@@ -268,6 +281,7 @@
     <MESSAGE value="Added function to compute overdensity radii from polytropic reconstruction" />
     <MESSAGE value="Modified numerical integration of Einasto profile to make it more accurate" />
     <MESSAGE value="Added cooling time calculation" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added cooling time calculation" />
+    <MESSAGE value="Import package data" />
+    <option name="LAST_COMMIT_MESSAGE" value="Import package data" />
   </component>
 </project>
