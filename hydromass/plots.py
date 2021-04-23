@@ -46,6 +46,8 @@ def get_coolfunc(Z):
 
         lambdalow = hdulow.data['LAMBDA']
 
+        ktgrid = hdulow.data['KT']
+
         hduhigh = fcf['COOLFUNC_Z%1.2lf' % (Zhigh)]
 
         lambdahigh = hduhigh.data['LAMBDA']
@@ -58,7 +60,9 @@ def get_coolfunc(Z):
 
         lambda_interp = thdu.data['LAMBDA']
 
-    return lambda_interp
+        ktgrid = thdu.data['KT']
+
+    return lambda_interp, ktgrid
 
 def cumsum_mat(nval):
     """
