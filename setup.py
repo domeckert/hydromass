@@ -12,5 +12,6 @@ setup(
       install_requires=[
             'numpy','scipy','astropy','matplotlib','pymc3',
       ],
+      include_package_data=True,
 )
 

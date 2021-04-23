@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added option to account for variation of the emissivity conversion factor across the radial range">
-      <change afterPath="$PROJECT_DIR$/hydromass/data/coolfunc_table.fits" afterDir="false" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -231,7 +227,14 @@
       <option name="project" value="LOCAL" />
       <updated>1615567441658</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="Added cooling time calculation">
+      <created>1619166377660</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1619166377660</updated>
+    </task>
+    <option name="localTasksCounter" value="29" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -240,7 +243,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="added forward pressure model" />
     <MESSAGE value="fixed bugs in mass_forw_from_samples" />
     <MESSAGE value="using Deterministic to fix parameters in forward" />
     <MESSAGE value="added checks of parameters before running" />
@@ -265,22 +267,7 @@
     <MESSAGE value="added option to set the name of the extension in SaveProfiles" />
     <MESSAGE value="Added function to compute overdensity radii from polytropic reconstruction" />
     <MESSAGE value="Modified numerical integration of Einasto profile to make it more accurate" />
-    <option name="LAST_COMMIT_MESSAGE" value="Modified numerical integration of Einasto profile to make it more accurate" />
-  </component>
-  <component name="WindowStateProjectService">
-    <state x="569" y="131" width="916" height="682" key="CommitChangelistDialog2" timestamp="1615567441517">
-      <screen x="72" y="27" width="1848" height="1053" />
-    </state>
-    <state x="569" y="131" width="916" height="682" key="CommitChangelistDialog2/72.27.1848.1053@72.27.1848.1053" timestamp="1615567441517" />
-    <state x="778" y="185" width="916" height="915" key="CommitChangelistDialog2/72.27.2488.1413@72.27.2488.1413" timestamp="1612512609118" />
-    <state x="639" y="259" width="800" height="540" key="Vcs.Push.Dialog.v2" timestamp="1615567464233">
-      <screen x="72" y="27" width="1848" height="1053" />
-    </state>
-    <state x="639" y="259" width="800" height="540" key="Vcs.Push.Dialog.v2/72.27.1848.1053@72.27.1848.1053" timestamp="1615567464233" />
-    <state x="836" y="372" width="800" height="540" key="Vcs.Push.Dialog.v2/72.27.2488.1413@72.27.2488.1413" timestamp="1612512618331" />
-    <state x="747" y="428" width="427" height="182" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1614842018254">
-      <screen x="72" y="27" width="1848" height="1053" />
-    </state>
-    <state x="747" y="428" width="427" height="182" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/72.27.1848.1053@72.27.1848.1053" timestamp="1614842018254" />
+    <MESSAGE value="Added cooling time calculation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added cooling time calculation" />
   </component>
 </project>
