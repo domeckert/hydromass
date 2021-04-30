@@ -137,6 +137,8 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.samplogp0 = dpar['logP0']
 
+    Mhyd.cf_prof = None
+
     # Now recreate operators
 
     prof = Mhyd.sbprof
@@ -309,6 +311,8 @@ def ReloadGP(Mhyd, infile):
     Mhyd.bin_fact = modhead['BINFACT']
 
     Mhyd.ngauss = modhead['NGAUSS']
+
+    Mhyd.cf_prof = None
 
     # Now recreate operators
 
@@ -515,6 +519,8 @@ def ReloadForward(Mhyd, infile):
     Mhyd.nmore = headden['NMORE']
 
     modhead = fin[2].header
+
+    Mhyd.cf_prof = None
 
     mod = Forward()
 
