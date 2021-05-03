@@ -171,8 +171,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     else:
 
-        Mhyd.K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to surface brightness
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        Mhyd.K = np.dot(prof.psfmat, Ksb) # transformation to surface brightness
+
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
@@ -197,15 +199,26 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
 
+        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
     pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
     Mhyd.sb = pmc
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch
@@ -346,8 +359,10 @@ def ReloadGP(Mhyd, infile):
 
     else:
 
-        Mhyd.K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to surface brightness
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        Mhyd.K = np.dot(prof.psfmat, Ksb)  # transformation to surface brightness
+
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
@@ -377,11 +392,29 @@ def ReloadGP(Mhyd, infile):
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+
+        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
+    pmc = np.median(allsb, axis=1)
+    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb = pmc
+    Mhyd.sb_lo = pmcl
+    Mhyd.sb_hi = pmch
 
     if Mhyd.spec_data is not None and Mhyd.sz_data is None:
 
@@ -404,13 +437,6 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.GPgrad = calc_gp_grad_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact,
                                                   smin=Mhyd.smin, smax=Mhyd.smax)
-
-    pmc = np.median(allsb, axis=1)
-    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
-    Mhyd.sb = pmc
-    Mhyd.sb_lo = pmcl
-    Mhyd.sb_hi = pmch
 
     alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
     pmc = np.median(alldens, axis=1)
@@ -578,8 +604,10 @@ def ReloadForward(Mhyd, infile):
 
     else:
 
-        Mhyd.K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to surface brightness
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        Mhyd.K = np.dot(prof.psfmat, Ksb)  # transformation to surface brightness
+
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
@@ -604,15 +632,26 @@ def ReloadForward(Mhyd, infile):
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
 
+        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
     pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
     Mhyd.sb = pmc
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch

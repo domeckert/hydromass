@@ -509,7 +509,9 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
     else:
 
-        K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure, psfmat) # transformation to surface brightness
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        K = np.dot(prof.psfmat, Ksb)
 
     # Set up initial values
     if np.isnan(sb[0]) or sb[0] <= 0:
@@ -739,14 +741,25 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(samples.T))
 
+        allsb_conv = np.dot(K, np.exp(samples.T))
+
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
     pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
     Mhyd.sb = pmc
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch

@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -310,7 +314,14 @@
       <option name="project" value="LOCAL" />
       <updated>1620033651279</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="Added variable CCF option to Forward">
+      <created>1620033730422</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1620033730422</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -319,7 +330,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="added non-parametric Gaussian Process reconstruction" />
     <MESSAGE value="added high-resolution profile calculation to Forward" />
     <MESSAGE value="added saving/reloading options" />
     <MESSAGE value="removed unnecessary function" />
@@ -344,6 +354,7 @@
     <MESSAGE value="Fixed missing abundance argument" />
     <MESSAGE value="Added cf_prof=None when reloading data" />
     <MESSAGE value="Propagated rmin and rmax to calculation of Rdelta" />
-    <option name="LAST_COMMIT_MESSAGE" value="Propagated rmin and rmax to calculation of Rdelta" />
+    <MESSAGE value="Added variable CCF option to Forward" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added variable CCF option to Forward" />
   </component>
 </project>

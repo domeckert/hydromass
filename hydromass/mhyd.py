@@ -186,13 +186,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             file_cov = get_data_file_path('pnt_covmat.dat')
 
-            #pnt_mean = np.loadtxt(file_means).astype(np.float32)
+            pnt_mean = np.loadtxt(file_means).astype(np.float32)
 
-            pnt_mean = np.array([[0.15288539, 1.07588625, 0.05624287]])
+            #pnt_mean = np.array([[0.15288539, 1.07588625, 0.05624287]])
 
-            #pnt_cov = np.loadtxt(file_cov).astype(np.float32)
+            pnt_cov = np.loadtxt(file_cov).astype(np.float32)
 
-            pnt_cov = np.array([[ 0.00400375, -0.0199079, -0.0022997 ], [-0.0199079, 0.54718882, 0.02912699],[-0.0022997, 0.02912699, 0.00343748]])
+            #pnt_cov = np.array([[ 0.00400375, -0.0199079, -0.0022997 ], [-0.0199079, 0.54718882, 0.02912699],[-0.0022997, 0.02912699, 0.00343748]])
 
     with hydro_model:
         # Priors for unknown model parameters
