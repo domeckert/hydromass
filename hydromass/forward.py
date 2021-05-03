@@ -544,6 +544,33 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
     vol = vx.deproj_vol().T
 
+    Mhyd.cf_prof = None
+
+    try:
+        nn = len(Mhyd.ccf)
+
+    except TypeError:
+
+        print('Single conversion factor provided, we will assume it is constant throughout the radial range')
+
+        cf = Mhyd.ccf
+
+    else:
+
+        if len(Mhyd.ccf) != len(rad):
+
+            print('The provided conversion factor has a different length as the input radial binning. Adopting the mean value.')
+
+            cf = np.mean(Mhyd.ccf)
+
+        else:
+
+            print('Interpolating conversion factor profile onto the radial grid')
+
+            cf = np.interp(rout_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+            Mhyd.cf_prof = cf
+
     if Mhyd.spec_data is not None:
 
         if Mhyd.spec_data.psfmat is not None:
@@ -565,8 +592,6 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
         Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc, withbkg=False)
 
     hydro_model = pm.Model()
-
-    cf = Mhyd.ccf
 
     with hydro_model:
         # Priors for unknown model parameters
