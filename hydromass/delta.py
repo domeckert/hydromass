@@ -690,7 +690,7 @@ def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=2000.):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_GP(delta, Mhyd, rmin=100., rmax=2000.)
+        res = calc_rdelta_mdelta_GP(delta, Mhyd, rmin=rmin, rmax=rmax)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -722,7 +722,7 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=2000.)
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, rmin=100., rmax=2000.)
+        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, rmin=rmin, rmax=rmax)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
