@@ -15,7 +15,7 @@ from .save import *
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False):
+                   pnt=False, hmc=False):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3
@@ -335,10 +335,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
 
-
     tinit = time.time()
 
-    print('Running MCMC...')
+    print('Running HMC...')
 
     with hydro_model:
 
@@ -346,11 +345,23 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, start=start, tune=tune)
+            trace = pm.sample(nmcmc, init='ADVI', start=start, tune=tune, return_inferencedata=True,
+                              target_accept=0.9)
 
         else:
 
-            trace = pm.sample(nmcmc, tune=tune)
+            trace = pm.sample(nmcmc, init='ADVI', tune=tune, return_inferencedata=True, target_accept=0.9)
+
+
+        Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
+
+        if Mhyd.spec_data is not None:
+
+            Mhyd.ppc_kt = pm.sample_posterior_predictive(trace, var_names=['kt'])
+
+        if Mhyd.sz_data is not None:
+
+            Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
 
     print('Done.')
 
@@ -360,12 +371,18 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     Mhyd.trace = trace
 
+    Mhyd.hydro_model = hydro_model
+
     # Get chains and save them to file
-    sampc = trace.get_values('coefs')
+    chain_coefs = np.array(trace.posterior['coefs'])
+
+    sc_coefs = chain_coefs.shape
+
+    sampc = chain_coefs.reshape(sc_coefs[0]*sc_coefs[1], sc_coefs[2])
 
     if fit_bkg:
 
-        sampb = trace.get_values('bkg')
+        sampb = np.array(trace.posterior['bkg']).flatten()
 
         samples = np.append(sampc, sampb, axis=1)
 
@@ -422,7 +439,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.mstar = mstar
     Mhyd.pnt = pnt
     if pnt:
-        Mhyd.pnt_pars = trace.get_values('Pnt')[:, 0]
+        Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
     pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
@@ -436,9 +453,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     for i in range(model.npar):
 
         name = model.parnames[i]
-        samppar[:, i] = trace.get_values(name)
+        samppar[:, i] = np.array(trace.posterior[name]).flatten()
 
-    samplogp0 = trace.get_values('logp0')
+    samplogp0 = np.array(trace.posterior['logp0']).flatten()
 
     Mhyd.samppar = samppar
     Mhyd.samplogp0 = samplogp0
@@ -618,7 +635,7 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, hmc=False):
 
         if model is None:
 
@@ -642,7 +659,8 @@ class Mhyd:
                        dmonly=dmonly,
                        mstar=mstar,
                        find_map=find_map,
-                       pnt=pnt)
+                       pnt=pnt,
+                       hmc=hmc)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
