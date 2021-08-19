@@ -193,11 +193,15 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
 
-    mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
+    rref_m = (rin_m + rout_m) / 2.
+
+    mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
     rout_mul = np.tile(rout_m, nsamp).reshape(nsamp, nvalm)
 
     rin_mul = np.tile(rin_m, nsamp).reshape(nsamp, nvalm)
+
+    rref_mul = np.tile(rref_m, nsamp).reshape(nsamp, nvalm)
 
     # Adding baryonic mass contribution in case of DM-only fit
     if Mhyd.dmonly:
@@ -233,7 +237,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
         mass = mass + mbar.T
 
     # Pressure gradient
-    dpres = - mass / rout_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
+    dpres = - mass / rref_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
 
     press00 = np.exp(Mhyd.samplogp0)
 
@@ -243,7 +247,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     if Mhyd.pnt:
 
-        alpha_turb = alpha_turb_np(rout_m, Mhyd.samppar, Mhyd.redshift, Mhyd.pnt_pars)
+        alpha_turb = alpha_turb_np(rref_m, Mhyd.samppar, Mhyd.redshift, Mhyd.pnt_pars)
 
         pth = press_out * (1. - alpha_turb)
 
@@ -506,6 +510,8 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
     rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
+    rref_m = (rin_m + rout_m) / 2.
+
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
     vol_x = vx.deproj_vol().T
@@ -559,6 +565,7 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
     dict={
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        "R_REF": rref_m,
         "P_TOT": mptot,
         "P_TOT_LO": mptotl,
         "P_TOT_HI": mptoth,

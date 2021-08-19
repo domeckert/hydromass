@@ -547,7 +547,7 @@ class Polytropic:
                 self.start = start
 
             if sd is None:
-                self.sd = [0.02, 0.5, 0.1, 0.1, 0.05]
+                self.sd = [0.06, 0.5, 0.1, 0.1, 0.05]
 
             else:
 

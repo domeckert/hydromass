@@ -106,6 +106,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     # Define the fine grid onto which the mass model will be computed
     rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
 
+    rref_m = (rin_m + rout_m)/2.
+
     if dmonly and mstar is not None:
 
         r_mstar = mstar[:, 0]
@@ -145,7 +147,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             print('Interpolating conversion factor profile onto the radial grid')
 
-            cf = np.interp(rout_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+            cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
 
             Mhyd.cf_prof = cf
 
@@ -164,11 +166,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     if fit_bkg:
 
-        Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc)
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc)
 
     else:
 
-        Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc, withbkg=False)
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc, withbkg=False)
 
     hydro_model = pm.Model()
 
@@ -264,7 +266,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
         # Evaluate mass model
-        mass = Mhyd.mfact * model.func_pm(rout_m, *pmod, delta=model.delta) / Mhyd.mfact0
+        mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
 
         if dmonly:
 
@@ -284,7 +286,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             mass = mass + mbar
 
         # Pressure gradient
-        dpres = - mass / rout_m ** 2 * dens_m * (rout_m - rin_m)
+        dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
 
         press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
 
@@ -294,7 +296,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             r200c = pmod[1]
 
-            alpha_turb = alpha_turb_pm(rout_m, r200c, c200, Mhyd.redshift, pnt_pars)
+            alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
 
             pth = press_out * (1. - alpha_turb)
 
