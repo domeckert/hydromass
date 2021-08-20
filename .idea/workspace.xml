@@ -3,10 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -336,7 +333,14 @@
       <option name="project" value="LOCAL" />
       <updated>1622530863632</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Improved numerical integration">
+      <created>1629363860369</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1629363860369</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -345,7 +349,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="removed unnecessary function" />
     <MESSAGE value="changed parameters defining GP" />
     <MESSAGE value="clean-up OP function" />
     <MESSAGE value="add reloading options" />
@@ -370,6 +373,7 @@
     <MESSAGE value="Added variable CCF option to Forward" />
     <MESSAGE value="Fixed PSF convolution model in GP and Forward as well as reloading options" />
     <MESSAGE value="Tuned NUTS sampling parameters" />
-    <option name="LAST_COMMIT_MESSAGE" value="Tuned NUTS sampling parameters" />
+    <MESSAGE value="Improved numerical integration" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improved numerical integration" />
   </component>
 </project>

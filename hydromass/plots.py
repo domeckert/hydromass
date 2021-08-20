@@ -176,7 +176,6 @@ def rads_more(Mhyd, nmore=5):
 
 
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
-
     samples = Mhyd.samples
 
     nsamp = len(samples)
@@ -191,9 +190,17 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         cf_prof = Mhyd.ccf
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
-
     rref_m = (rin_m + rout_m) / 2.
+
+    if Mhyd.fit_bkg:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
 
     mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
@@ -255,8 +262,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         pth = press_out
 
-    return  dens_m, press_out, pth
-
+    return dens_m, press_out, pth
 
 def kt_from_samples(Mhyd, model, nmore=5):
     """
@@ -354,7 +360,7 @@ def P_from_samples(Mhyd, model, nmore=5):
     return pmed, plo, phi
 
 
-def mass_from_samples(Mhyd, model, nmore=5, plot=False):
+def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
     """
 
     Compute median and percentile mass profile, gas mass and gas fraction from Mhyd reconstruction
@@ -364,7 +370,24 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
     :return: Median mass [in M_sun], Lower 1-sigma percentile, Upper 1-sigma percentile, Median Mgas, Lower, Upper, Median Fgas, Lower, Upper
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    if rin is None:
+        rin = np.min(rin_m)
+
+        if rin == 0:
+            rin = 1.
+
+    if rout is None:
+        rout = np.max(rout_m)
+
+    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
+
+    rref_m = (rin_m + rout_m) / 2.
 
     mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, model.delta) * 1e13
 
@@ -380,7 +403,15 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
         cf_prof = Mhyd.ccf
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    if Mhyd.fit_bkg:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    alldens = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     # Matrix containing integration volumes
     volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
@@ -434,6 +465,7 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
     dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        "R_REF": rref_m,
         "MASS": mtotm,
         "MASS_LO": mtotlo,
         "MASS_HI": mtothi,
@@ -497,8 +529,7 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
         return dict
 
 
-
-def prof_hires(Mhyd, model, nmore=5, Z=0.3):
+def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
@@ -508,7 +539,21 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
     :return:
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    if rin is None:
+        rin = np.min(rin_m)
+
+        if rin == 0:
+            rin = 1.
+
+    rout = np.max(rout_m)
+
+    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
 
     rref_m = (rin_m + rout_m) / 2.
 
@@ -546,7 +591,8 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
     lambda3d = np.interp(t3d, ktgrid, coolfunc)
 
-    tcool = 3./2. * dens_m * (1. + 1./Mhyd.nhc) * t3d * kev2erg / (lambda3d * dens_m **2 / Mhyd.nhc) / year
+    tcool = 3. / 2. * dens_m * (1. + 1. / Mhyd.nhc) * t3d * kev2erg / (
+                lambda3d * dens_m ** 2 / Mhyd.nhc) / year
 
     mtc, mtcl, mtch = np.percentile(tcool, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
@@ -562,7 +608,7 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
         mpnt, mpntl, mpnth = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
 
-    dict={
+    dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
         "R_REF": rref_m,
@@ -597,7 +643,6 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
     return dict
 
-
 def mgas_pm(rin_m, rout_m, dens):
 
     # Integration volumes
@@ -612,7 +657,6 @@ def mgas_pm(rin_m, rout_m, dens):
     mgas = pm.math.dot(cs_mat, dens * volint) / 1e13
 
     return mgas
-
 
 
 def PlotMgas(Mhyd, plot=False, outfile=None, nmore=5):
