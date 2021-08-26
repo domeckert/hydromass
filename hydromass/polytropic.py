@@ -159,7 +159,7 @@ def kt_poly_from_samples(Mhyd, Polytropic, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -235,7 +235,7 @@ def P_poly_from_samples(Mhyd, Polytropic, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     npx = len(Mhyd.sz_data.rref_sz)
 
@@ -260,7 +260,7 @@ def mass_poly_from_samples(Mhyd, Polytropic, plot=False, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     nvalm = len(rin_m)
 
@@ -362,7 +362,7 @@ def prof_poly_hires(Mhyd, Polytropic, nmore=5, Z=0.3):
     :return:
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -695,7 +695,7 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
         Kdens = calc_density_operator(rad, pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     nptmore = len(rout_m)
 
