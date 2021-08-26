@@ -15,7 +15,7 @@ from .save import *
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, hmc=False):
+                   pnt=False, rmin=None, rmax=None):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3
@@ -30,6 +30,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     :param nrc: (integer) Number of core radii values to set up the multiscale model (default = number of data points / 4)
     :param nbetas: (integer) Number of beta values to set up the multiscale model (default = 6)
     :param min_beta: (float) Minimum beta value (default = 0.6)
+    :param rmin: Minimum limiting radius (in arcmin) of the active region for the surface brightness. If rmin=None, no minimum radius is applied.
+    :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied.
     :return:
 
     """
@@ -42,6 +44,29 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     area = prof.area
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
+
+    if rmin is not None:
+        valid = np.where(rad>=rmin)
+        sb = sb[valid]
+        esb = esb[valid]
+        rad = rad[valid]
+        erad = erad[valid]
+        counts = counts[valid]
+        area = area[valid]
+        exposure = exposure[valid]
+        bkgcounts = bkgcounts[valid]
+
+    if rmax is not None:
+        valid = np.where(rad <= rmax)
+        sb = sb[valid]
+        esb = esb[valid]
+        rad = rad[valid]
+        erad = erad[valid]
+        counts = counts[valid]
+        area = area[valid]
+        exposure = exposure[valid]
+        bkgcounts = bkgcounts[valid]
+
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -104,7 +129,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Kdens = calc_density_operator(rad, pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     rref_m = (rin_m + rout_m)/2.
 
@@ -637,7 +662,7 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, hmc=False):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None):
 
         if model is None:
 
@@ -662,7 +687,8 @@ class Mhyd:
                        mstar=mstar,
                        find_map=find_map,
                        pnt=pnt,
-                       hmc=hmc)
+                       rmin=rmin,
+                       rmax=rmax)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
