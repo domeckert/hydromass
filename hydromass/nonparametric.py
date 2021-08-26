@@ -1,6 +1,7 @@
 import numpy as np
 from .deproject import *
-from .plots import rads_more, get_coolfunc
+from .plots import rads_more, get_coolfunc, estimate_P0
+from scipy.interpolate import interp1d
 
 # Function to compute linear operator transforming norms of GP model into radial profile
 
@@ -87,14 +88,13 @@ def kt_GP_from_samples(Mhyd, nmore=5):
     """
 
     if Mhyd.spec_data is None:
-
         print('No spectral data provided')
 
         return
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -124,6 +124,32 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
+    if np.max(rout_m) > rout_m[ntm - 1]:
+        # Power law outside of the fitted range
+        ne0 = dens_m[nvalm - 1, :]
+
+        T0 = Mhyd.sampp0 / ne0
+
+        Tspo = t3d[ntm - 1, :]
+
+        rspo = rout_m[ntm - 1]
+
+        r0 = rout_m[nvalm - 1]
+
+        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+
+        nout = nvalm - ntm
+
+        outspec = np.where(rout_m > rspo)
+
+        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+
+        rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+        t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
+
     # Mazzotta weights
     ei = dens_m ** 2 * t3d ** (-0.75)
 
@@ -134,7 +160,7 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
     tmed, tlo, thi = np.percentile(tproj, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-    t3dot, t3dlt, t3dht = np.percentile(t3d,[50., 50. - 68.3 / 2. , 50. + 68.3 / 2.] , axis=1)
+    t3dot, t3dlt, t3dht = np.percentile(t3d, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     t3do, t3dl, t3dh = t3dot[index_x], t3dlt[index_x], t3dht[index_x]
 
@@ -168,9 +194,7 @@ def P_GP_from_samples(Mhyd, nmore=5):
 
         return
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
-
-    t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     nsamp = len(Mhyd.samples)
 
@@ -185,6 +209,34 @@ def P_GP_from_samples(Mhyd, nmore=5):
         cf_prof = Mhyd.ccf
 
     dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+
+    t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
+
+    if np.max(rout_m) > rout_m[ntm - 1]:
+        # Power law outside of the fitted range
+        ne0 = dens_m[nvalm - 1, :]
+
+        T0 = Mhyd.sampp0 / ne0
+
+        Tspo = t3d[ntm - 1, :]
+
+        rspo = rout_m[ntm - 1]
+
+        r0 = rout_m[nvalm - 1]
+
+        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+
+        nout = nvalm - ntm
+
+        outspec = np.where(rout_m > rspo)
+
+        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+
+        rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+        t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
 
     p3d = t3d * dens_m
 
@@ -195,11 +247,28 @@ def P_GP_from_samples(Mhyd, nmore=5):
     return pmed, plo, phi
 
 
-def mass_GP_from_samples(Mhyd, plot=False, nmore=5):
+def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    if rin is None:
+        rin = np.min(rin_m)
+
+        if rin == 0:
+            rin = 1.
+
+    if rout is None:
+        rout = np.max(rout_m)
+
+    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
+
+    rref_m = (rin_m + rout_m) / 2.
 
     nvalm = len(rin_m)
 
@@ -211,15 +280,75 @@ def mass_GP_from_samples(Mhyd, plot=False, nmore=5):
 
         cf_prof = Mhyd.ccf
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    if Mhyd.fit_bkg:
 
-    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / cf_prof * Mhyd.transf
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
 
-    t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
+        Kdens_grad = calc_grad_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+        Kdens_grad = calc_grad_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+
+    grad_dens = np.dot(Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / cf_prof * Mhyd.transf
+
+    if Mhyd.spec_data is not None and Mhyd.sz_data is None:
+
+        rout_joint = Mhyd.spec_data.rout_x
+
+    elif Mhyd.spec_data is None and Mhyd.sz_data is not None:
+
+        rout_joint = Mhyd.sz_data.rout_sz
+
+    elif Mhyd.spec_data is not None and Mhyd.sz_data is not None:
+
+        rout_joint = np.sort(np.append(Mhyd.spec_data.rout_x, Mhyd.sz_data.rout_sz))
+
+    rin_joint = np.roll(rout_joint, 1)
+
+    rin_joint[0] = 0.
+
+    GPop, rgauss, sig = calc_gp_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
+
+    GPgrad = calc_gp_grad_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
+
+    t3d = np.dot(GPop, Mhyd.samppar.T)
 
     rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
 
-    grad_t3d = rout_mul / cgskpc / t3d * np.dot(Mhyd.GPgrad, Mhyd.samppar.T)
+    grad_t3d = rout_mul / cgskpc / t3d * np.dot(GPgrad, Mhyd.samppar.T)
+
+    if np.max(rout_m) > rout_m[ntm - 1]:
+        # Power law outside of the fitted range
+        ne0 = dens_m[nvalm - 1, :]
+
+        T0 = Mhyd.sampp0 / ne0
+
+        Tspo = t3d[ntm - 1, :]
+
+        rspo = rout_m[ntm - 1]
+
+        r0 = rout_m[nvalm - 1]
+
+        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+
+        nout = nvalm - ntm
+
+        outspec = np.where(rout_m > rspo)
+
+        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+
+        rout_mm = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+        t3d[outspec] = Tspo_mul * (rout_mm / rspo) ** (-alpha_mul)
+
+        grad_t3d[outspec] = - alpha_mul
 
     mass = - rout_mul * t3d / (cgsG * cgsamu * Mhyd.mup) * (grad_t3d + grad_dens) * kev2erg / Msun
 
@@ -300,7 +429,7 @@ def mass_GP_from_samples(Mhyd, plot=False, nmore=5):
         return dict
 
 
-def prof_GP_hires(Mhyd, nmore=5, Z=0.3):
+def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
@@ -310,7 +439,23 @@ def prof_GP_hires(Mhyd, nmore=5, Z=0.3):
     :return:
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    if rin is None:
+        rin = np.min(rin_m)
+
+        if rin == 0:
+            rin = 1.
+
+    rout = np.max(rout_m)
+
+    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
+
+    rref_m = (rin_m + rout_m) / 2.
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -328,9 +473,63 @@ def prof_GP_hires(Mhyd, nmore=5, Z=0.3):
 
         cf_prof = Mhyd.ccf
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    if Mhyd.fit_bkg:
 
-    t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
+        Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+
+    if Mhyd.spec_data is not None and Mhyd.sz_data is None:
+
+        rout_joint = Mhyd.spec_data.rout_x
+
+    elif Mhyd.spec_data is None and Mhyd.sz_data is not None:
+
+        rout_joint = Mhyd.sz_data.rout_sz
+
+    elif Mhyd.spec_data is not None and Mhyd.sz_data is not None:
+
+        rout_joint = np.sort(np.append(Mhyd.spec_data.rout_x, Mhyd.sz_data.rout_sz))
+
+    rin_joint = np.roll(rout_joint, 1)
+
+    rin_joint[0] = 0.
+
+    GPop, rgauss, sig = calc_gp_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
+
+    t3d = np.dot(GPop, Mhyd.samppar.T)
+
+    rspo = np.max(rout_joint)
+
+    if rout > rspo:
+        # Power law outside of the fitted range
+        ne0 = dens_m[nvalm - 1, :]
+
+        T0 = Mhyd.sampp0 / ne0
+
+        finter = interp1d(rout_m, t3d, axis=0)
+
+        Tspo = finter(rspo)
+
+        r0 = rout_m[nvalm - 1]
+
+        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+
+        outspec = np.where(rout_m > rspo)
+
+        nout = len(outspec[0])
+
+        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+
+        rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+        t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
 
     p3d = t3d * dens_m
 
@@ -367,6 +566,7 @@ def prof_GP_hires(Mhyd, nmore=5, Z=0.3):
     dict={
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        "R_REF": rref_m,
         "P_TOT": mptot,
         "P_TOT_LO": mptotl,
         "P_TOT_HI": mptoth,
@@ -456,7 +656,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-        K = np.dot(prof.psfmat, Ksb)
+        K = np.dot(psfmat, Ksb)
 
     # Set up initial values
     if np.isnan(sb[0]) or sb[0] <= 0:
@@ -483,7 +683,9 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
         Kdens = calc_density_operator(rad, pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
+
+    rref_m = (rin_m + rout_m) / 2.
 
     nptmore = len(rout_m)
 
@@ -514,7 +716,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             print('Interpolating conversion factor profile onto the radial grid')
 
-            cf = np.interp(rout_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+            cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
 
             Mhyd.cf_prof = cf
 
@@ -562,6 +764,10 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     GPgrad = calc_gp_grad_operator(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
 
+    P0_est = estimate_P0(Mhyd)
+
+    err_P0_est = P0_est  # 1-dex
+
     hydro_model = pm.Model()
 
     with hydro_model:
@@ -596,6 +802,34 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
         t3d = pm.math.dot(GPop, gpp)
 
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
+
+        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
+                                   lower=np.log(P0_est) - err_P0_est / P0_est,
+                                   upper=np.log(P0_est) + err_P0_est / P0_est)
+
+        if np.max(rout_m) > rout_m[ntm - 1]:
+            # Power law outside of the fitted range
+            ne0 = dens_m[nptmore - 1]
+
+            T0 = np.exp(logp0) / ne0
+
+            Tspo = t3d[ntm - 1]
+
+            rspo = rout_m[ntm - 1]
+
+            r0 = rout_m[nptmore - 1]
+
+            alpha = - pm.math.log(Tspo/T0) / np.log(rspo/r0)
+
+            outspec = np.where(rout_m > rspo)
+
+            inspec = np.where(rout_m <= rspo)
+
+            t3d_in = t3d[inspec]
+
+            t3d_out = Tspo * (rout_m[outspec] / rspo) ** (-alpha)
+
+            t3d = pm.math.concatenate([t3d_in, t3d_out])
 
         # Density Likelihood
         if fit_bkg:
@@ -736,6 +970,9 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     Mhyd.transf = transf
     Mhyd.Kdens_m = Kdens_m
     Mhyd.Kdens_grad = Kdens_grad
+
+    sampp0 = np.exp(trace.get_values('logp0'))
+    Mhyd.sampp0 = sampp0
 
     if Mhyd.spec_data is not None:
         kt_mod = kt_GP_from_samples(Mhyd, nmore=nmore)
