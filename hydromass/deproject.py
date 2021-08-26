@@ -335,6 +335,9 @@ def medsmooth(prof):
 
 def EdgeCorr(nbin,rin_cm,rout_cm,em0):
     # edge correction
+    rin_kpc = rin_cm / cgskpc
+    rout_kpc = rout_cm / cgskpc
+
     mrad = [rin_cm[nbin - 1], rout_cm[nbin - 1]]
     edge0 = (mrad[0] + mrad[1]) * mrad[0] * mrad[1] / rout_cm ** 3
     edge1 = 2. * rout_cm / mrad[1] + np.arccos(rout_cm / mrad[1])
@@ -371,7 +374,7 @@ def OP(deproj,nmc=1000):
         # Projected emission measure profiles
         em0 = prof.profile * K2em * area
         e_em0 = prof.eprof * K2em * area
-        corr = EdgeCorr(nbin, rin_cm, rout_cm, em0)
+        corr = EdgeCorr(nbin, rinam, routam, em0)
     else:
         x=MyDeprojVol(rinam,routam)
         vol=np.transpose(x.deproj_vol()).T
@@ -382,7 +385,7 @@ def OP(deproj,nmc=1000):
     # Deproject and propagate error using Monte Carlo
     emres = np.repeat(e_em0,nmc).reshape(nbin,nmc) * np.random.randn(nbin,nmc) + np.repeat(em0,nmc).reshape(nbin,nmc)
     ct = np.repeat(corr,nmc).reshape(nbin,nmc)
-    print(ct)
+    #print(ct)
     allres = np.linalg.solve(vol, emres * (1. - ct))
     ev0 = np.std(allres,axis=1)
     v0 = np.median(allres,axis=1)
