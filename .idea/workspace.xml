@@ -3,14 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/delta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/deproject.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -354,7 +348,42 @@
       <option name="project" value="LOCAL" />
       <updated>1629449252972</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="Added extrapolation to outer radius of the surface brightness using a power law to avoid issues at the outer boundary">
+      <created>1629982821872</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1629982821872</updated>
+    </task>
+    <task id="LOCAL-00042" summary="P0 is now evaluated at the outer boundary of the surface brightness profile if it is larger than the outer boundary of the spectral/SZ profiles">
+      <created>1629982875198</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1629982875198</updated>
+    </task>
+    <task id="LOCAL-00043" summary="Added new function to estimate P0 by fitting a rough gNFW profile to the spectral data">
+      <created>1629982928300</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1629982928300</updated>
+    </task>
+    <task id="LOCAL-00044" summary="Fixed overflow issue in onion peeling">
+      <created>1629982953059</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1629982953059</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Updated call to rads_more">
+      <created>1629982970855</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1629982970855</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -363,11 +392,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="clean-up OP function" />
-    <MESSAGE value="add reloading options" />
-    <MESSAGE value="added calculation of overdensity radii and masses for GP and Forward" />
-    <MESSAGE value="added a function to output resulting profiles to FITS file" />
-    <MESSAGE value="Added option to account for variation of the emissivity conversion factor across the radial range" />
     <MESSAGE value="Fixed bug in emissivity calculation" />
     <MESSAGE value="added option to tune the minimum and maximum radius when computing rdelta" />
     <MESSAGE value="fixed very important bug with PSF correction when fitting the surface brightness instead of the counts" />
@@ -388,6 +412,11 @@
     <MESSAGE value="Tuned NUTS sampling parameters" />
     <MESSAGE value="Improved numerical integration" />
     <MESSAGE value="Added options to choose the range and number of points when computing hires profiles" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added options to choose the range and number of points when computing hires profiles" />
+    <MESSAGE value="Added extrapolation to outer radius of the surface brightness using a power law to avoid issues at the outer boundary" />
+    <MESSAGE value="P0 is now evaluated at the outer boundary of the surface brightness profile if it is larger than the outer boundary of the spectral/SZ profiles" />
+    <MESSAGE value="Added new function to estimate P0 by fitting a rough gNFW profile to the spectral data" />
+    <MESSAGE value="Fixed overflow issue in onion peeling" />
+    <MESSAGE value="Updated call to rads_more" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated call to rads_more" />
   </component>
 </project>

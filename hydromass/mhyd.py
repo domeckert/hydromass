@@ -89,14 +89,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     npt = len(pars)
 
     if prof.psfmat is not None:
-        psfmat = np.transpose(prof.psfmat)
+        psfmat = prof.psfmat
     else:
         psfmat = np.eye(prof.nbin)
 
     # Compute linear combination kernel
     if fit_bkg:
 
-        K = calc_linear_operator(rad, sourcereg, pars, area, exposure, psfmat) # transformation to counts
+        K = calc_linear_operator(rad, sourcereg, pars, area, exposure, np.transpose(psfmat)) # transformation to counts
 
     else:
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
