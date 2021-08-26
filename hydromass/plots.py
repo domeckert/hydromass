@@ -4,6 +4,8 @@ from .deproject import *
 from .constants import *
 from .pnt import *
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
+import copy
 
 def get_coolfunc(Z):
     """
@@ -132,13 +134,31 @@ def rads_more(Mhyd, nmore=5):
 
     ntotjoint = len(tot_joint)
 
-    rout_more = np.empty(int((ntotjoint - 0.5) * nmore))
+    ntm = int((ntotjoint - 0.5) * nmore)
+
+    rout_more = np.empty(ntm)
 
     for i in range(ntotjoint - 1):
 
         rout_more[i * nmore:(i + 1) * nmore] = np.linspace(tot_joint[i], tot_joint[i + 1], nmore + 1)[1:]
 
     rout_more[(ntotjoint - 1) * nmore:] = np.linspace(rref_joint[njoint - 1], rout_joint[njoint - 1], int(nmore / 2.) + 1)[1:]
+
+    # Move the outer boundary to the edge of the SB profile if it is farther out
+    sbprof = Mhyd.sbprof
+
+    rmax_sb = np.max(sbprof.bins) * Mhyd.amin2kpc
+
+    if rmax_sb > np.max(rout_more):
+        nvm = len(rout_more)
+
+        dx_out = rout_more[nvm - 1] - rout_more[nvm - 2]
+
+        rout_2add = np.arange(np.max(rout_more), rmax_sb, dx_out)
+
+        rout_2add = np.append(rout_2add[1:], rmax_sb)
+
+        rout_more = np.append(rout_more, rout_2add)
 
     rin_more = np.roll(rout_more, 1)
 
@@ -172,8 +192,52 @@ def rads_more(Mhyd, nmore=5):
 
             sum_mat[i, :][ix] = 1. / nval
 
-    return rin_more, rout_more, index_x, index_sz, sum_mat
+    return rin_more, rout_more, index_x, index_sz, sum_mat, ntm
 
+def gnfw_p0(x,pars):
+    P0=pars[0]
+    rs=pars[1]
+    alpha=pars[2]
+    beta=pars[3]
+    gamma=pars[4]
+    t1=np.power(x/rs,gamma)
+    t2=np.power(1.+np.power(x/rs,alpha),(beta-gamma)/alpha)
+    return P0/t1/t2
+
+def estimate_P0(Mhyd):
+    spec_data = Mhyd.spec_data
+
+    sbprof = copy.copy(Mhyd.sbprof)
+
+    sbprof.profile = np.abs(sbprof.profile)
+
+    deprop = Deproject(z=Mhyd.redshift, cf=Mhyd.ccf, profile=sbprof)
+
+    deprop.OnionPeeling()
+
+    pars_press = np.array([3.28, 1200., 1.33, 4.72, 0.59])
+
+    ne_interp = np.interp(spec_data.rref_x_am, sbprof.bins, deprop.dens) * Mhyd.nhc
+
+    p_interp = ne_interp * spec_data.temp_x
+    ep_interp = ne_interp * spec_data.errt_x
+
+    def chi2_gnfw(pars):
+        pars_press[0] = pars[0]
+        pars_press[1] = pars[1]
+        mm = gnfw_p0(spec_data.rref_x, pars_press)
+        chi2 = np.sum((p_interp - mm) ** 2 / ep_interp ** 2)
+        return chi2
+
+    res = minimize(chi2_gnfw, np.array([1e-4, 1200.]), method='Nelder-Mead')
+
+    maxrad = np.max(sbprof.bins * Mhyd.amin2kpc)
+
+    pars_press[:2] = res['x']
+
+    p0 = gnfw_p0(maxrad, pars_press)
+
+    return p0
 
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
     samples = Mhyd.samples
@@ -282,7 +346,7 @@ def kt_from_samples(Mhyd, model, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -349,7 +413,7 @@ def P_from_samples(Mhyd, model, nmore=5):
 
         return
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     dens_m, press_tot, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
@@ -370,7 +434,7 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
     :return: Median mass [in M_sun], Lower 1-sigma percentile, Upper 1-sigma percentile, Median Mgas, Lower, Upper, Median Fgas, Lower, Upper
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if rin is None:
         rin = np.min(rin_m)
@@ -539,7 +603,7 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
     :return:
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if rin is None:
         rin = np.min(rin_m)
@@ -678,7 +742,7 @@ def PlotMgas(Mhyd, plot=False, outfile=None, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     nvalm = len(rin_m)
 
