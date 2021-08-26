@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -383,7 +381,14 @@
       <option name="project" value="LOCAL" />
       <updated>1629982970855</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL-00046" summary="Fixed call to psfmat when no matrix has been defined">
+      <created>1629985758661</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1629985758661</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -392,7 +397,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Fixed bug in emissivity calculation" />
     <MESSAGE value="added option to tune the minimum and maximum radius when computing rdelta" />
     <MESSAGE value="fixed very important bug with PSF correction when fitting the surface brightness instead of the counts" />
     <MESSAGE value="Added function to plot the profiles from the polytropic reconstruction" />
@@ -417,6 +421,7 @@
     <MESSAGE value="Added new function to estimate P0 by fitting a rough gNFW profile to the spectral data" />
     <MESSAGE value="Fixed overflow issue in onion peeling" />
     <MESSAGE value="Updated call to rads_more" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updated call to rads_more" />
+    <MESSAGE value="Fixed call to psfmat when no matrix has been defined" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed call to psfmat when no matrix has been defined" />
   </component>
 </project>
