@@ -613,7 +613,9 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
 
     rout = np.max(rout_m)
 
-    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+    bins = np.linspace(np.sqrt(rin), np.sqrt(rout), npt + 1)
+
+    bins = bins ** 2
 
     rin_m = bins[:npt]
 

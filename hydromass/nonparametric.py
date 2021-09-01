@@ -39,6 +39,37 @@ def calc_gp_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
 
     return rg , rgaus, sig
 
+def calc_gp_operator_lognormal(npt, rads, rin, rout, bin_fact=2.0, smin=None, smax=None):
+    # Set up the Gaussian Process model
+    rmin = (rin[0] + rout[0]) / 2.
+
+    rmax = np.max(rout)
+
+    width = rout - rin
+
+    # Gaussians logarithmically spaced between min and max radius
+    rgaus = np.linspace(np.log(rmin/2.), np.log(rmax*2.), npt)
+
+    if smin is None or smax is None:
+
+        # Sigma logarithmically spaced between min and max bin size
+        sig = bin_fact * np.mean(width) / np.mean(rin)
+
+    else:
+        # Sigma logarithmically spaced between min and max bin size
+        sig = smin / np.mean(rin)
+
+    nrads = len(rads)  # rads may or may not be equal to bins
+
+    # Extend into 2D and compute values of Gaussians at each point
+    rgext = np.tile(rgaus, nrads).reshape(nrads, npt)
+
+    radsext = np.log(np.repeat(rads, npt).reshape(nrads, npt))
+
+    rg = 1. / (np.sqrt(2. * np.pi) * sig) * np.exp(-(radsext - rgext) ** 2 / 2. / sig ** 2)
+
+    return rg , rgaus, sig
+
 
 # Analytical gradient of the Gaussian process model
 
@@ -75,6 +106,41 @@ def calc_gp_grad_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=No
     rg = 1. / (np.sqrt(2. * np.pi) * sigext ** 3) * np.exp(- (radsext - rgext) ** 2 / 2. / sigext ** 2) * (- (radsext - rgext))
 
     return rg
+
+
+# Analytical gradient of the Gaussian process model
+
+def calc_gp_grad_operator_lognormal(npt, rads, rin, rout, bin_fact=2.0, smin=None, smax=None):
+    # Set up the Gaussian Process model
+    rmin = (rin[0] + rout[0]) / 2.
+
+    rmax = np.max(rout)
+
+    width = rout - rin
+
+    # Gaussians logarithmically spaced between min and max radius
+    rgaus = np.linspace(np.log(rmin/2.), np.log(rmax*2.), npt)
+
+    if smin is None or smax is None:
+
+        # Sigma logarithmically spaced between min and max bin size
+        sig = bin_fact * np.mean(width) / np.mean(rin)
+
+    else:
+        # Sigma logarithmically spaced between min and max bin size
+        sig = smin / np.mean(rin)
+
+    nrads = len(rads)  # rads may or may not be equal to bins
+
+    # Extend into 2D and compute values of Gaussians at each point
+    rgext = np.tile(rgaus, nrads).reshape(nrads, npt)
+
+    radsext = np.repeat(rads, npt).reshape(nrads, npt)
+
+    grad_ana = 1. / np.sqrt(2. * np.pi) / (sig ** 3) * np.exp(- (np.log(radsext) - rgext) ** 2 / 2. / sig ** 2) * (
+        - (np.log(radsext) - rgext)) / radsext
+
+    return grad_ana
 
 
 def kt_GP_from_samples(Mhyd, nmore=5):
@@ -312,9 +378,9 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     rin_joint[0] = 0.
 
-    GPop, rgauss, sig = calc_gp_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
+    GPop, rgauss, sig = calc_gp_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
 
-    GPgrad = calc_gp_grad_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
+    GPgrad = calc_gp_grad_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
 
     t3d = np.dot(GPop, Mhyd.samppar.T)
 
@@ -449,7 +515,9 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 
     rout = np.max(rout_m)
 
-    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+    bins = np.linspace(np.sqrt(rin), np.sqrt(rout), npt + 1)
+
+    bins = bins ** 2
 
     rin_m = bins[:npt]
 
@@ -499,7 +567,7 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 
     rin_joint[0] = 0.
 
-    GPop, rgauss, sig = calc_gp_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
+    GPop, rgauss, sig = calc_gp_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
 
     t3d = np.dot(GPop, Mhyd.samppar.T)
 
@@ -760,9 +828,9 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     rin_joint[0] = 0.
 
-    GPop, rgauss, sig = calc_gp_operator(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
+    GPop, rgauss, sig = calc_gp_operator_lognormal(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
 
-    GPgrad = calc_gp_grad_operator(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
+    GPgrad = calc_gp_grad_operator_lognormal(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
 
     P0_est = estimate_P0(Mhyd)
 
@@ -791,7 +859,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
             pred = pm.math.dot(K, al)
 
         # GP parameters
-        coefs_GP = pm.Normal('GP', mu=np.log(sig), sd=20, shape=ngauss)
+        coefs_GP = pm.Normal('GP', mu=np.log(30./ngauss), sd=20, shape=ngauss)
 
         # Expected value of outcome
         gpp = pm.math.exp(coefs_GP)
