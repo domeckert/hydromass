@@ -328,7 +328,9 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
     if rout is None:
         rout = np.max(rout_m)
 
-    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+    bins = np.linspace(np.sqrt(rin), np.sqrt(rout), npt + 1)
+
+    bins = bins ** 2
 
     rin_m = bins[:npt]
 
@@ -388,23 +390,25 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     grad_t3d = rout_mul / cgskpc / t3d * np.dot(GPgrad, Mhyd.samppar.T)
 
-    if np.max(rout_m) > rout_m[ntm - 1]:
+    rspo = np.max(rout_joint)
+
+    if rout > rspo:
         # Power law outside of the fitted range
         ne0 = dens_m[nvalm - 1, :]
 
         T0 = Mhyd.sampp0 / ne0
 
-        Tspo = t3d[ntm - 1, :]
+        finter = interp1d(rout_m, t3d, axis=0)
 
-        rspo = rout_m[ntm - 1]
+        Tspo = finter(rspo)
 
         r0 = rout_m[nvalm - 1]
 
         alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
 
-        nout = nvalm - ntm
-
         outspec = np.where(rout_m > rspo)
+
+        nout = len(outspec[0])
 
         Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
 

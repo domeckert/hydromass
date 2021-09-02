@@ -4,7 +4,6 @@
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -397,7 +396,14 @@
       <option name="project" value="LOCAL" />
       <updated>1629986046107</updated>
     </task>
-    <option name="localTasksCounter" value="48" />
+    <task id="LOCAL-00048" summary="Replaced linear Gaussian process with log-normal process">
+      <created>1630483537217</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1630483537218</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -406,7 +412,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="fixed very important bug with PSF correction when fitting the surface brightness instead of the counts" />
     <MESSAGE value="Added function to plot the profiles from the polytropic reconstruction" />
     <MESSAGE value="added option to set the name of the extension in SaveProfiles" />
     <MESSAGE value="Added function to compute overdensity radii from polytropic reconstruction" />
@@ -431,6 +436,7 @@
     <MESSAGE value="Updated call to rads_more" />
     <MESSAGE value="Fixed call to psfmat when no matrix has been defined" />
     <MESSAGE value="Switched radius at which the density is evaluated from rref to rout" />
-    <option name="LAST_COMMIT_MESSAGE" value="Switched radius at which the density is evaluated from rref to rout" />
+    <MESSAGE value="Replaced linear Gaussian process with log-normal process" />
+    <option name="LAST_COMMIT_MESSAGE" value="Replaced linear Gaussian process with log-normal process" />
   </component>
 </project>
