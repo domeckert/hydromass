@@ -39,7 +39,7 @@ def calc_gp_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
 
     return rg , rgaus, sig
 
-def calc_gp_operator_lognormal(npt, rads, rin, rout, bin_fact=2.0, smin=None, smax=None):
+def calc_gp_operator_lognormal(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
     # Set up the Gaussian Process model
     rmin = (rin[0] + rout[0]) / 2.
 
@@ -49,24 +49,31 @@ def calc_gp_operator_lognormal(npt, rads, rin, rout, bin_fact=2.0, smin=None, sm
 
     # Gaussians logarithmically spaced between min and max radius
     rgaus = np.linspace(np.log(rmin/2.), np.log(rmax*2.), npt)
+    #rgaus = np.linspace(np.log(rmin), np.log(rmax), npt)
+    #outside = np.where(np.logical_or(rgaus<np.log(rmin), rgaus>np.log(rmax)))
 
     if smin is None or smax is None:
 
         # Sigma logarithmically spaced between min and max bin size
-        sig = bin_fact * np.mean(width) / np.mean(rin)
+        sig = np.exp(np.linspace(np.log(bin_fact * rmin), np.log(np.max(bin_fact * width)),npt)) / np.exp(rgaus)
+        #sig = np.ones(npt) * bin_fact * np.mean(width) / np.mean(rin)
 
     else:
         # Sigma logarithmically spaced between min and max bin size
-        sig = smin / np.mean(rin)
+        sig = np.ones(npt) * smin / np.mean(rin)
+
+    #sig[outside] = 2.0
 
     nrads = len(rads)  # rads may or may not be equal to bins
 
     # Extend into 2D and compute values of Gaussians at each point
+    sigext = np.tile(sig, nrads).reshape(nrads, npt)
+
     rgext = np.tile(rgaus, nrads).reshape(nrads, npt)
 
     radsext = np.log(np.repeat(rads, npt).reshape(nrads, npt))
 
-    rg = 1. / (np.sqrt(2. * np.pi) * sig) * np.exp(-(radsext - rgext) ** 2 / 2. / sig ** 2)
+    rg = 1. / (np.sqrt(2. * np.pi) * sigext) * np.exp(-(radsext - rgext) ** 2 / 2. / sigext ** 2)
 
     return rg , rgaus, sig
 
@@ -110,7 +117,7 @@ def calc_gp_grad_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=No
 
 # Analytical gradient of the Gaussian process model
 
-def calc_gp_grad_operator_lognormal(npt, rads, rin, rout, bin_fact=2.0, smin=None, smax=None):
+def calc_gp_grad_operator_lognormal(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
     # Set up the Gaussian Process model
     rmin = (rin[0] + rout[0]) / 2.
 
@@ -120,24 +127,31 @@ def calc_gp_grad_operator_lognormal(npt, rads, rin, rout, bin_fact=2.0, smin=Non
 
     # Gaussians logarithmically spaced between min and max radius
     rgaus = np.linspace(np.log(rmin/2.), np.log(rmax*2.), npt)
+    #rgaus = np.linspace(np.log(rmin), np.log(rmax), npt)
+    #outside = np.where(np.logical_or(rgaus<np.log(rmin), rgaus>np.log(rmax)))
 
     if smin is None or smax is None:
 
         # Sigma logarithmically spaced between min and max bin size
-        sig = bin_fact * np.mean(width) / np.mean(rin)
+        sig = np.exp(np.linspace(np.log(bin_fact * rmin), np.log(np.max(bin_fact * width)),npt)) / np.exp(rgaus)
+        #sig = np.ones(npt) * bin_fact * np.mean(width) / np.mean(rin)
 
     else:
         # Sigma logarithmically spaced between min and max bin size
-        sig = smin / np.mean(rin)
+        sig = np.ones(npt) * smin / np.mean(rin)
+
+    #sig[outside] = 2.0
 
     nrads = len(rads)  # rads may or may not be equal to bins
 
     # Extend into 2D and compute values of Gaussians at each point
+    sigext = np.tile(sig, nrads).reshape(nrads, npt)
+
     rgext = np.tile(rgaus, nrads).reshape(nrads, npt)
 
     radsext = np.repeat(rads, npt).reshape(nrads, npt)
 
-    grad_ana = 1. / np.sqrt(2. * np.pi) / (sig ** 3) * np.exp(- (np.log(radsext) - rgext) ** 2 / 2. / sig ** 2) * (
+    grad_ana = 1. / np.sqrt(2. * np.pi) / (sigext ** 3) * np.exp(- (np.log(radsext) - rgext) ** 2 / 2. / sigext ** 2) * (
         - (np.log(radsext) - rgext)) / radsext
 
     return grad_ana
@@ -190,31 +204,35 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
-    if np.max(rout_m) > rout_m[ntm - 1]:
-        # Power law outside of the fitted range
-        ne0 = dens_m[nvalm - 1, :]
+    extend = False
 
-        T0 = Mhyd.sampp0 / ne0
+    if extend:
 
-        Tspo = t3d[ntm - 1, :]
+        if np.max(rout_m) > rout_m[ntm - 1]:
+            # Power law outside of the fitted range
+            ne0 = dens_m[nvalm - 1, :]
 
-        rspo = rout_m[ntm - 1]
+            T0 = Mhyd.sampp0 / ne0
 
-        r0 = rout_m[nvalm - 1]
+            Tspo = t3d[ntm - 1, :]
 
-        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+            rspo = rout_m[ntm - 1]
 
-        nout = nvalm - ntm
+            r0 = rout_m[nvalm - 1]
 
-        outspec = np.where(rout_m > rspo)
+            alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
 
-        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+            nout = nvalm - ntm
 
-        rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+            outspec = np.where(rout_m > rspo)
 
-        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+            Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
 
-        t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
+            rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+            alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+            t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
 
     # Mazzotta weights
     ei = dens_m ** 2 * t3d ** (-0.75)
@@ -278,31 +296,35 @@ def P_GP_from_samples(Mhyd, nmore=5):
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
-    if np.max(rout_m) > rout_m[ntm - 1]:
-        # Power law outside of the fitted range
-        ne0 = dens_m[nvalm - 1, :]
+    extend = False
 
-        T0 = Mhyd.sampp0 / ne0
+    if extend:
 
-        Tspo = t3d[ntm - 1, :]
+        if np.max(rout_m) > rout_m[ntm - 1]:
+            # Power law outside of the fitted range
+            ne0 = dens_m[nvalm - 1, :]
 
-        rspo = rout_m[ntm - 1]
+            T0 = Mhyd.sampp0 / ne0
 
-        r0 = rout_m[nvalm - 1]
+            Tspo = t3d[ntm - 1, :]
 
-        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+            rspo = rout_m[ntm - 1]
 
-        nout = nvalm - ntm
+            r0 = rout_m[nvalm - 1]
 
-        outspec = np.where(rout_m > rspo)
+            alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
 
-        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+            nout = nvalm - ntm
 
-        rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+            outspec = np.where(rout_m > rspo)
 
-        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+            Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
 
-        t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
+            rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+            alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+            t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
 
     p3d = t3d * dens_m
 
@@ -392,33 +414,37 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     rspo = np.max(rout_joint)
 
-    if rout > rspo:
-        # Power law outside of the fitted range
-        ne0 = dens_m[nvalm - 1, :]
+    extend = False
 
-        T0 = Mhyd.sampp0 / ne0
+    if extend:
 
-        finter = interp1d(rout_m, t3d, axis=0)
+        if rout > rspo:
+            # Power law outside of the fitted range
+            ne0 = dens_m[nvalm - 1, :]
 
-        Tspo = finter(rspo)
+            T0 = Mhyd.sampp0 / ne0
 
-        r0 = rout_m[nvalm - 1]
+            finter = interp1d(rout_m, t3d, axis=0)
 
-        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+            Tspo = finter(rspo)
 
-        outspec = np.where(rout_m > rspo)
+            r0 = rout_m[nvalm - 1]
 
-        nout = len(outspec[0])
+            alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
 
-        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+            outspec = np.where(rout_m > rspo)
 
-        rout_mm = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+            nout = len(outspec[0])
 
-        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+            Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
 
-        t3d[outspec] = Tspo_mul * (rout_mm / rspo) ** (-alpha_mul)
+            rout_mm = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
 
-        grad_t3d[outspec] = - alpha_mul
+            alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+            t3d[outspec] = Tspo_mul * (rout_mm / rspo) ** (-alpha_mul)
+
+            grad_t3d[outspec] = - alpha_mul
 
     mass = - rout_mul * t3d / (cgsG * cgsamu * Mhyd.mup) * (grad_t3d + grad_dens) * kev2erg / Msun
 
@@ -577,31 +603,35 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 
     rspo = np.max(rout_joint)
 
-    if rout > rspo:
-        # Power law outside of the fitted range
-        ne0 = dens_m[nvalm - 1, :]
+    extend = False
 
-        T0 = Mhyd.sampp0 / ne0
+    if extend:
 
-        finter = interp1d(rout_m, t3d, axis=0)
+        if rout > rspo:
+            # Power law outside of the fitted range
+            ne0 = dens_m[nvalm - 1, :]
 
-        Tspo = finter(rspo)
+            T0 = Mhyd.sampp0 / ne0
 
-        r0 = rout_m[nvalm - 1]
+            finter = interp1d(rout_m, t3d, axis=0)
 
-        alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
+            Tspo = finter(rspo)
 
-        outspec = np.where(rout_m > rspo)
+            r0 = rout_m[nvalm - 1]
 
-        nout = len(outspec[0])
+            alpha = - np.log(Tspo / T0) / np.log(rspo / r0)
 
-        Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
+            outspec = np.where(rout_m > rspo)
 
-        rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+            nout = len(outspec[0])
 
-        alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+            Tspo_mul = np.tile(Tspo, nout).reshape(nout, nsamp)
 
-        t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
+            rout_mul = np.repeat(rout_m[outspec], nsamp).reshape(nout, nsamp)
+
+            alpha_mul = np.tile(alpha, nout).reshape(nout, nsamp)
+
+            t3d[outspec] = Tspo_mul * (rout_mul / rspo) ** (-alpha_mul)
 
     p3d = t3d * dens_m
 
@@ -863,7 +893,8 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
             pred = pm.math.dot(K, al)
 
         # GP parameters
-        coefs_GP = pm.Normal('GP', mu=np.log(30./ngauss), sd=20, shape=ngauss)
+        #coefs_GP = pm.Normal('GP', mu=np.log(30./ngauss), sd=20, shape=ngauss)
+        coefs_GP = pm.Normal('GP', mu=1./np.sqrt(np.arange(1,ngauss+1)), sd=20, shape=ngauss)
 
         # Expected value of outcome
         gpp = pm.math.exp(coefs_GP)
@@ -875,33 +906,36 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
-        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
-                                   lower=np.log(P0_est) - err_P0_est / P0_est,
-                                   upper=np.log(P0_est) + err_P0_est / P0_est)
+        extend = False
 
-        if np.max(rout_m) > rout_m[ntm - 1]:
-            # Power law outside of the fitted range
-            ne0 = dens_m[nptmore - 1]
+        if extend:
+            logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
+                                       lower=np.log(P0_est) - err_P0_est / P0_est,
+                                       upper=np.log(P0_est) + err_P0_est / P0_est)
 
-            T0 = np.exp(logp0) / ne0
+            if np.max(rout_m) > rout_m[ntm - 1]:
+                # Power law outside of the fitted range
+                ne0 = dens_m[nptmore - 1]
 
-            Tspo = t3d[ntm - 1]
+                T0 = np.exp(logp0) / ne0
 
-            rspo = rout_m[ntm - 1]
+                Tspo = t3d[ntm - 1]
 
-            r0 = rout_m[nptmore - 1]
+                rspo = rout_m[ntm - 1]
 
-            alpha = - pm.math.log(Tspo/T0) / np.log(rspo/r0)
+                r0 = rout_m[nptmore - 1]
 
-            outspec = np.where(rout_m > rspo)
+                alpha = - pm.math.log(Tspo/T0) / np.log(rspo/r0)
 
-            inspec = np.where(rout_m <= rspo)
+                outspec = np.where(rout_m > rspo)
 
-            t3d_in = t3d[inspec]
+                inspec = np.where(rout_m <= rspo)
 
-            t3d_out = Tspo * (rout_m[outspec] / rspo) ** (-alpha)
+                t3d_in = t3d[inspec]
 
-            t3d = pm.math.concatenate([t3d_in, t3d_out])
+                t3d_out = Tspo * (rout_m[outspec] / rspo) ** (-alpha)
+
+                t3d = pm.math.concatenate([t3d_in, t3d_out])
 
         # Density Likelihood
         if fit_bkg:
@@ -1043,8 +1077,9 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     Mhyd.Kdens_m = Kdens_m
     Mhyd.Kdens_grad = Kdens_grad
 
-    sampp0 = np.exp(trace.get_values('logp0'))
-    Mhyd.sampp0 = sampp0
+    if extend:
+        sampp0 = np.exp(trace.get_values('logp0'))
+        Mhyd.sampp0 = sampp0
 
     if Mhyd.spec_data is not None:
         kt_mod = kt_GP_from_samples(Mhyd, nmore=nmore)

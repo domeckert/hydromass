@@ -178,7 +178,7 @@ def ReloadModel(Mhyd, infile, mstar=None):
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if Mhyd.fit_bkg:
 
@@ -366,7 +366,7 @@ def ReloadGP(Mhyd, infile):
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if Mhyd.fit_bkg:
 
@@ -432,10 +432,10 @@ def ReloadGP(Mhyd, infile):
 
     rin_joint[0] = 0.
 
-    Mhyd.GPop, rgauss, sig = calc_gp_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint,
+    Mhyd.GPop, rgauss, sig = calc_gp_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint,
                                                         bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
 
-    Mhyd.GPgrad = calc_gp_grad_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact,
+    Mhyd.GPgrad = calc_gp_grad_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact,
                                                   smin=Mhyd.smin, smax=Mhyd.smax)
 
     alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
@@ -611,7 +611,7 @@ def ReloadForward(Mhyd, infile):
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if Mhyd.fit_bkg:
 
