@@ -447,6 +447,9 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
     bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
 
+    if rin == 1.:
+        bins[0] = 0.
+
     rin_m = bins[:npt]
 
     rout_m = bins[1:]
