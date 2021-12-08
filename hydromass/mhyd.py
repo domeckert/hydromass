@@ -11,6 +11,7 @@ from astropy.io import fits
 import os
 import pymc3 as pm
 from .save import *
+import arviz as az
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
@@ -271,9 +272,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            P0_est = 1e-4 * 5. # 5 keV and R500 density
+            P0_est = estimate_P0(Mhyd=Mhyd)
 
-            err_P0_est = P0_est # 1-dex
+            print('Estimated value of P0: %g' % (P0_est))
+
+            err_P0_est = P0_est # 1 in ln
 
         logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
@@ -315,6 +318,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
 
+        # Non-thermal pressure correction, if any
         if pnt:
 
             c200 = pmod[0]
@@ -507,6 +511,42 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.pmod_lo = plo
         Mhyd.pmod_hi = phi
 
+    totlike = 0.
+    nptot = model.npar + 1
+    thermolike = 0.
+    npthermo = model.npar + 1
+
+    if fit_bkg:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
+        nptot = nptot + npt + 1
+        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
+
+    else:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
+        nptot = nptot + npt
+        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
+
+    if Mhyd.spec_data is not None:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
+
+
+    if Mhyd.sz_data is not None:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
+
+    if pnt:
+        nptot = nptot + 3
+        npthermo = npthermo + 3
+
+    Mhyd.totlike = totlike
+    Mhyd.nptot = nptot
+    Mhyd.thermolike = thermolike
+    Mhyd.npthermo = npthermo
+    Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
+    Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
 
 
 class Mhyd:

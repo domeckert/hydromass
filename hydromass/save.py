@@ -49,6 +49,14 @@ def SaveModel(Mhyd, model, outfile=None):
 
     cols.append(col)
 
+    col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
+
+    cols.append(col)
+
+    col = fits.Column(name='LogLikeTH', format='E', array=Mhyd.thermolike)
+
+    cols.append(col)
+
     coldefs = fits.ColDefs(cols)
 
     modhdu = fits.BinTableHDU.from_columns(coldefs)
@@ -59,6 +67,10 @@ def SaveModel(Mhyd, model, outfile=None):
     modhead['MASSMOD'] = model.massmod
 
     modhead['DELTA'] = model.delta
+
+    modhead['WAIC'] = Mhyd.waic['waic']
+
+    modhead['LOO'] = Mhyd.loo['loo']
 
     for i in range(model.npar):
         parname = model.parnames[i]
@@ -104,6 +116,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
     Mhyd.mstar = mstar
 
     Mhyd.pnt = headden['PNT']
+
+    Mhyd.waic = headden['WAIC']
+
+    Mhyd.loo = headden['LOO']
 
     modhead = fin[2].header
 
@@ -350,6 +366,9 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.pardens = list_params_density(rad, sourcereg, Mhyd.amin2kpc, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
 
+    # Define the fine grid onto which the mass model will be computed
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
     # Compute linear combination kernel
     if Mhyd.fit_bkg:
 
@@ -357,6 +376,9 @@ def ReloadGP(Mhyd, infile):
                                                 psfmat)  # transformation to counts
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc)
 
+        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+        Mhyd.Kdens_grad = calc_grad_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
@@ -365,22 +387,10 @@ def ReloadGP(Mhyd, infile):
 
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
-    # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
-    if Mhyd.fit_bkg:
-
-        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
-
-        Mhyd.Kdens_grad = calc_grad_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
-
-    else:
-
         Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
-                                                       withbkg=False)
-
+                                             withbkg=False)
         Mhyd.Kdens_grad = calc_grad_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
-                                                       withbkg=False)
+                                             withbkg=False)
 
     if Mhyd.fit_bkg:
 
