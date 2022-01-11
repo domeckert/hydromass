@@ -1,0 +1,987 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>hydromass.save &mdash; hydromass 0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> hydromass
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Intro</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hydromass.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">hydromass</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>hydromass.save</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for hydromass.save</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.plots</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.functions</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.nonparametric</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.forward</span> <span class="kn">import</span> <span class="o">*</span>
+
+<div class="viewcode-block" id="SaveModel"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.SaveModel">[docs]</a><span class="k">def</span> <span class="nf">SaveModel</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Save the output chains of a fitted mass model to an output file. The output file can then be reloaded into a new Mhyd object using the :func:`hydromass.save.ReloadModel` function.</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model</span>
+<span class="sd">    :type model: class:`hydromass.functions.Model`</span>
+<span class="sd">    :param outfile: Name of output FITS file. If none, the file is outputted to a file called &quot;output_model.fits&quot; under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none</span>
+<span class="sd">    :type outfile: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dir</span> <span class="o">+</span> <span class="s1">&#39;/output_model.fits&#39;</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Nothing to save, exiting&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No model provided, exiting&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">massmod</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Incorrect model provided, exiting&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">hdus</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span><span class="n">hdus</span><span class="o">=</span><span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()])</span>
+
+    <span class="n">denshdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;DENSITY&#39;</span><span class="p">)</span>
+
+    <span class="n">headsamp</span> <span class="o">=</span> <span class="n">denshdu</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;BKGLIM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NRC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NBETAS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;MINBETA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;CCF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;TRANSF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;FITBKG&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NMORE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;DMONLY&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dmonly</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;PNT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pnt</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">denshdu</span><span class="p">)</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">col</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;logP0&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samplogp0</span><span class="p">)</span>
+
+    <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">col</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;LogLike&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">totlike</span><span class="p">)</span>
+
+    <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">col</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;LogLikeTH&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">thermolike</span><span class="p">)</span>
+
+    <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">coldefs</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+
+    <span class="n">modhdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span><span class="n">coldefs</span><span class="p">)</span>
+
+    <span class="n">modhdu</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;MASS MODEL&#39;</span>
+
+    <span class="n">modhead</span> <span class="o">=</span> <span class="n">modhdu</span><span class="o">.</span><span class="n">header</span>
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;MASSMOD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">massmod</span>
+
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;DELTA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">delta</span>
+
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;WAIC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">waic</span><span class="p">[</span><span class="s1">&#39;waic&#39;</span><span class="p">]</span>
+
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;LOO&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">loo</span><span class="p">[</span><span class="s1">&#39;loo&#39;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">parname</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;ST&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SD&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;LOW&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;HI&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">modhdu</span><span class="p">)</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReloadModel"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.ReloadModel">[docs]</a><span class="k">def</span> <span class="nf">ReloadModel</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">infile</span><span class="p">,</span> <span class="n">mstar</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Reload the result of a previous mass model fit within the current live session after it has been saved using the :func:`hydromass.save.SaveModel` function</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveModel` function</span>
+<span class="sd">    :type infile: str</span>
+<span class="sd">    :param mstar: External cumulative stellar mass profile if available. If none, no stellar mass profile is used. Defaults to none</span>
+<span class="sd">    :type mstar: class:`numpy.ndarray`</span>
+<span class="sd">    :return: A :class:`hydromass.functions.Model` object with the model definition and parameters</span>
+<span class="sd">    :rtype: class:`hydromass.functions.Model`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fin</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">headden</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;BKGLIM&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NRC&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NBETAS&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;MINBETA&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;CCF&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;TRANSF&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;FITBKG&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NMORE&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dmonly</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;DMONLY&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span> <span class="o">=</span> <span class="n">mstar</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">pnt</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;PNT&#39;</span><span class="p">]</span>
+
+    <span class="c1">#Mhyd.waic = headden[&#39;WAIC&#39;]</span>
+
+    <span class="c1">#Mhyd.loo = headden[&#39;LOO&#39;]</span>
+
+    <span class="n">modhead</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">massmod</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;MASSMOD&#39;</span><span class="p">]</span>
+
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;DELTA&#39;</span><span class="p">]</span>
+
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">massmod</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">parname</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;ST&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">sd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SD&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;LOW&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;HI&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+    <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS2&#39;</span><span class="p">])</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nsamp</span><span class="p">,</span> <span class="n">mod</span><span class="o">.</span><span class="n">npar</span><span class="p">))</span>
+
+    <span class="n">dpar</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpar</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samplogp0</span> <span class="o">=</span> <span class="n">dpar</span><span class="p">[</span><span class="s1">&#39;logP0&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Now recreate operators</span>
+
+    <span class="n">prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span>
+
+    <span class="n">rad</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">bins</span>
+
+    <span class="n">area</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">area</span>
+
+    <span class="n">exposure</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">effexp</span>
+
+    <span class="n">sourcereg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rad</span> <span class="o">&lt;</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span><span class="p">)</span>
+
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">list_params</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span><span class="p">)</span>
+
+    <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">psfmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">psfmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span> <span class="o">=</span> <span class="n">list_params_density</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span><span class="p">)</span>
+
+    <span class="c1"># Compute linear combination kernel</span>
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">calc_linear_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span>
+                                                <span class="n">psfmat</span><span class="p">)</span>  <span class="c1"># transformation to counts</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">,</span> <span class="n">Ksb</span><span class="p">)</span> <span class="c1"># transformation to surface brightness</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Define the fine grid onto which the mass model will be computed</span>
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span>
+                                                       <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+
+        <span class="n">allsb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ksb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">bfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="n">npt</span><span class="p">]))</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkg</span> <span class="o">=</span> <span class="n">bfit</span>
+
+        <span class="n">allsb_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">,</span> <span class="n">allsb</span><span class="p">[:,</span> <span class="p">:</span><span class="n">npt</span><span class="p">])</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">allsb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ksb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">allsb_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="n">alldens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span><span class="p">)</span>
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kt_mod</span> <span class="o">=</span> <span class="n">kt_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">mod</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod_lo</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC_LO&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod_hi</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC_HI&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d_lo</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D_LO&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d_hi</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D_HI&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pmed</span><span class="p">,</span> <span class="n">plo</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">P_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">mod</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod</span> <span class="o">=</span> <span class="n">pmed</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod_lo</span> <span class="o">=</span> <span class="n">plo</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod_hi</span> <span class="o">=</span> <span class="n">phi</span>
+
+    <span class="k">return</span> <span class="n">mod</span></div>
+
+<div class="viewcode-block" id="SaveGP"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.SaveGP">[docs]</a><span class="k">def</span> <span class="nf">SaveGP</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Save the result of a non-parametric GP reconstruction into an output FITS file. The result can be later reloaded through the :func:`hydromass.save.ReloadGP` function</span>
+
+<span class="sd">    :param Mhyd:  A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the non-parametric GP reconstruction</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param outfile: Name of output FITS file. If none, the file is outputted to a file called &quot;output_GP.fits&quot; under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none</span>
+<span class="sd">    :type outfile: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dir</span> <span class="o">+</span> <span class="s1">&#39;/output_GP.fits&#39;</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Nothing to save, exiting&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ngauss</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No GP reconstruction found in structure, exiting&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">hdus</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span><span class="n">hdus</span><span class="o">=</span><span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()])</span>
+
+    <span class="n">denshdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;DENSITY&#39;</span><span class="p">)</span>
+
+    <span class="n">headsamp</span> <span class="o">=</span> <span class="n">denshdu</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;BKGLIM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NRC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NBETAS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;MINBETA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;CCF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;TRANSF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;FITBKG&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NMORE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">denshdu</span><span class="p">)</span>
+
+    <span class="n">gphdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;GP&#39;</span><span class="p">)</span>
+    <span class="n">modhead</span> <span class="o">=</span> <span class="n">gphdu</span><span class="o">.</span><span class="n">header</span>
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SMIN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">smin</span>
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SMAX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">smax</span>
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;BINFACT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bin_fact</span>
+    <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;NGAUSS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ngauss</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gphdu</span><span class="p">)</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReloadGP"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.ReloadGP">[docs]</a><span class="k">def</span> <span class="nf">ReloadGP</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">infile</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Reload the result of a non-parametric GP reconstruction previously saved using the :func:`hydromass.save.SaveGP` function into the current session.</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveGP` function</span>
+<span class="sd">    :type infile: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fin</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">headden</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;BKGLIM&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NRC&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NBETAS&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;MINBETA&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;CCF&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;TRANSF&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;FITBKG&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NMORE&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">modhead</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">smin</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SMIN&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">smax</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SMAX&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">bin_fact</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;BINFACT&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">ngauss</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;NGAUSS&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Now recreate operators</span>
+
+    <span class="n">prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span>
+
+    <span class="n">rad</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">bins</span>
+
+    <span class="n">area</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">area</span>
+
+    <span class="n">exposure</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">effexp</span>
+
+    <span class="n">sourcereg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rad</span> <span class="o">&lt;</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span><span class="p">)</span>
+
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">list_params</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span><span class="p">)</span>
+
+    <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">psfmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">psfmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span> <span class="o">=</span> <span class="n">list_params_density</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span><span class="p">)</span>
+
+    <span class="c1"># Define the fine grid onto which the mass model will be computed</span>
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="c1"># Compute linear combination kernel</span>
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">calc_linear_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span>
+                                                <span class="n">psfmat</span><span class="p">)</span>  <span class="c1"># transformation to counts</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_grad</span> <span class="o">=</span> <span class="n">calc_grad_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">,</span> <span class="n">Ksb</span><span class="p">)</span>  <span class="c1"># transformation to surface brightness</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span>
+                                             <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_grad</span> <span class="o">=</span> <span class="n">calc_grad_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span>
+                                             <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+
+        <span class="n">allsb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ksb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">bfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="n">npt</span><span class="p">]))</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkg</span> <span class="o">=</span> <span class="n">bfit</span>
+
+        <span class="n">allsb_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">,</span> <span class="n">allsb</span><span class="p">[:,</span> <span class="p">:</span><span class="n">npt</span><span class="p">])</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">allsb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ksb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">allsb_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rout_joint</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rout_x</span>
+
+    <span class="k">elif</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rout_joint</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rout_sz</span>
+
+    <span class="k">elif</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rout_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rout_x</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rout_sz</span><span class="p">))</span>
+
+    <span class="n">rin_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">rout_joint</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">rin_joint</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">GPop</span><span class="p">,</span> <span class="n">rgauss</span><span class="p">,</span> <span class="n">sig</span> <span class="o">=</span> <span class="n">calc_gp_operator_lognormal</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">ngauss</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">rin_joint</span><span class="p">,</span> <span class="n">rout_joint</span><span class="p">,</span>
+                                                        <span class="n">bin_fact</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">bin_fact</span><span class="p">,</span> <span class="n">smin</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">smin</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">smax</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">GPgrad</span> <span class="o">=</span> <span class="n">calc_gp_grad_operator_lognormal</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">ngauss</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">rin_joint</span><span class="p">,</span> <span class="n">rout_joint</span><span class="p">,</span> <span class="n">bin_fact</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">bin_fact</span><span class="p">,</span>
+                                                  <span class="n">smin</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">smin</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">smax</span><span class="p">)</span>
+
+    <span class="n">alldens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span><span class="p">)</span>
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kt_mod</span> <span class="o">=</span> <span class="n">kt_GP_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod_lo</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC_LO&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod_hi</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC_HI&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d_lo</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D_LO&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d_hi</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D_HI&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pmed</span><span class="p">,</span> <span class="n">plo</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">P_GP_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod</span> <span class="o">=</span> <span class="n">pmed</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod_lo</span> <span class="o">=</span> <span class="n">plo</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod_hi</span> <span class="o">=</span> <span class="n">phi</span></div>
+
+
+<div class="viewcode-block" id="SaveForward"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.SaveForward">[docs]</a><span class="k">def</span> <span class="nf">SaveForward</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">Forward</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and the output of the forward fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param Forward: A :class:`hydromass.forward.Forward` object containing the definition of the forward model</span>
+<span class="sd">    :type Forward: class:`hydromass.forward.Forward`</span>
+<span class="sd">    :param outfile: Name of output FITS file. If none, the file is outputted to a file called &quot;output_forward.fits&quot; under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none</span>
+<span class="sd">    :type outfile: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dir</span> <span class="o">+</span> <span class="s1">&#39;/output_forward.fits&#39;</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Nothing to save, exiting&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">Forward</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No Forward model provided, exiting&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">hdus</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span><span class="n">hdus</span><span class="o">=</span><span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()])</span>
+
+    <span class="n">denshdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;DENSITY&#39;</span><span class="p">)</span>
+
+    <span class="n">headsamp</span> <span class="o">=</span> <span class="n">denshdu</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;BKGLIM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NRC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NBETAS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;MINBETA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;CCF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;TRANSF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;FITBKG&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span>
+    <span class="n">headsamp</span><span class="p">[</span><span class="s1">&#39;NMORE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">denshdu</span><span class="p">)</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Forward</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">Forward</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">coldefs</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+
+    <span class="n">modhdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span><span class="n">coldefs</span><span class="p">)</span>
+
+    <span class="n">modhdu</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;FORWARD MODEL&#39;</span>
+
+    <span class="n">modhead</span> <span class="o">=</span> <span class="n">modhdu</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Forward</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">parname</span> <span class="o">=</span> <span class="n">Forward</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;ST&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Forward</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SD&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Forward</span><span class="o">.</span><span class="n">sd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;LOW&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Forward</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;HI&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="n">Forward</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">modhdu</span><span class="p">)</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ReloadForward"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.ReloadForward">[docs]</a><span class="k">def</span> <span class="nf">ReloadForward</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">infile</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Reload the results of a previous forward fit saved using the :func:`hydromass.save.SaveForward` function into the current live session</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveForward` function</span>
+<span class="sd">    :type infile: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fin</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">headden</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;BKGLIM&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NRC&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NBETAS&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;MINBETA&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;CCF&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;TRANSF&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;FITBKG&#39;</span><span class="p">]</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span> <span class="o">=</span> <span class="n">headden</span><span class="p">[</span><span class="s1">&#39;NMORE&#39;</span><span class="p">]</span>
+
+    <span class="n">modhead</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">Forward</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">parname</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;ST&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">sd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;SD&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;LOW&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+        <span class="n">mod</span><span class="o">.</span><span class="n">limits</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">modhead</span><span class="p">[</span><span class="s1">&#39;HI&#39;</span> <span class="o">+</span> <span class="n">parname</span><span class="p">]</span>
+
+    <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS2&#39;</span><span class="p">])</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nsamp</span><span class="p">,</span> <span class="n">mod</span><span class="o">.</span><span class="n">npar</span><span class="p">))</span>
+
+    <span class="n">dpar</span> <span class="o">=</span> <span class="n">fin</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">parnames</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dpar</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="c1"># Now recreate operators</span>
+
+    <span class="n">prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span>
+
+    <span class="n">rad</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">bins</span>
+
+    <span class="n">area</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">area</span>
+
+    <span class="n">exposure</span> <span class="o">=</span> <span class="n">prof</span><span class="o">.</span><span class="n">effexp</span>
+
+    <span class="n">sourcereg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rad</span> <span class="o">&lt;</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkglim</span><span class="p">)</span>
+
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">list_params</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span><span class="p">)</span>
+
+    <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">psfmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">psfmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
+
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span> <span class="o">=</span> <span class="n">list_params_density</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nrc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nbetas</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">min_beta</span><span class="p">)</span>
+
+    <span class="c1"># Compute linear combination kernel</span>
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">calc_linear_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span>
+                                                <span class="n">psfmat</span><span class="p">)</span>  <span class="c1"># transformation to counts</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">,</span> <span class="n">Ksb</span><span class="p">)</span>  <span class="c1"># transformation to surface brightness</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Define the fine grid onto which the mass model will be computed</span>
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span>
+                                                       <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+
+        <span class="n">allsb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ksb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">bfit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="n">npt</span><span class="p">]))</span>
+
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">bkg</span> <span class="o">=</span> <span class="n">bfit</span>
+
+        <span class="n">allsb_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">psfmat</span><span class="p">,</span> <span class="n">allsb</span><span class="p">[:,</span> <span class="p">:</span><span class="n">npt</span><span class="p">])</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Ksb</span> <span class="o">=</span> <span class="n">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">allsb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ksb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">allsb_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_dec_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">allsb_conv</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">sb_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="n">alldens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span><span class="p">)</span>
+    <span class="n">pmc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pmch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">alldens</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens</span> <span class="o">=</span> <span class="n">pmc</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens_lo</span> <span class="o">=</span> <span class="n">pmcl</span>
+    <span class="n">Mhyd</span><span class="o">.</span><span class="n">dens_hi</span> <span class="o">=</span> <span class="n">pmch</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kt_mod</span> <span class="o">=</span> <span class="n">kt_forw_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">mod</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod_lo</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC_LO&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">ktmod_hi</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;TSPEC_HI&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d_lo</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D_LO&#39;</span><span class="p">]</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">kt3d_hi</span> <span class="o">=</span> <span class="n">kt_mod</span><span class="p">[</span><span class="s1">&#39;T3D_HI&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pmed</span><span class="p">,</span> <span class="n">plo</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">P_forw_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">mod</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod</span> <span class="o">=</span> <span class="n">pmed</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod_lo</span> <span class="o">=</span> <span class="n">plo</span>
+        <span class="n">Mhyd</span><span class="o">.</span><span class="n">pmod_hi</span> <span class="o">=</span> <span class="n">phi</span>
+
+    <span class="k">return</span> <span class="n">mod</span></div>
+
+<div class="viewcode-block" id="SaveProfiles"><a class="viewcode-back" href="../../hydromass.html#hydromass.save.SaveProfiles">[docs]</a><span class="k">def</span> <span class="nf">SaveProfiles</span><span class="p">(</span><span class="n">profiles</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extname</span><span class="o">=</span><span class="s1">&#39;THERMODYNAMIC PROFILES&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Save the profiles loaded into a profile dictionary into an output FITS file</span>
+
+<span class="sd">    :param profiles: Dictionary containing profiles and profile names</span>
+<span class="sd">    :type profiles: dict</span>
+<span class="sd">    :param outfile: Output FITS file name</span>
+<span class="sd">    :type outfile: str</span>
+<span class="sd">    :param extname: Name of the extension of the FITS file containing the output data. Defaults to &quot;THERMODYNAMIC PROFILES&quot;</span>
+<span class="sd">    :type extname: str</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: output file name must be provided&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="n">hdus</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span><span class="n">hdus</span><span class="o">=</span><span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()])</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">profiles</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="n">col</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">coldefs</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+
+    <span class="n">modhdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span><span class="n">coldefs</span><span class="p">)</span>
+
+    <span class="n">modhdu</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">extname</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">modhdu</span><span class="p">)</span>
+
+    <span class="n">hdus</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2022, D. Eckert
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

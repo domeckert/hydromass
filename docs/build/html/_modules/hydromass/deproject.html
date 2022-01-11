@@ -1,0 +1,468 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>hydromass.deproject &mdash; hydromass 0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> hydromass
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Intro</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hydromass.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">hydromass</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>hydromass.deproject</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for hydromass.deproject</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gamma</span>
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">pymc3</span> <span class="k">as</span> <span class="nn">pm</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="c1"># Function to calculate a linear operator transforming parameter vector into predicted model counts</span>
+
+<div class="viewcode-block" id="calc_linear_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_linear_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_linear_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span><span class="n">sourcereg</span><span class="p">,</span><span class="n">pars</span><span class="p">,</span><span class="n">area</span><span class="p">,</span><span class="n">expo</span><span class="p">,</span><span class="n">psf</span><span class="p">):</span>
+    <span class="c1"># Select values in the source region</span>
+    <span class="n">rfit</span><span class="o">=</span><span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
+    <span class="n">npt</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="n">npars</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">areamul</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">],</span><span class="n">npars</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span><span class="n">npt</span><span class="p">)</span>
+    <span class="n">expomul</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">expo</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">],</span><span class="n">npars</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span><span class="n">npt</span><span class="p">)</span>
+    <span class="n">spsf</span><span class="o">=</span><span class="n">psf</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">]</span>
+    
+    <span class="c1"># Compute linear combination of basis functions in the source region</span>
+    <span class="n">beta</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span><span class="n">npt</span><span class="p">)</span>
+    <span class="n">rc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span><span class="n">npt</span><span class="p">)</span>
+    <span class="n">base</span><span class="o">=</span><span class="mf">1.</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">rfit</span><span class="o">/</span><span class="n">rc</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">expon</span><span class="o">=-</span><span class="mf">3.</span><span class="o">*</span><span class="n">beta</span><span class="o">+</span><span class="mf">0.5</span>
+    <span class="n">func_base</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="n">expon</span><span class="p">)</span>
+    
+    <span class="c1"># Predict number of counts per annulus and convolve with PSF</span>
+    <span class="n">Ktrue</span><span class="o">=</span><span class="n">func_base</span><span class="o">*</span><span class="n">areamul</span><span class="o">*</span><span class="n">expomul</span>
+    <span class="n">Kconv</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">spsf</span><span class="p">,</span><span class="n">Ktrue</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    
+    <span class="c1"># Recast into full matrix and add column for background</span>
+    <span class="n">nptot</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rad</span><span class="p">)</span>
+    <span class="n">Ktot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nptot</span><span class="p">,</span><span class="n">npars</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">Ktot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="n">Kconv</span>
+    <span class="n">Ktot</span><span class="p">[:,</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="n">area</span><span class="o">*</span><span class="n">expo</span>
+    <span class="k">return</span> <span class="n">Ktot</span></div>
+
+
+<span class="c1"># Function to create the list of parameters for the basis functions</span>
+<span class="n">nsh</span><span class="o">=</span><span class="mf">4.</span> <span class="c1"># number of basis functions to set</span>
+
+<div class="viewcode-block" id="list_params"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.list_params">[docs]</a><span class="k">def</span> <span class="nf">list_params</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span><span class="n">sourcereg</span><span class="p">,</span><span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span><span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">):</span>
+    <span class="n">rfit</span><span class="o">=</span><span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
+    <span class="n">npfit</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nrc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">nrc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">npfit</span><span class="o">/</span><span class="n">nsh</span><span class="p">),</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">allrc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rfit</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rfit</span><span class="p">[</span><span class="n">npfit</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">),</span><span class="n">nrc</span><span class="p">)</span>
+    <span class="c1">#allbetas=np.linspace(0.4,3.,6)</span>
+    <span class="n">allbetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">min_beta</span><span class="p">,</span> <span class="mf">3.</span><span class="p">,</span> <span class="n">nbetas</span><span class="p">)</span>
+    <span class="n">nrc</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">allrc</span><span class="p">)</span>
+    <span class="n">nbetas</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">allbetas</span><span class="p">)</span>
+    <span class="n">rc</span><span class="o">=</span><span class="n">allrc</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">nbetas</span><span class="p">)</span>
+    <span class="n">betas</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">allbetas</span><span class="p">,</span><span class="n">nrc</span><span class="p">)</span>
+    <span class="n">ptot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nrc</span><span class="o">*</span><span class="n">nbetas</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">ptot</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">betas</span>
+    <span class="n">ptot</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">rc</span>
+    <span class="k">return</span> <span class="n">ptot</span></div>
+
+<span class="c1"># Function to create a linear operator transforming parameters into surface brightness</span>
+
+<div class="viewcode-block" id="calc_sb_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_sb_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span><span class="n">sourcereg</span><span class="p">,</span><span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="c1"># Select values in the source region</span>
+    <span class="n">rfit</span><span class="o">=</span><span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
+    <span class="n">npt</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="n">npars</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="c1"># Compute linear combination of basis functions in the source region</span>
+    <span class="n">beta</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span><span class="n">npt</span><span class="p">)</span>
+    <span class="n">rc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span><span class="n">npt</span><span class="p">)</span>
+    <span class="n">base</span><span class="o">=</span><span class="mf">1.</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">rfit</span><span class="o">/</span><span class="n">rc</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">expon</span><span class="o">=-</span><span class="mf">3.</span><span class="o">*</span><span class="n">beta</span><span class="o">+</span><span class="mf">0.5</span>
+    <span class="n">func_base</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="n">expon</span><span class="p">)</span>
+    
+    <span class="c1"># Recast into full matrix and add column for background</span>
+    <span class="k">if</span> <span class="n">withbkg</span><span class="p">:</span>
+        <span class="n">nptot</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rad</span><span class="p">)</span>
+        <span class="n">Ktot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nptot</span><span class="p">,</span><span class="n">npars</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">Ktot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="n">func_base</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">Ktot</span><span class="p">[:,</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="mf">0.0</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Ktot</span> <span class="o">=</span> <span class="n">func_base</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">return</span> <span class="n">Ktot</span></div>
+
+
+<div class="viewcode-block" id="calc_sb_operator_psf"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_sb_operator_psf">[docs]</a><span class="k">def</span> <span class="nf">calc_sb_operator_psf</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">expo</span><span class="p">,</span> <span class="n">psf</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Select values in the source region</span>
+    <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
+    <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="n">npars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">areamul</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">],</span> <span class="n">npars</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">expomul</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">expo</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">],</span> <span class="n">npars</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">spsf</span> <span class="o">=</span> <span class="n">psf</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">]</span>
+
+    <span class="c1"># Compute linear combination of basis functions in the source region</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">rc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">rfit</span> <span class="o">/</span> <span class="n">rc</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">expon</span> <span class="o">=</span> <span class="o">-</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">+</span> <span class="mf">0.5</span>
+    <span class="n">func_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">expon</span><span class="p">)</span>
+
+    <span class="n">Ktrue</span> <span class="o">=</span> <span class="n">func_base</span> <span class="o">*</span> <span class="n">areamul</span> <span class="o">*</span> <span class="n">expomul</span>
+    <span class="n">Kconv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">spsf</span><span class="p">,</span> <span class="n">Ktrue</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">Kconvsb</span> <span class="o">=</span> <span class="n">Kconv</span> <span class="o">/</span> <span class="n">areamul</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="n">expomul</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="c1"># Recast into full matrix and add column for background</span>
+    <span class="k">if</span> <span class="n">withbkg</span><span class="p">:</span>
+        <span class="n">nptot</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rad</span><span class="p">)</span>
+        <span class="n">Ktot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nptot</span><span class="p">,</span> <span class="n">npars</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">Ktot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">npars</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kconvsb</span>
+        <span class="n">Ktot</span><span class="p">[:,</span> <span class="n">npars</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Ktot</span> <span class="o">=</span> <span class="n">Kconvsb</span>
+
+    <span class="k">return</span> <span class="n">Ktot</span></div>
+
+
+<div class="viewcode-block" id="calc_int_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_int_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_int_operator</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">pars</span><span class="p">):</span>
+    <span class="c1"># Select values in the source region</span>
+    <span class="n">npars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">rads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">])</span>
+    <span class="n">npt</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="c1"># Compute linear combination of basis functions in the source region</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">rc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">rads</span> <span class="o">/</span> <span class="n">rc</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">expon</span> <span class="o">=</span> <span class="o">-</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">+</span> <span class="mf">1.5</span>
+    <span class="n">func_base</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">expon</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">rc</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="c1"># Recast into full matrix and add column for background</span>
+    <span class="n">Kint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">npt</span><span class="p">,</span> <span class="n">npars</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">Kint</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">npars</span><span class="p">]</span> <span class="o">=</span> <span class="n">func_base</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">Kint</span><span class="p">[:,</span> <span class="n">npars</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="n">Kint</span></div>
+
+
+<div class="viewcode-block" id="list_params_density"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.list_params_density">[docs]</a><span class="k">def</span> <span class="nf">list_params_density</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">kpcp</span><span class="p">,</span> <span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">):</span>
+    <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
+    <span class="n">npfit</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nrc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">nrc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">npfit</span> <span class="o">/</span> <span class="n">nsh</span><span class="p">),</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">allrc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rfit</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rfit</span><span class="p">[</span><span class="n">npfit</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">),</span> <span class="n">nrc</span><span class="p">)</span> <span class="o">*</span> <span class="n">kpcp</span>
+    <span class="c1"># allbetas=np.linspace(0.5,3.,6)</span>
+    <span class="n">allbetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">min_beta</span><span class="p">,</span> <span class="mf">3.</span><span class="p">,</span> <span class="n">nbetas</span><span class="p">)</span>
+    <span class="n">nrc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">allrc</span><span class="p">)</span>
+    <span class="n">nbetas</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">allbetas</span><span class="p">)</span>
+    <span class="n">rc</span> <span class="o">=</span> <span class="n">allrc</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">nbetas</span><span class="p">)</span>
+    <span class="n">betas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">allbetas</span><span class="p">,</span> <span class="n">nrc</span><span class="p">)</span>
+    <span class="n">ptot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nrc</span> <span class="o">*</span> <span class="n">nbetas</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">ptot</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">betas</span>
+    <span class="n">ptot</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">rc</span>
+    <span class="k">return</span> <span class="n">ptot</span></div>
+
+
+<span class="c1"># Linear operator to transform parameters into density</span>
+
+<div class="viewcode-block" id="calc_density_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_density_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">kpcp</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="c1"># Select values in the source region</span>
+    <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">kpcp</span>
+    <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="n">npars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Compute linear combination of basis functions in the source region</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">rc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">rfit</span> <span class="o">/</span> <span class="n">rc</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">expon</span> <span class="o">=</span> <span class="o">-</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">beta</span>
+    <span class="n">func_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">expon</span><span class="p">)</span>
+    <span class="n">cfact</span> <span class="o">=</span> <span class="n">gamma</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">beta</span><span class="p">)</span> <span class="o">/</span> <span class="n">gamma</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">rc</span>
+    <span class="n">fng</span> <span class="o">=</span> <span class="n">func_base</span> <span class="o">*</span> <span class="n">cfact</span>
+
+    <span class="c1"># Recast into full matrix and add column for background</span>
+    <span class="k">if</span> <span class="n">withbkg</span><span class="p">:</span>
+        <span class="n">nptot</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+        <span class="n">Ktot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nptot</span><span class="p">,</span><span class="n">npars</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">Ktot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="n">fng</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">Ktot</span><span class="p">[:,</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="mf">0.0</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Ktot</span> <span class="o">=</span> <span class="n">fng</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">return</span> <span class="n">Ktot</span></div>
+
+<span class="c1"># Function to compute d(log n)/d(log r)</span>
+<div class="viewcode-block" id="calc_grad_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_grad_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_grad_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">kpcp</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="c1"># Select values in the source region</span>
+    <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">kpcp</span>
+    <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+    <span class="n">npars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Compute linear combination of basis functions in the source region</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">rc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">npt</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">npars</span><span class="p">,</span> <span class="n">npt</span><span class="p">)</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">rfit</span> <span class="o">/</span> <span class="n">rc</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">expon</span> <span class="o">=</span> <span class="o">-</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">beta</span>
+    <span class="n">func_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">expon</span><span class="p">)</span>
+    <span class="n">cfact</span> <span class="o">=</span> <span class="n">gamma</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">beta</span><span class="p">)</span> <span class="o">/</span> <span class="n">gamma</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">rc</span>
+    <span class="n">n2</span> <span class="o">=</span> <span class="n">func_base</span> <span class="o">*</span> <span class="n">cfact</span>
+    <span class="n">dlogn2dlogr</span> <span class="o">=</span> <span class="o">-</span> <span class="mf">6.</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">rfit</span> <span class="o">/</span> <span class="n">rc</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">base</span>
+    <span class="n">grad</span> <span class="o">=</span> <span class="n">n2</span> <span class="o">*</span> <span class="n">dlogn2dlogr</span>
+
+    <span class="c1"># Recast into full matrix and add column for background</span>
+    <span class="k">if</span> <span class="n">withbkg</span><span class="p">:</span>
+        <span class="n">nptot</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
+        <span class="n">Ktot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nptot</span><span class="p">,</span><span class="n">npars</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">Ktot</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npt</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="n">grad</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">Ktot</span><span class="p">[:,</span><span class="n">npars</span><span class="p">]</span><span class="o">=</span><span class="mf">0.0</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Ktot</span> <span class="o">=</span> <span class="n">grad</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">return</span> <span class="n">Ktot</span></div>
+
+
+<div class="viewcode-block" id="MyDeprojVol"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.MyDeprojVol">[docs]</a><span class="k">class</span> <span class="nc">MyDeprojVol</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Mydeproj</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radin</span><span class="p">,</span> <span class="n">radot</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">        :param radin:</span>
+
+<span class="sd">        :param radot:</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radin</span><span class="o">=</span><span class="n">radin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radot</span><span class="o">=</span><span class="n">radot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+
+<div class="viewcode-block" id="MyDeprojVol.deproj_vol"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.MyDeprojVol.deproj_vol">[docs]</a>    <span class="k">def</span> <span class="nf">deproj_vol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">###############volume=deproj_vol(radin,radot)</span>
+        <span class="n">ri</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radin</span><span class="p">)</span>
+        <span class="n">ro</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radot</span><span class="p">)</span>
+
+        <span class="n">diftot</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ri</span><span class="p">)):</span>
+            <span class="n">dif</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">ro</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">ro</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="mf">100.</span>
+            <span class="n">diftot</span><span class="o">=</span><span class="n">diftot</span><span class="o">+</span><span class="n">dif</span>
+            <span class="n">ro</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">diftot</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; DEPROJ_VOL: WARNING - abs(ri(i)-ro(i-1)) differs by&#39;</span><span class="p">,</span><span class="n">diftot</span><span class="p">,</span><span class="s1">&#39; percent&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; DEPROJ_VOL: Fixing up radii ... &#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">dif</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">ro</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">ro</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="mf">100.</span>
+                <span class="n">diftot</span><span class="o">=</span><span class="n">diftot</span><span class="o">+</span><span class="n">dif</span>
+        <span class="n">nbin</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">ro</span><span class="p">)</span>
+        <span class="n">volconst</span><span class="o">=</span><span class="mf">4.</span><span class="o">/</span><span class="mf">3.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="n">volmat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbin</span><span class="p">,</span> <span class="n">nbin</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">iring</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nbin</span><span class="p">))):</span>
+            <span class="n">volmat</span><span class="p">[</span><span class="n">iring</span><span class="p">,</span><span class="n">iring</span><span class="p">]</span><span class="o">=</span><span class="n">volconst</span> <span class="o">*</span> <span class="n">ro</span><span class="p">[</span><span class="n">iring</span><span class="p">]</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="p">(</span><span class="n">ri</span><span class="p">[</span><span class="n">iring</span><span class="p">]</span><span class="o">/</span><span class="n">ro</span><span class="p">[</span><span class="n">iring</span><span class="p">])</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span>
+            <span class="k">for</span> <span class="n">ishell</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">iring</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">nbin</span><span class="p">))):</span>
+                <span class="n">f1</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="p">(</span><span class="n">ri</span><span class="p">[</span><span class="n">iring</span><span class="p">]</span><span class="o">/</span><span class="n">ro</span><span class="p">[</span><span class="n">ishell</span><span class="p">])</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="p">(</span><span class="n">ro</span><span class="p">[</span><span class="n">iring</span><span class="p">]</span><span class="o">/</span><span class="n">ro</span><span class="p">[</span><span class="n">ishell</span><span class="p">])</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span>
+                <span class="n">f2</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="p">(</span><span class="n">ri</span><span class="p">[</span><span class="n">iring</span><span class="p">]</span><span class="o">/</span><span class="n">ri</span><span class="p">[</span><span class="n">ishell</span><span class="p">])</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="p">(</span><span class="n">ro</span><span class="p">[</span><span class="n">iring</span><span class="p">]</span><span class="o">/</span><span class="n">ri</span><span class="p">[</span><span class="n">ishell</span><span class="p">])</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span>
+                <span class="n">volmat</span><span class="p">[</span><span class="n">ishell</span><span class="p">,</span><span class="n">iring</span><span class="p">]</span><span class="o">=</span><span class="n">volconst</span> <span class="o">*</span> <span class="p">(</span><span class="n">f1</span><span class="o">*</span><span class="n">ro</span><span class="p">[</span><span class="n">ishell</span><span class="p">]</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="n">f2</span><span class="o">*</span><span class="n">ri</span><span class="p">[</span><span class="n">ishell</span><span class="p">]</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">volmat</span><span class="p">[</span><span class="n">ishell</span><span class="p">,</span><span class="n">iring</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="n">exit</span><span class="p">()</span>
+
+        <span class="n">volume2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">volmat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">volume2</span></div></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2022, D. Eckert
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

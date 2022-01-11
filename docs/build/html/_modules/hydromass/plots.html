@@ -1,0 +1,1105 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>hydromass.plots &mdash; hydromass 0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> hydromass
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Intro</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hydromass.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">hydromass</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>hydromass.plots</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for hydromass.plots</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">.deproject</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.pnt</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">pyproffit</span>
+
+<div class="viewcode-block" id="get_coolfunc"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.get_coolfunc">[docs]</a><span class="k">def</span> <span class="nf">get_coolfunc</span><span class="p">(</span><span class="n">Z</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve the cooling function data from the internal data archive and return the cooling function profile for a given input metallicity</span>
+
+<span class="sd">    :param Z: Metallicity (relative to Anders &amp; Grevesse; defaults to 0.3)</span>
+<span class="sd">    :type Z: float</span>
+<span class="sd">    :return: Cooling function profile and temperature grid</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Z_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">,</span> <span class="mf">0.48</span><span class="p">,</span> <span class="mf">0.58</span><span class="p">,</span> <span class="mf">0.70</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+
+    <span class="n">file_cf</span> <span class="o">=</span> <span class="n">get_data_file_path</span><span class="p">(</span><span class="s1">&#39;coolfunc_table.fits&#39;</span><span class="p">)</span>
+
+    <span class="n">fcf</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_cf</span><span class="p">)</span>
+
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">Z_grid</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Z_grid</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">Z</span><span class="p">:</span>
+
+        <span class="n">Zlow</span> <span class="o">=</span> <span class="n">Z_grid</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="n">Zhigh</span> <span class="o">=</span> <span class="n">Z_grid</span><span class="p">[</span><span class="n">ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">Z_grid</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">Z</span><span class="p">:</span>
+
+        <span class="n">Zlow</span> <span class="o">=</span> <span class="n">Z_grid</span><span class="p">[</span><span class="n">ind</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">Zhigh</span> <span class="o">=</span> <span class="n">Z_grid</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Zlow</span> <span class="o">=</span> <span class="n">Z</span>
+
+        <span class="n">Zhigh</span> <span class="o">=</span> <span class="n">Z</span>
+
+    <span class="k">if</span> <span class="n">Zlow</span> <span class="o">!=</span> <span class="n">Zhigh</span><span class="p">:</span>
+
+        <span class="n">hdulow</span> <span class="o">=</span> <span class="n">fcf</span><span class="p">[</span><span class="s1">&#39;COOLFUNC_Z</span><span class="si">%1.2lf</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Zlow</span><span class="p">)]</span>
+
+        <span class="n">lambdalow</span> <span class="o">=</span> <span class="n">hdulow</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;LAMBDA&#39;</span><span class="p">]</span>
+
+        <span class="n">ktgrid</span> <span class="o">=</span> <span class="n">hdulow</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;KT&#39;</span><span class="p">]</span>
+
+        <span class="n">hduhigh</span> <span class="o">=</span> <span class="n">fcf</span><span class="p">[</span><span class="s1">&#39;COOLFUNC_Z</span><span class="si">%1.2lf</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Zhigh</span><span class="p">)]</span>
+
+        <span class="n">lambdahigh</span> <span class="o">=</span> <span class="n">hduhigh</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;LAMBDA&#39;</span><span class="p">]</span>
+
+        <span class="n">lambda_interp</span> <span class="o">=</span> <span class="n">lambdalow</span> <span class="o">+</span> <span class="p">(</span><span class="n">Z</span> <span class="o">-</span> <span class="n">Zlow</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">lambdahigh</span> <span class="o">-</span> <span class="n">lambdalow</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">Zhigh</span> <span class="o">-</span> <span class="n">Zlow</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">thdu</span> <span class="o">=</span> <span class="n">fcf</span><span class="p">[</span><span class="s1">&#39;COOLFUNC_Z</span><span class="si">%1.2lf</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Z</span><span class="p">)]</span>
+
+        <span class="n">lambda_interp</span> <span class="o">=</span> <span class="n">thdu</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;LAMBDA&#39;</span><span class="p">]</span>
+
+        <span class="n">ktgrid</span> <span class="o">=</span> <span class="n">thdu</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;KT&#39;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">lambda_interp</span><span class="p">,</span> <span class="n">ktgrid</span></div>
+
+<div class="viewcode-block" id="cumsum_mat"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.cumsum_mat">[docs]</a><span class="k">def</span> <span class="nf">cumsum_mat</span><span class="p">(</span><span class="n">nval</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Function to create a matrix that flips a vector, makes a cumulative sum and adds a 0 as the first element</span>
+<span class="sd">    Then dot(mat, vector) returns the Riemann integral as a cumulative sum</span>
+
+<span class="sd">    :param nval: Vector size</span>
+<span class="sd">    :type nval: int</span>
+<span class="sd">    :return: Cumulative sum operator</span>
+<span class="sd">    :type nval: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">onemat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nval</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nval</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">triu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">onemat</span><span class="p">)</span>
+
+    <span class="n">flipped_triu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">triu</span><span class="p">)</span>
+
+    <span class="n">zeromat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nval</span><span class="p">,</span> <span class="n">nval</span><span class="p">))</span>
+
+    <span class="n">zeromat</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">flipped_triu</span>
+
+    <span class="n">totmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">zeromat</span><span class="p">)</span>
+
+    <span class="k">return</span>  <span class="n">totmat</span></div>
+
+
+<div class="viewcode-block" id="rads_more"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.rads_more">[docs]</a><span class="k">def</span> <span class="nf">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Return grid of (in, out) radii from X-ray, SZ data or both. Concatenates radii if necessary, then computes a grid of radii.</span>
+<span class="sd">    Returns the output arrays and the indices corresponding to the input X-ray and/or SZ radii.</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing loaded X-ray and/or SZ loaded data.</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Defaults to 5.</span>
+<span class="sd">    :type nmore: int</span>
+<span class="sd">    :return:</span>
+<span class="sd">        - rin, rout: the inner and outer radii of the fine grid</span>
+<span class="sd">        - index_x, index_sz: lists of indices corresponding to the position of the input values in the grid</span>
+<span class="sd">        - sum_mat: matrix containing the number of values in each subgrid bin</span>
+<span class="sd">        - ntm: total number of grid points</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rout_joint</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rout_x</span>
+
+        <span class="n">rref_joint</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span>
+
+    <span class="k">elif</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rout_joint</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rout_sz</span>
+
+        <span class="n">rref_joint</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rref_sz</span>
+
+    <span class="k">elif</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rout_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rout_x</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rout_sz</span><span class="p">))</span>
+
+        <span class="n">rref_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rref_sz</span><span class="p">))</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No loaded data found in input hydromass.Mhyd object, nothing to do&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="n">rin_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">rout_joint</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">rin_joint</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+    <span class="n">njoint</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rref_joint</span><span class="p">)</span>
+
+    <span class="n">tot_joint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rin_joint</span><span class="p">,</span> <span class="n">rref_joint</span><span class="p">))</span>
+
+    <span class="n">ntotjoint</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tot_joint</span><span class="p">)</span>
+
+    <span class="n">ntm</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">ntotjoint</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">nmore</span><span class="p">)</span>
+
+    <span class="n">rout_more</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">ntm</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ntotjoint</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+
+        <span class="n">rout_more</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">nmore</span><span class="p">:(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">nmore</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">tot_joint</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tot_joint</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">nmore</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="n">rout_more</span><span class="p">[(</span><span class="n">ntotjoint</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">nmore</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">rref_joint</span><span class="p">[</span><span class="n">njoint</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">rout_joint</span><span class="p">[</span><span class="n">njoint</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">nmore</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="c1"># Move the outer boundary to the edge of the SB profile if it is farther out</span>
+    <span class="n">sbprof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span>
+
+    <span class="n">rmax_sb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sbprof</span><span class="o">.</span><span class="n">bins</span><span class="p">)</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span>
+
+    <span class="k">if</span> <span class="n">rmax_sb</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rout_more</span><span class="p">):</span>
+        <span class="n">nvm</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rout_more</span><span class="p">)</span>
+
+        <span class="n">dx_out</span> <span class="o">=</span> <span class="n">rout_more</span><span class="p">[</span><span class="n">nvm</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">rout_more</span><span class="p">[</span><span class="n">nvm</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span>
+
+        <span class="n">rout_2add</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rout_more</span><span class="p">),</span> <span class="n">rmax_sb</span><span class="p">,</span> <span class="n">dx_out</span><span class="p">)</span>
+
+        <span class="n">rout_2add</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rout_2add</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">rmax_sb</span><span class="p">)</span>
+
+        <span class="n">rout_more</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rout_more</span><span class="p">,</span> <span class="n">rout_2add</span><span class="p">)</span>
+
+    <span class="n">rin_more</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">rout_more</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">rin_more</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">index_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">rout_more</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">index_sz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">rout_more</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span><span class="o">.</span><span class="n">rref_sz</span><span class="p">))</span>
+
+    <span class="n">sum_mat</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">ntot</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rout_more</span><span class="p">)</span>
+
+        <span class="n">nx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span><span class="p">)</span>
+
+        <span class="n">sum_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nx</span><span class="p">,</span> <span class="n">ntot</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">):</span>
+
+            <span class="n">ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">rin_more</span> <span class="o">&lt;</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rout_x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rin_more</span> <span class="o">&gt;=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rin_x</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+            <span class="n">nval</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="n">sum_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:][</span><span class="n">ix</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">nval</span>
+
+    <span class="k">return</span> <span class="n">rin_more</span><span class="p">,</span> <span class="n">rout_more</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span></div>
+
+<div class="viewcode-block" id="gnfw_p0"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.gnfw_p0">[docs]</a><span class="k">def</span> <span class="nf">gnfw_p0</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">pars</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generalized NFW function to estimate the pressure at the outer boundary, P0</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        P_{gNFW}(r) = \\frac{P_0} {(r/r_s)^\\gamma (1+(r/rs)^\\alpha)^{(\\beta-\\gamma)/\\alpha}}</span>
+
+<span class="sd">    :param x: Radius</span>
+<span class="sd">    :type x: numpy.ndarray</span>
+<span class="sd">    :param pars: Array containing the five parameters (P0, rs, alpha, beta, and gamma) of the gNFW function</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :return: Model pressure</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">P0</span><span class="o">=</span><span class="n">pars</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">rs</span><span class="o">=</span><span class="n">pars</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="n">pars</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">beta</span><span class="o">=</span><span class="n">pars</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">gamma</span><span class="o">=</span><span class="n">pars</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">t1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">rs</span><span class="p">,</span><span class="n">gamma</span><span class="p">)</span>
+    <span class="n">t2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">rs</span><span class="p">,</span><span class="n">alpha</span><span class="p">),(</span><span class="n">beta</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span><span class="o">/</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">P0</span><span class="o">/</span><span class="n">t1</span><span class="o">/</span><span class="n">t2</span></div>
+
+<div class="viewcode-block" id="estimate_P0"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.estimate_P0">[docs]</a><span class="k">def</span> <span class="nf">estimate_P0</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. A rough electron density profile is estimated by deprojecting the surface brightness profile using the onion peeling techique, and temperature deprojection is neglected. The resulting pressure profile is fitted with a gNFW profile using the scipy.minimize function and the best-fit function is used to extrapolate the pressure to the outer boundary to provide a rough estimate of :math:`P_0`.</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the loaded data</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :return: Estimated value of :math:`P_0`</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">spec_data</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span>
+
+    <span class="n">sbprof</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span><span class="p">)</span>
+
+    <span class="n">sbprof</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sbprof</span><span class="o">.</span><span class="n">profile</span><span class="p">)</span>
+
+    <span class="n">deprop</span> <span class="o">=</span> <span class="n">pyproffit</span><span class="o">.</span><span class="n">Deproject</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">redshift</span><span class="p">,</span> <span class="n">cf</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span><span class="p">,</span> <span class="n">profile</span><span class="o">=</span><span class="n">sbprof</span><span class="p">)</span>
+
+    <span class="n">deprop</span><span class="o">.</span><span class="n">OnionPeeling</span><span class="p">()</span>
+
+    <span class="n">pars_press</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3.28</span><span class="p">,</span> <span class="mf">1200.</span><span class="p">,</span> <span class="mf">1.33</span><span class="p">,</span> <span class="mf">4.72</span><span class="p">,</span> <span class="mf">0.59</span><span class="p">])</span>
+
+    <span class="n">ne_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x_am</span><span class="p">,</span> <span class="n">sbprof</span><span class="o">.</span><span class="n">bins</span><span class="p">,</span> <span class="n">deprop</span><span class="o">.</span><span class="n">dens</span><span class="p">)</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nhc</span>
+
+    <span class="n">p_interp</span> <span class="o">=</span> <span class="n">ne_interp</span> <span class="o">*</span> <span class="n">spec_data</span><span class="o">.</span><span class="n">temp_x</span>
+    <span class="n">ep_interp</span> <span class="o">=</span> <span class="n">ne_interp</span> <span class="o">*</span> <span class="n">spec_data</span><span class="o">.</span><span class="n">errt_x</span>
+
+    <span class="k">def</span> <span class="nf">chi2_gnfw</span><span class="p">(</span><span class="n">pars</span><span class="p">):</span>
+        <span class="n">pars_press</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">pars</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pars_press</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pars</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mm</span> <span class="o">=</span> <span class="n">gnfw_p0</span><span class="p">(</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span><span class="p">,</span> <span class="n">pars_press</span><span class="p">)</span>
+        <span class="n">chi2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">p_interp</span> <span class="o">-</span> <span class="n">mm</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">ep_interp</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">chi2</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span><span class="n">chi2_gnfw</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1e-4</span><span class="p">,</span> <span class="mf">1200.</span><span class="p">]),</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;Nelder-Mead&#39;</span><span class="p">)</span>
+
+    <span class="n">maxrad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sbprof</span><span class="o">.</span><span class="n">bins</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="n">pars_press</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+
+    <span class="n">p0</span> <span class="o">=</span> <span class="n">gnfw_p0</span><span class="p">(</span><span class="n">maxrad</span><span class="p">,</span> <span class="n">pars_press</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">p0</span></div>
+
+<div class="viewcode-block" id="densout_pout_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.densout_pout_from_samples">[docs]</a><span class="k">def</span> <span class="nf">densout_pout_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute the model 3D density and pressure profiles from the output NUTS sample on an arbitrary output grid</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model</span>
+<span class="sd">    :type model: class:`hydromass.functions.Model`</span>
+<span class="sd">    :param rin_m: A 1-D array containing the inner boundaries of the chosen bins</span>
+<span class="sd">    :type rin_m: numpy.ndarray</span>
+<span class="sd">    :param rout_m: A 1-D array containing the outer boundaries of the chosen bins</span>
+<span class="sd">    :type rout_m: numpy.ndarray</span>
+<span class="sd">    :return:</span>
+<span class="sd">        - dens_m: A 2-D array containing the gas density profiles for all the samples</span>
+<span class="sd">        - press_out: A 2-D array containing the total 3D pressure profile</span>
+<span class="sd">        - pth: A 2-D array containing the thermal pressure profile. If non-thermal pressure is not modeled then this is equal to the total pressure</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span>
+
+    <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+
+    <span class="n">nvalm</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">cf_prof</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">cf_prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span>
+
+    <span class="n">rref_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin_m</span> <span class="o">+</span> <span class="n">rout_m</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rref_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rref_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">dens_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Kdens_m</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">cf_prof</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span><span class="p">)</span>
+
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mfact</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">func_np</span><span class="p">(</span><span class="n">rref_m</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mfact0</span>
+
+    <span class="n">rout_mul</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nsamp</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">)</span>
+
+    <span class="n">rin_mul</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">rin_m</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nsamp</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">)</span>
+
+    <span class="n">rref_mul</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">rref_m</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nsamp</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">)</span>
+
+    <span class="c1"># Adding baryonic mass contribution in case of DM-only fit</span>
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dmonly</span><span class="p">:</span>
+        <span class="c1"># Matrix containing integration volumes</span>
+        <span class="n">volmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mf">4.</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">rout_m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> <span class="n">rin_m</span> <span class="o">**</span> <span class="mi">3</span><span class="p">),</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+        <span class="c1"># Compute Mgas profile as cumulative sum over the volume</span>
+
+        <span class="n">nhconv</span> <span class="o">=</span> <span class="n">cgsamu</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mu_e</span> <span class="o">*</span> <span class="n">cgskpc</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">/</span> <span class="n">Msun</span>  <span class="c1"># Msun/kpc^3</span>
+
+        <span class="n">ones_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">))</span>
+
+        <span class="n">cs_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">ones_mat</span><span class="p">)</span>
+
+        <span class="n">mgas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cs_mat</span><span class="p">,</span> <span class="n">dens_m</span> <span class="o">*</span> <span class="n">nhconv</span> <span class="o">*</span> <span class="n">volmat</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e13</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mfact0</span>
+
+        <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="n">r_mstar</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">cum_mstar</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">mstar_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">r_mstar</span><span class="p">,</span> <span class="n">cum_mstar</span><span class="p">)</span>
+
+            <span class="n">mstar_mul</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">mstar_m</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+            <span class="n">mbar</span> <span class="o">=</span> <span class="n">mgas</span> <span class="o">+</span> <span class="n">mstar_mul</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mfact0</span> <span class="o">/</span> <span class="mf">1e13</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">mbar</span> <span class="o">=</span> <span class="n">mgas</span>
+
+        <span class="n">mass</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">+</span> <span class="n">mbar</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="c1"># Pressure gradient</span>
+    <span class="n">dpres</span> <span class="o">=</span> <span class="o">-</span> <span class="n">mass</span> <span class="o">/</span> <span class="n">rref_mul</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dens_m</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="p">(</span><span class="n">rout_mul</span> <span class="o">-</span> <span class="n">rin_mul</span><span class="p">)</span>
+
+    <span class="n">press00</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samplogp0</span><span class="p">)</span>
+
+    <span class="n">int_mat</span> <span class="o">=</span> <span class="n">cumsum_mat</span><span class="p">(</span><span class="n">nvalm</span><span class="p">)</span>
+
+    <span class="n">press_out</span> <span class="o">=</span> <span class="n">press00</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">int_mat</span><span class="p">,</span> <span class="n">dpres</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pnt</span><span class="p">:</span>
+
+        <span class="n">alpha_turb</span> <span class="o">=</span> <span class="n">alpha_turb_np</span><span class="p">(</span><span class="n">rref_m</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">redshift</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pnt_pars</span><span class="p">)</span>
+
+        <span class="n">pth</span> <span class="o">=</span> <span class="n">press_out</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">alpha_turb</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">pth</span> <span class="o">=</span> <span class="n">press_out</span>
+
+    <span class="k">return</span> <span class="n">dens_m</span><span class="p">,</span> <span class="n">press_out</span><span class="p">,</span> <span class="n">pth</span></div>
+
+<div class="viewcode-block" id="kt_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.kt_from_samples">[docs]</a><span class="k">def</span> <span class="nf">kt_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute model temperature profile from a mass reconstruction run, evaluated at reference X-ray temperature radii</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model</span>
+<span class="sd">    :type model: class:`hydromass.functions.Model`</span>
+<span class="sd">    :return: Dictionary containing the model temperature profile and uncertainties, 3D and spectroscopic-like</span>
+<span class="sd">    :rtype: dict(9xnval)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No spectral data provided&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span>
+
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="n">vx</span> <span class="o">=</span> <span class="n">MyDeprojVol</span><span class="p">(</span><span class="n">rin_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="n">vol_x</span> <span class="o">=</span> <span class="n">vx</span><span class="o">.</span><span class="n">deproj_vol</span><span class="p">()</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">psfmat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">mat1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">psfmat</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">)</span>
+
+        <span class="n">proj_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">vol_x</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">proj_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sum_mat</span><span class="p">,</span> <span class="n">vol_x</span><span class="p">)</span>
+
+    <span class="n">npx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span><span class="p">)</span>
+
+    <span class="n">dens_m</span><span class="p">,</span> <span class="n">press_out</span><span class="p">,</span> <span class="n">pth</span> <span class="o">=</span> <span class="n">densout_pout_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">)</span>
+
+    <span class="n">t3d</span> <span class="o">=</span> <span class="n">pth</span> <span class="o">/</span> <span class="n">dens_m</span>
+
+    <span class="c1"># Mazzotta weights</span>
+    <span class="n">ei</span> <span class="o">=</span> <span class="n">dens_m</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">t3d</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.75</span><span class="p">)</span>
+
+    <span class="c1"># Temperature projection</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">proj_mat</span><span class="p">,</span> <span class="n">ei</span><span class="p">)</span>
+
+    <span class="n">tproj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">proj_mat</span><span class="p">,</span> <span class="n">t3d</span> <span class="o">*</span> <span class="n">ei</span><span class="p">)</span> <span class="o">/</span> <span class="n">flux</span>
+
+    <span class="n">tmed</span><span class="p">,</span> <span class="n">tlo</span><span class="p">,</span> <span class="n">thi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">tproj</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">t3dot</span><span class="p">,</span> <span class="n">t3dlt</span><span class="p">,</span> <span class="n">t3dht</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">t3do</span><span class="p">,</span> <span class="n">t3dl</span><span class="p">,</span> <span class="n">t3dh</span> <span class="o">=</span> <span class="n">t3dot</span><span class="p">[</span><span class="n">index_x</span><span class="p">],</span> <span class="n">t3dlt</span><span class="p">[</span><span class="n">index_x</span><span class="p">],</span> <span class="n">t3dht</span><span class="p">[</span><span class="n">index_x</span><span class="p">]</span>
+
+    <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;R_IN&quot;</span><span class="p">:</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rin_x</span><span class="p">,</span>
+        <span class="s2">&quot;R_OUT&quot;</span><span class="p">:</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rout_x</span><span class="p">,</span>
+        <span class="s2">&quot;R_REF&quot;</span><span class="p">:</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span><span class="o">.</span><span class="n">rref_x</span><span class="p">,</span>
+        <span class="s2">&quot;T3D&quot;</span><span class="p">:</span> <span class="n">t3do</span><span class="p">,</span>
+        <span class="s2">&quot;T3D_LO&quot;</span><span class="p">:</span> <span class="n">t3dl</span><span class="p">,</span>
+        <span class="s2">&quot;T3D_HI&quot;</span><span class="p">:</span> <span class="n">t3dh</span><span class="p">,</span>
+        <span class="s2">&quot;TSPEC&quot;</span><span class="p">:</span> <span class="n">tmed</span><span class="p">,</span>
+        <span class="s2">&quot;TSPEC_LO&quot;</span><span class="p">:</span> <span class="n">tlo</span><span class="p">,</span>
+        <span class="s2">&quot;TSPEC_HI&quot;</span><span class="p">:</span> <span class="n">thi</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="nb">dict</span></div>
+
+
+<div class="viewcode-block" id="P_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.P_from_samples">[docs]</a><span class="k">def</span> <span class="nf">P_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute model pressure profile from an existing mass reconstruction run and evaluate it at the reference SZ radii</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model</span>
+<span class="sd">    :type model: class:`hydromass.functions.Model`</span>
+<span class="sd">    :return: Arrays containing the median 3D pressure profile and the 16th and 84th percentiles</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No SZ data provided&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="n">dens_m</span><span class="p">,</span> <span class="n">press_tot</span><span class="p">,</span> <span class="n">pth</span> <span class="o">=</span> <span class="n">densout_pout_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">)</span>
+
+    <span class="n">pmt</span><span class="p">,</span> <span class="n">plot</span><span class="p">,</span> <span class="n">phit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">pth</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">pmed</span><span class="p">,</span> <span class="n">plo</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">pmt</span><span class="p">[</span><span class="n">index_sz</span><span class="p">],</span> <span class="n">plot</span><span class="p">[</span><span class="n">index_sz</span><span class="p">],</span> <span class="n">phit</span><span class="p">[</span><span class="n">index_sz</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">pmed</span><span class="p">,</span> <span class="n">plo</span><span class="p">,</span> <span class="n">phi</span></div>
+
+
+<div class="viewcode-block" id="mass_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.mass_from_samples">[docs]</a><span class="k">def</span> <span class="nf">mass_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">npt</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the median and percentile mass profile, gas mass and gas fraction from an existing mass reconstruction run</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model</span>
+<span class="sd">    :type model: class:`hydromass.functions.Model`</span>
+<span class="sd">    :param rin: Minimum radius of the output profiles</span>
+<span class="sd">    :type rin: float</span>
+<span class="sd">    :param rout: Maximum radius of the output profiles</span>
+<span class="sd">    :type rout: float</span>
+<span class="sd">    :param npt: Number of radial points in the output profiles. Defaults to 200</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param plot: Plot the mass and gas mass profiles and return a matplotlib figure. Defaults to False.</span>
+<span class="sd">    :type plot: bool</span>
+<span class="sd">    :return: Dictionary containing the median mass [in M_sun], Lower 1-sigma percentile, Upper 1-sigma percentile, Median Mgas, Lower, Upper, Median Fgas, Lower, Upper</span>
+<span class="sd">    :rtype: dict(16xnpt)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">rin</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">rin</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="k">if</span> <span class="n">rout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rout_m</span><span class="p">)</span>
+
+    <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rin</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rout</span><span class="p">),</span> <span class="n">npt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rin</span> <span class="o">==</span> <span class="mf">1.</span><span class="p">:</span>
+        <span class="n">bins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+    <span class="n">rin_m</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[:</span><span class="n">npt</span><span class="p">]</span>
+
+    <span class="n">rout_m</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="n">rref_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin_m</span> <span class="o">+</span> <span class="n">rout_m</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mfact</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">func_np</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e13</span>
+
+    <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span><span class="p">)</span>
+
+    <span class="n">nvalm</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">cf_prof</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">cf_prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">fit_bkg</span><span class="p">:</span>
+
+        <span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rref_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">Kdens_m</span> <span class="o">=</span> <span class="n">calc_density_operator</span><span class="p">(</span><span class="n">rref_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pardens</span><span class="p">,</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">alldens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Kdens_m</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">cf_prof</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span><span class="p">)</span>
+
+    <span class="c1"># Matrix containing integration volumes</span>
+    <span class="n">volmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mf">4.</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">rout_m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> <span class="n">rin_m</span> <span class="o">**</span> <span class="mi">3</span><span class="p">),</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+    <span class="c1"># Compute Mgas profile as cumulative sum over the volume</span>
+
+    <span class="n">nhconv</span> <span class="o">=</span> <span class="n">cgsamu</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mu_e</span> <span class="o">*</span> <span class="n">cgskpc</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">/</span> <span class="n">Msun</span>  <span class="c1"># Msun/kpc^3</span>
+
+    <span class="n">ones_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">))</span>
+
+    <span class="n">cs_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">ones_mat</span><span class="p">)</span>
+
+    <span class="n">mgas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cs_mat</span><span class="p">,</span> <span class="n">alldens</span> <span class="o">*</span> <span class="n">nhconv</span> <span class="o">*</span> <span class="n">volmat</span><span class="p">)</span>
+
+    <span class="n">mg</span><span class="p">,</span> <span class="n">mgl</span><span class="p">,</span> <span class="n">mgh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">mgas</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">r_mstar</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">cum_mstar</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">mstar_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">r_mstar</span><span class="p">,</span> <span class="n">cum_mstar</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">mstar_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nvalm</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dmonly</span><span class="p">:</span>
+
+        <span class="n">mtot</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">+</span> <span class="n">mgas</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="n">mstar_m</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">fgas</span> <span class="o">=</span> <span class="n">mgas</span> <span class="o">/</span> <span class="n">mtot</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">fgas</span> <span class="o">=</span> <span class="n">mgas</span> <span class="o">/</span> <span class="n">mass</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">fg</span><span class="p">,</span> <span class="n">fgl</span><span class="p">,</span> <span class="n">fgh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">fgas</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mmed</span><span class="p">,</span> <span class="n">mlo</span><span class="p">,</span> <span class="n">mhi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">mass</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">dmonly</span><span class="p">:</span>
+
+        <span class="n">mtotm</span><span class="p">,</span> <span class="n">mtotlo</span><span class="p">,</span> <span class="n">mtothi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">mtot</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">mtotm</span><span class="p">,</span> <span class="n">mtotlo</span><span class="p">,</span> <span class="n">mtothi</span> <span class="o">=</span> <span class="n">mmed</span><span class="p">,</span> <span class="n">mlo</span><span class="p">,</span> <span class="n">mhi</span>
+
+    <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;R_IN&quot;</span><span class="p">:</span> <span class="n">rin_m</span><span class="p">,</span>
+        <span class="s2">&quot;R_OUT&quot;</span><span class="p">:</span> <span class="n">rout_m</span><span class="p">,</span>
+        <span class="s2">&quot;R_REF&quot;</span><span class="p">:</span> <span class="n">rref_m</span><span class="p">,</span>
+        <span class="s2">&quot;MASS&quot;</span><span class="p">:</span> <span class="n">mtotm</span><span class="p">,</span>
+        <span class="s2">&quot;MASS_LO&quot;</span><span class="p">:</span> <span class="n">mtotlo</span><span class="p">,</span>
+        <span class="s2">&quot;MASS_HI&quot;</span><span class="p">:</span> <span class="n">mtothi</span><span class="p">,</span>
+        <span class="s2">&quot;M_DM&quot;</span><span class="p">:</span> <span class="n">mmed</span><span class="p">,</span>
+        <span class="s2">&quot;M_DM_LO&quot;</span><span class="p">:</span> <span class="n">mlo</span><span class="p">,</span>
+        <span class="s2">&quot;M_DM_HI&quot;</span><span class="p">:</span> <span class="n">mhi</span><span class="p">,</span>
+        <span class="s2">&quot;MGAS&quot;</span><span class="p">:</span> <span class="n">mg</span><span class="p">,</span>
+        <span class="s2">&quot;MGAS_LO&quot;</span><span class="p">:</span> <span class="n">mgl</span><span class="p">,</span>
+        <span class="s2">&quot;MGAS_HI&quot;</span><span class="p">:</span> <span class="n">mgh</span><span class="p">,</span>
+        <span class="s2">&quot;FGAS&quot;</span><span class="p">:</span> <span class="n">fg</span><span class="p">,</span>
+        <span class="s2">&quot;FGAS_LO&quot;</span><span class="p">:</span> <span class="n">fgl</span><span class="p">,</span>
+        <span class="s2">&quot;FGAS_HI&quot;</span><span class="p">:</span> <span class="n">fgh</span><span class="p">,</span>
+        <span class="s2">&quot;M_STAR&quot;</span><span class="p">:</span> <span class="n">mstar_m</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+        <span class="n">ax_size</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span>
+                   <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">]</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">ax_size</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">minorticks_on</span><span class="p">()</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;major&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;minor&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">()</span> <span class="o">+</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_yticklabels</span><span class="p">()):</span>
+
+            <span class="n">item</span><span class="o">.</span><span class="n">set_fontsize</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;$M_</span><span class="si">{gas}</span><span class="s1">$&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mgl</span><span class="p">,</span> <span class="n">mgh</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mmed</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;$M_</span><span class="si">{Hyd}</span><span class="s1">$&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mlo</span><span class="p">,</span> <span class="n">mhi</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mstar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mstar_m</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;$M_{\star}$&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Radius [kpc]&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;$M(&lt;R) [M_\odot]$&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span> <span class="o">=</span> <span class="mi">22</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">fig</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">return</span> <span class="nb">dict</span></div>
+
+
+<div class="viewcode-block" id="prof_hires"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.prof_hires">[docs]</a><span class="k">def</span> <span class="nf">prof_hires</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">npt</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">Z</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute best-fitting thermodynamic profiles and error envelopes from an existing mass reconstruction run</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model</span>
+<span class="sd">    :type model: class:`hydromass.functions.Model`</span>
+<span class="sd">    :param rin: Minimum radius of the output profiles</span>
+<span class="sd">    :type rin: float</span>
+<span class="sd">    :param npt: Number of radial points in the output profiles. Defaults to 200</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param Z: Gas metallicity for cooling function calculation. Defaults to 0.3</span>
+<span class="sd">    :type Z: float</span>
+<span class="sd">    :return: Dictionary containing the median profiles and 1-sigma percentiles of temperature, pressure, gas density, entropy, and cooling time</span>
+<span class="sd">    :rtype: dict(30xnpt)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">rin</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">rin</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="n">rout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rout_m</span><span class="p">)</span>
+
+    <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rin</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rout</span><span class="p">),</span> <span class="n">npt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">bins</span> <span class="o">=</span> <span class="n">bins</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="n">rin_m</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[:</span><span class="n">npt</span><span class="p">]</span>
+
+    <span class="n">rout_m</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="n">rref_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin_m</span> <span class="o">+</span> <span class="n">rout_m</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+    <span class="n">vx</span> <span class="o">=</span> <span class="n">MyDeprojVol</span><span class="p">(</span><span class="n">rin_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">,</span> <span class="n">rout_m</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">amin2kpc</span><span class="p">)</span>
+
+    <span class="n">vol_x</span> <span class="o">=</span> <span class="n">vx</span><span class="o">.</span><span class="n">deproj_vol</span><span class="p">()</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">dens_m</span><span class="p">,</span> <span class="n">p3d</span><span class="p">,</span> <span class="n">pth</span> <span class="o">=</span> <span class="n">densout_pout_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">)</span>
+
+    <span class="n">t3d</span> <span class="o">=</span> <span class="n">pth</span> <span class="o">/</span> <span class="n">dens_m</span>
+
+    <span class="c1"># Mazzotta weights</span>
+    <span class="n">ei</span> <span class="o">=</span> <span class="n">dens_m</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">t3d</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.75</span><span class="p">)</span>
+
+    <span class="c1"># Temperature projection</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vol_x</span><span class="p">,</span> <span class="n">ei</span><span class="p">)</span>
+
+    <span class="n">tproj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vol_x</span><span class="p">,</span> <span class="n">t3d</span> <span class="o">*</span> <span class="n">ei</span><span class="p">)</span> <span class="o">/</span> <span class="n">flux</span>
+
+    <span class="n">K3d</span> <span class="o">=</span> <span class="n">t3d</span> <span class="o">*</span> <span class="n">dens_m</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span> <span class="mf">2.</span> <span class="o">/</span> <span class="mf">3.</span><span class="p">)</span>
+
+    <span class="n">mptot</span><span class="p">,</span> <span class="n">mptotl</span><span class="p">,</span> <span class="n">mptoth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">p3d</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mp</span><span class="p">,</span> <span class="n">mpl</span><span class="p">,</span> <span class="n">mph</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">pth</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mt3d</span><span class="p">,</span> <span class="n">mt3dl</span><span class="p">,</span> <span class="n">mt3dh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mtp</span><span class="p">,</span> <span class="n">mtpl</span><span class="p">,</span> <span class="n">mtph</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">tproj</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mne</span><span class="p">,</span> <span class="n">mnel</span><span class="p">,</span> <span class="n">mneh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">dens_m</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mK</span><span class="p">,</span> <span class="n">mKl</span><span class="p">,</span> <span class="n">mKh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">K3d</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">coolfunc</span><span class="p">,</span> <span class="n">ktgrid</span> <span class="o">=</span> <span class="n">get_coolfunc</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+
+    <span class="n">lambda3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="n">ktgrid</span><span class="p">,</span> <span class="n">coolfunc</span><span class="p">)</span>
+
+    <span class="n">tcool</span> <span class="o">=</span> <span class="mf">3.</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">dens_m</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nhc</span><span class="p">)</span> <span class="o">*</span> <span class="n">t3d</span> <span class="o">*</span> <span class="n">kev2erg</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="n">lambda3d</span> <span class="o">*</span> <span class="n">dens_m</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">nhc</span><span class="p">)</span> <span class="o">/</span> <span class="n">year</span>
+
+    <span class="n">mtc</span><span class="p">,</span> <span class="n">mtcl</span><span class="p">,</span> <span class="n">mtch</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">tcool</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">mcf</span><span class="p">,</span> <span class="n">mcfl</span><span class="p">,</span> <span class="n">mcfh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">lambda3d</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">pnt</span><span class="p">:</span>
+
+        <span class="n">pnt_all</span> <span class="o">=</span> <span class="n">p3d</span> <span class="o">-</span> <span class="n">pth</span>
+
+        <span class="n">mpnt</span><span class="p">,</span> <span class="n">mpntl</span><span class="p">,</span> <span class="n">mpnth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">pnt_all</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">mpnt</span><span class="p">,</span> <span class="n">mpntl</span><span class="p">,</span> <span class="n">mpnth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mptot</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mptot</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mptot</span><span class="p">))</span>
+
+    <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;R_IN&quot;</span><span class="p">:</span> <span class="n">rin_m</span><span class="p">,</span>
+        <span class="s2">&quot;R_OUT&quot;</span><span class="p">:</span> <span class="n">rout_m</span><span class="p">,</span>
+        <span class="s2">&quot;R_REF&quot;</span><span class="p">:</span> <span class="n">rref_m</span><span class="p">,</span>
+        <span class="s2">&quot;P_TOT&quot;</span><span class="p">:</span> <span class="n">mptot</span><span class="p">,</span>
+        <span class="s2">&quot;P_TOT_LO&quot;</span><span class="p">:</span> <span class="n">mptotl</span><span class="p">,</span>
+        <span class="s2">&quot;P_TOT_HI&quot;</span><span class="p">:</span> <span class="n">mptoth</span><span class="p">,</span>
+        <span class="s2">&quot;P_TH&quot;</span><span class="p">:</span> <span class="n">mp</span><span class="p">,</span>
+        <span class="s2">&quot;P_TH_LO&quot;</span><span class="p">:</span> <span class="n">mpl</span><span class="p">,</span>
+        <span class="s2">&quot;P_TH_HI&quot;</span><span class="p">:</span> <span class="n">mph</span><span class="p">,</span>
+        <span class="s2">&quot;T3D&quot;</span><span class="p">:</span> <span class="n">mt3d</span><span class="p">,</span>
+        <span class="s2">&quot;T3D_LO&quot;</span><span class="p">:</span> <span class="n">mt3dl</span><span class="p">,</span>
+        <span class="s2">&quot;T3D_HI&quot;</span><span class="p">:</span> <span class="n">mt3dh</span><span class="p">,</span>
+        <span class="s2">&quot;TSPEC&quot;</span><span class="p">:</span> <span class="n">mtp</span><span class="p">,</span>
+        <span class="s2">&quot;TSPEC_LO&quot;</span><span class="p">:</span> <span class="n">mtpl</span><span class="p">,</span>
+        <span class="s2">&quot;TSPEC_HI&quot;</span><span class="p">:</span> <span class="n">mtph</span><span class="p">,</span>
+        <span class="s2">&quot;NE&quot;</span><span class="p">:</span> <span class="n">mne</span><span class="p">,</span>
+        <span class="s2">&quot;NE_LO&quot;</span><span class="p">:</span> <span class="n">mnel</span><span class="p">,</span>
+        <span class="s2">&quot;NE_HI&quot;</span><span class="p">:</span> <span class="n">mneh</span><span class="p">,</span>
+        <span class="s2">&quot;K&quot;</span><span class="p">:</span> <span class="n">mK</span><span class="p">,</span>
+        <span class="s2">&quot;K_LO&quot;</span><span class="p">:</span> <span class="n">mKl</span><span class="p">,</span>
+        <span class="s2">&quot;K_HI&quot;</span><span class="p">:</span> <span class="n">mKh</span><span class="p">,</span>
+        <span class="s2">&quot;P_NT&quot;</span><span class="p">:</span> <span class="n">mpnt</span><span class="p">,</span>
+        <span class="s2">&quot;P_NT_LO&quot;</span><span class="p">:</span> <span class="n">mpntl</span><span class="p">,</span>
+        <span class="s2">&quot;P_NT_HI&quot;</span><span class="p">:</span> <span class="n">mpnth</span><span class="p">,</span>
+        <span class="s2">&quot;T_COOL&quot;</span><span class="p">:</span> <span class="n">mtc</span><span class="p">,</span>
+        <span class="s2">&quot;T_COOL_LO&quot;</span><span class="p">:</span> <span class="n">mtcl</span><span class="p">,</span>
+        <span class="s2">&quot;T_COOL_HI&quot;</span><span class="p">:</span> <span class="n">mtch</span><span class="p">,</span>
+        <span class="s2">&quot;LAMBDA&quot;</span><span class="p">:</span> <span class="n">mcf</span><span class="p">,</span>
+        <span class="s2">&quot;LAMBDA_LO&quot;</span><span class="p">:</span> <span class="n">mcfl</span><span class="p">,</span>
+        <span class="s2">&quot;LAMBDA_HI&quot;</span><span class="p">:</span> <span class="n">mcfh</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="nb">dict</span></div>
+
+<div class="viewcode-block" id="mgas_pm"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.mgas_pm">[docs]</a><span class="k">def</span> <span class="nf">mgas_pm</span><span class="p">(</span><span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">dens</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Theano function to compute the gas mass</span>
+
+<span class="sd">    :param rin_m: 1-D array containing the inner edges of radial bins</span>
+<span class="sd">    :type rin_m: numpy.ndarray</span>
+<span class="sd">    :param rout_m: 1-D array containing the outer edges of radial bins</span>
+<span class="sd">    :type rout_m: numpy.ndarray</span>
+<span class="sd">    :param dens: Theano tensor including the density profile evaluated at the chosen radial bins</span>
+<span class="sd">    :type dens: theano.tensor</span>
+<span class="sd">    :return: Cumulative gas mass profile</span>
+<span class="sd">    :rtype: theano.tensor</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># Integration volumes</span>
+    <span class="n">volint</span> <span class="o">=</span> <span class="mf">4.</span> <span class="o">/</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">rout_m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> <span class="n">rin_m</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">nvalm</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+
+    <span class="n">ones_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">))</span>
+
+    <span class="n">cs_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">ones_mat</span><span class="p">)</span>
+
+    <span class="n">mgas</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cs_mat</span><span class="p">,</span> <span class="n">dens</span> <span class="o">*</span> <span class="n">volint</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e13</span>
+
+    <span class="k">return</span> <span class="n">mgas</span></div>
+
+
+<div class="viewcode-block" id="PlotMgas"><a class="viewcode-back" href="../../hydromass.html#hydromass.plots.PlotMgas">[docs]</a><span class="k">def</span> <span class="nf">PlotMgas</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute Mgas profile and error envelope from mass reconstruction run</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param plot: Plot the gas mass profile. Defaults to False</span>
+<span class="sd">    :type plot: bool</span>
+<span class="sd">    :param outfile: If plot=True, file name to output the plotted Mgas profile. If none, the plot is displayed on stdout. Defaults to None</span>
+<span class="sd">    :type outfile: str</span>
+<span class="sd">    :param nmore: Number of points defining fine grid, must be equal to the value used for the mass reconstruction. Defaults to 5</span>
+<span class="sd">    :type nmore: int</span>
+<span class="sd">    :return: 1-D arrays containing the median gas mass and 16th and 84th percentiles. If plot=True, a matplotlib figure is also returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">redshift</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no mass reconstruction found&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+    <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span>
+
+    <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">nmore</span><span class="p">)</span>
+
+    <span class="n">nvalm</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">cf_prof</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">cf_prof</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">cf_prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">ccf</span>
+
+    <span class="n">alldens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">Kdens_m</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">cf_prof</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">transf</span><span class="p">)</span>
+
+    <span class="c1"># Matrix containing integration volumes</span>
+    <span class="n">volmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mf">4.</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">rout_m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> <span class="n">rin_m</span> <span class="o">**</span> <span class="mi">3</span><span class="p">),</span> <span class="n">nsamp</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nsamp</span><span class="p">)</span>
+
+    <span class="c1"># Compute Mgas profile as cumulative sum over the volume</span>
+
+    <span class="n">nhconv</span> <span class="o">=</span> <span class="n">cgsamu</span> <span class="o">*</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">mu_e</span> <span class="o">*</span> <span class="n">cgskpc</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">/</span> <span class="n">Msun</span>  <span class="c1"># Msun/kpc^3</span>
+
+    <span class="n">ones_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nvalm</span><span class="p">,</span> <span class="n">nvalm</span><span class="p">))</span>
+
+    <span class="n">cs_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">ones_mat</span><span class="p">)</span>
+
+    <span class="n">mgas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cs_mat</span><span class="p">,</span> <span class="n">alldens</span> <span class="o">*</span> <span class="n">nhconv</span> <span class="o">*</span> <span class="n">volmat</span><span class="p">)</span>
+
+    <span class="n">mg</span><span class="p">,</span> <span class="n">mgl</span><span class="p">,</span> <span class="n">mgh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">mgas</span><span class="p">,</span> <span class="p">[</span><span class="mf">50.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">-</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">50.</span> <span class="o">+</span> <span class="mf">68.3</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+        <span class="n">ax_size</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span>
+                   <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">]</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">ax_size</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">minorticks_on</span><span class="p">()</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;major&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;minor&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">()</span> <span class="o">+</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_yticklabels</span><span class="p">()):</span>
+
+            <span class="n">item</span><span class="o">.</span><span class="n">set_fontsize</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">rout_m</span><span class="p">,</span> <span class="n">mgl</span><span class="p">,</span> <span class="n">mgh</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Radius [kpc]&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;$M_</span><span class="si">{gas}</span><span class="s1"> [M_\odot]$&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">mg</span><span class="p">,</span> <span class="n">mgl</span><span class="p">,</span> <span class="n">mgh</span><span class="p">,</span> <span class="n">fig</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">return</span> <span class="n">mg</span><span class="p">,</span> <span class="n">mgl</span><span class="p">,</span> <span class="n">mgh</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2022, D. Eckert
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

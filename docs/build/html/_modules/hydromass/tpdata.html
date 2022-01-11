@@ -1,0 +1,758 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>hydromass.tpdata &mdash; hydromass 0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> hydromass
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Intro</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../hydromass.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">hydromass</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>hydromass.tpdata</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for hydromass.tpdata</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">.deproject</span> <span class="kn">import</span> <span class="n">MyDeprojVol</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">brentq</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">convolve</span>
+
+
+<div class="viewcode-block" id="SpecData"><a class="viewcode-back" href="../../hydromass.html#hydromass.tpdata.SpecData">[docs]</a><span class="k">class</span> <span class="nc">SpecData</span><span class="p">:</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Container class to load a spectroscopic temperature profile and its uncertainties. The data can either be passed all at once by reading a FITS table file or directly as numpy arrays.</span>
+
+<span class="sd">    :param redshift: Source redshift</span>
+<span class="sd">    :type redshift: float</span>
+<span class="sd">    :param spec_data: Link to a FITS file containing the spectroscopic temperature profile to be read. The FITS table should contain the following fields: &#39;RIN&#39;, &#39;ROUT&#39;, &#39;KT&#39;, &#39;KT_LO&#39;, and &#39;KT_HI&#39; (see the description below). If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None</span>
+<span class="sd">    :type spec_data: str</span>
+<span class="sd">    :param rin: 1-D array including the inner boundary definition of the spectroscopic bins (in arcmin). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param rout: 1-D array including the outer boundary definition of the spectroscopic bins (in arcmin). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param kt: 1-D array containing the fitted spectroscopic temperature (in keV). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None</span>
+<span class="sd">    :type kt: numpy.ndarray</span>
+<span class="sd">    :param err_kt_low: 1-D array containing the lower 1-sigma error on the fitted spectroscopic temperature (in keV). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None</span>
+<span class="sd">    :type err_kt_low: numpy.ndarray</span>
+<span class="sd">    :param err_kt_high: 1-D array containing the upper 1-sigma error on the fitted spectroscopic temperature (in keV). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None</span>
+<span class="sd">    :type err_kt_high: numpy.ndarray</span>
+<span class="sd">    :param cosmo: Astropy cosmology object including the cosmology definition</span>
+<span class="sd">    :type cosmo: astropy.cosmology</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redshift</span><span class="p">,</span> <span class="n">spec_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err_kt_low</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err_kt_high</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cosmo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">spec_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">kt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No data provided. Please provide either an input FITS data file or a set of numpy arrays.&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">kt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Ambiguous input. Please provide either an input FITS data file or a set of numpy arrays.&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">spec_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">spec_data</span><span class="p">):</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Spectral data file not found in path, skipping&#39;</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reading spectral data from file &#39;</span> <span class="o">+</span> <span class="n">spec_data</span><span class="p">)</span>
+
+                <span class="n">ftx</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">spec_data</span><span class="p">)</span>
+
+                <span class="n">dtx</span> <span class="o">=</span> <span class="n">ftx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+                <span class="n">cols</span> <span class="o">=</span> <span class="n">ftx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span>
+
+                <span class="n">colnames</span> <span class="o">=</span> <span class="n">cols</span><span class="o">.</span><span class="n">names</span>
+
+                <span class="k">if</span> <span class="s1">&#39;RIN&#39;</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
+
+                    <span class="n">rin</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;RIN&#39;</span><span class="p">]</span>
+
+                    <span class="n">rout</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;ROUT&#39;</span><span class="p">]</span>
+
+                <span class="k">elif</span> <span class="s1">&#39;RADIUS&#39;</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
+
+                    <span class="n">rx</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;RADIUS&#39;</span><span class="p">]</span>
+
+                    <span class="n">erx</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;WIDTH&#39;</span><span class="p">]</span>
+
+                    <span class="n">rin</span> <span class="o">=</span> <span class="n">rx</span> <span class="o">-</span> <span class="n">erx</span>
+
+                    <span class="n">rout</span> <span class="o">=</span> <span class="n">rx</span> <span class="o">+</span> <span class="n">erx</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No appropriate data found in input FITS table&#39;</span><span class="p">)</span>
+
+                    <span class="k">return</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">temp_x</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;KT&#39;</span><span class="p">]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">templ</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;KT_LO&#39;</span><span class="p">]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">temph</span> <span class="o">=</span> <span class="n">dtx</span><span class="p">[</span><span class="s1">&#39;KT_HI&#39;</span><span class="p">]</span>
+
+                <span class="n">ftx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">kt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">rin</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rout</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">err_kt_low</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">err_kt_high</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Missing input, please provide rin, rout, kt, err_kt_low, and err_kt_high&#39;</span><span class="p">)</span>
+
+                <span class="k">return</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">temp_x</span> <span class="o">=</span> <span class="n">kt</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">templ</span> <span class="o">=</span> <span class="n">err_kt_low</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">temph</span> <span class="o">=</span> <span class="n">err_kt_high</span>
+
+        <span class="k">if</span> <span class="n">cosmo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="kn">from</span> <span class="nn">astropy.cosmology</span> <span class="kn">import</span> <span class="n">Planck15</span> <span class="k">as</span> <span class="n">cosmo</span>
+
+        <span class="n">amin2kpc</span> <span class="o">=</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">kpc_proper_per_arcmin</span><span class="p">(</span><span class="n">redshift</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rin_x</span> <span class="o">=</span> <span class="n">rin</span> <span class="o">*</span> <span class="n">amin2kpc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rout_x</span> <span class="o">=</span> <span class="n">rout</span> <span class="o">*</span> <span class="n">amin2kpc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rin_x_am</span> <span class="o">=</span> <span class="n">rin</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rout_x_am</span> <span class="o">=</span> <span class="n">rout</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">MyDeprojVol</span><span class="p">(</span><span class="n">rin</span><span class="p">,</span> <span class="n">rout</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">deproj_vol</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">errt_x</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temph</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">templ</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rref_x</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">rin_x</span> <span class="o">**</span> <span class="mf">1.5</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rout_x</span> <span class="o">**</span> <span class="mf">1.5</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rref_x_am</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rref_x</span> <span class="o">/</span> <span class="n">amin2kpc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">psfmat</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+
+<div class="viewcode-block" id="SpecData.PSF"><a class="viewcode-back" href="../../hydromass.html#hydromass.tpdata.SpecData.PSF">[docs]</a>    <span class="k">def</span> <span class="nf">PSF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixsize</span><span class="p">,</span> <span class="n">psffunc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psffile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psfimage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psfpixsize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sourcemodel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psfmin</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compute a point spread function (PSF) mixing matrix for the loaded spectroscopic data. Each row of the PSF mixing matrix corresponding to a given annulus is computed by defining a normalized image into the annulus and zeros elsewhere. The image is then convolved with the PSF model using FFT. See Eckert et al. 2020 for details.</span>
+
+<span class="sd">        The PSF model can be provided either in the form of a one-dimensional radial function or of an image.</span>
+
+<span class="sd">        :param pixsize: Pixel size in arcmin</span>
+<span class="sd">        :type pixsize: float</span>
+<span class="sd">        :param psffunc: 1D function transforming an array of radii into the PSF model value. If None, an image should be provided. Defaults to None.</span>
+<span class="sd">        :type psffunc: func</span>
+<span class="sd">        :param psffile: FITS file containing the model PSF image. If None, the PSF should be provided either as a 1D function or a 2D array. Defaults to None.</span>
+<span class="sd">        :type psffile: str</span>
+<span class="sd">        :param psfimage: 2-D array containing an image of the PSF. The pixel size should be passed through the &quot;psfpixsize&quot; argument. If None, the PSF should be provided either as a 1D function or a FITS image. Defaults to None.</span>
+<span class="sd">        :type psfimage: numpy.ndarray</span>
+<span class="sd">        :param psfpixsize: Image pixel size (in arcmin) in case a PSF image is provided.</span>
+<span class="sd">        :type psfpixsize: float</span>
+<span class="sd">        :param sourcemodel: A pyproffit model describing the radial dependence of the emissivity distribution. If provided, the PSF at each point is weighted by the radial model to take the emissivity gradient across the bins into account when computing the PSF mixing matrix. If None, a flat distribution is assumed. Defaults to None.</span>
+<span class="sd">        :type sourcemodel: pyproffit.models.model</span>
+<span class="sd">        :param psfmin: Minimum PSF value (relative to the maximum) below which the effect of the PSF is neglected. Increasing psfmin speeds up the computation at the cost of a lower precision.</span>
+<span class="sd">        :type psfmin: float</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">rad</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rin_x_am</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rout_x_am</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+        <span class="n">erad</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rout_x_am</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rin_x_am</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+        <span class="k">if</span> <span class="n">psffile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">psfimage</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">psffunc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No PSF model given&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">psffile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">fpsf</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">psffile</span><span class="p">)</span>
+
+                <span class="n">psfimage</span> <span class="o">=</span> <span class="n">fpsf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">psfpixsize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                    <span class="n">psfpixsize</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">psfimage</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CDELT2&#39;</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">psfpixsize</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no pixel size is provided for the PSF image and the CDELT2 keyword is not set&#39;</span><span class="p">)</span>
+
+                        <span class="k">return</span>
+
+                <span class="n">fpsf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">psfimage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="k">if</span> <span class="n">psfpixsize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">psfpixsize</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no pixel size is provided for the PSF image&#39;</span><span class="p">)</span>
+
+                    <span class="k">return</span>
+
+            <span class="n">nbin</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rad</span><span class="p">)</span>
+
+            <span class="n">psfout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbin</span><span class="p">,</span> <span class="n">nbin</span><span class="p">))</span>
+
+            <span class="n">npexp</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">((</span><span class="n">rad</span><span class="p">[</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">erad</span><span class="p">[</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">pixsize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="n">exposure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">npexp</span><span class="p">,</span> <span class="n">npexp</span><span class="p">))</span>
+
+            <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+            <span class="n">rads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">npexp</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">npexp</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixsize</span>  <span class="c1"># arcmin</span>
+
+            <span class="n">kernel</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">psffunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">psffunc</span><span class="p">(</span><span class="n">rads</span><span class="p">)</span>
+
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
+                <span class="n">frmax</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">psffunc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">norm</span> <span class="o">-</span> <span class="n">psfmin</span>
+
+                <span class="k">if</span> <span class="n">frmax</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">:</span>
+
+                    <span class="n">rmax</span> <span class="o">=</span> <span class="n">brentq</span><span class="p">(</span><span class="n">frmax</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">pixsize</span>  <span class="c1"># pixsize</span>
+
+                    <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rmax</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+                <span class="n">yp</span><span class="p">,</span> <span class="n">xp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">npix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">npix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+                <span class="n">rpix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">xp</span> <span class="o">-</span> <span class="n">npix</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">yp</span> <span class="o">-</span> <span class="n">npix</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixsize</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">psffunc</span><span class="p">(</span><span class="n">rpix</span><span class="p">)</span>
+
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span> <span class="o">/</span> <span class="n">norm</span>
+
+            <span class="k">if</span> <span class="n">psfimage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">psfimage</span><span class="p">)</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">psfimage</span> <span class="o">/</span> <span class="n">norm</span>
+
+            <span class="k">if</span> <span class="n">kernel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No kernel provided, bye bye&#39;</span><span class="p">)</span>
+
+                <span class="k">return</span>
+
+            <span class="c1"># Sort pixels into radial bins</span>
+            <span class="n">tol</span> <span class="o">=</span> <span class="mf">0.5e-5</span>
+
+            <span class="n">sort_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbin</span><span class="p">):</span>
+
+                <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+                    <span class="n">sort_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">rads</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rads</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rad</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">erad</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="n">tol</span><span class="p">)))</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">sort_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">rads</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rad</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="n">erad</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="n">tol</span><span class="p">,</span>
+                                                             <span class="n">rads</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rad</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">erad</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="n">tol</span><span class="p">)))</span>
+
+            <span class="c1"># Calculate average of PSF image pixel-by-pixel and sort it by radial bins</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbin</span><span class="p">):</span>
+
+                <span class="c1"># print(&#39;Working with bin&#39;,n+1)</span>
+                <span class="n">region</span> <span class="o">=</span> <span class="n">sort_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+                <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">region</span><span class="p">])</span>
+
+                <span class="n">imgt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">sourcemodel</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">sourcemodel</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                    <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">npt</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">sourcemodel</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">rads</span><span class="p">[</span><span class="n">region</span><span class="p">],</span> <span class="o">*</span><span class="n">sourcemodel</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+                    <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">])</span>
+
+                    <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
+
+                <span class="c1"># FFT-convolve image with kernel</span>
+                <span class="n">blurred</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">imgt</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
+
+                <span class="n">numnoise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">blurred</span> <span class="o">&lt;</span> <span class="mf">1e-15</span><span class="p">)</span>
+
+                <span class="n">blurred</span><span class="p">[</span><span class="n">numnoise</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbin</span><span class="p">):</span>
+
+                    <span class="n">sn</span> <span class="o">=</span> <span class="n">sort_list</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+
+                    <span class="n">psfout</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">blurred</span><span class="p">[</span><span class="n">sn</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">psfmat</span> <span class="o">=</span> <span class="n">psfout</span></div></div>
+
+
+<div class="viewcode-block" id="SZData"><a class="viewcode-back" href="../../hydromass.html#hydromass.tpdata.SZData">[docs]</a><span class="k">class</span> <span class="nc">SZData</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Container class to load a SZ pressure profile and its covariance matrix. The data can either be passed all at once by reading a FITS table file or directly as numpy arrays.</span>
+
+<span class="sd">    :param redshift: Source redshift</span>
+<span class="sd">    :type redshift: float</span>
+<span class="sd">    :param sz_data: Link to a FITS file containing the SZ pressure profile to be read. If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None</span>
+<span class="sd">    :type sz_data: str</span>
+<span class="sd">    :param rin: 1-D array including the inner boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param rout: 1-D array including the outer boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param psz: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None</span>
+<span class="sd">    :type psz: numpy.ndarray</span>
+<span class="sd">    :param covmat_sz: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None</span>
+<span class="sd">    :type covmat_sz: numpy.ndarray</span>
+<span class="sd">    :param cosmo: Astropy cosmology object including the cosmology definition</span>
+<span class="sd">    :type cosmo: astropy.cosmology</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redshift</span><span class="p">,</span> <span class="n">sz_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psz</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">covmat_sz</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cosmo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">sz_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">psz</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No data provided. Please provide either an input FITS data file or a set of numpy arrays.&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">psz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Ambiguous input. Please provide either an input FITS data file or a set of numpy arrays.&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">sz_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">sz_data</span><span class="p">):</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SZ data file not found in path, skipping&#39;</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reading SZ data file &#39;</span> <span class="o">+</span> <span class="n">sz_data</span><span class="p">)</span>
+
+                <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">sz_data</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">pres_sz</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">errp_sz</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ERRFLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">rref_sz</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;RW&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">rin</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;RIN&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">rout</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ROUT&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">covmat_sz</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;COVMAT&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rref_sz</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rref_sz</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">psz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">rin</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rout</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">covmat_sz</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Missing input, please provide rin, rout, psz, and covmat_sz&#39;</span><span class="p">)</span>
+
+                <span class="k">return</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">pres_sz</span> <span class="o">=</span> <span class="n">psz</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">covmat_sz</span> <span class="o">=</span> <span class="n">covmat_sz</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">errp_sz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">covmat_sz</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">cosmo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="kn">from</span> <span class="nn">astropy.cosmology</span> <span class="kn">import</span> <span class="n">Planck15</span> <span class="k">as</span> <span class="n">cosmo</span>
+
+        <span class="n">amin2kpc</span> <span class="o">=</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">kpc_proper_per_arcmin</span><span class="p">(</span><span class="n">redshift</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rin_sz</span> <span class="o">=</span> <span class="n">rin</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rout_sz</span> <span class="o">=</span> <span class="n">rout</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rin_sz_am</span> <span class="o">=</span> <span class="n">rin</span> <span class="o">/</span> <span class="n">amin2kpc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rout_sz_am</span> <span class="o">=</span> <span class="n">rout</span> <span class="o">/</span> <span class="n">amin2kpc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rref_sz</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rin_sz</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rout_sz</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+
+
+
+<div class="viewcode-block" id="SZData.PSF"><a class="viewcode-back" href="../../hydromass.html#hydromass.tpdata.SZData.PSF">[docs]</a>    <span class="k">def</span> <span class="nf">PSF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixsize</span><span class="p">,</span> <span class="n">psffunc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psffile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psfimage</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psfpixsize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sourcemodel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psfmin</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Compute a point spread function (PSF) mixing matrix for the loaded SZ data. Each row of the PSF mixing matrix corresponding to a given annulus is computed by defining a normalized image into the annulus and zeros elsewhere. The image is then convolved with the PSF model using FFT. See Eckert et al. 2020 for details.</span>
+
+<span class="sd">        The PSF model can be provided either in the form of a one-dimensional radial function or of an image.</span>
+
+<span class="sd">        :param pixsize: Pixel size in arcmin</span>
+<span class="sd">        :type pixsize: float</span>
+<span class="sd">        :param psffunc: 1D function transforming an array of radii into the PSF model value. If None, an image should be provided. Defaults to None.</span>
+<span class="sd">        :type psffunc: func</span>
+<span class="sd">        :param psffile: FITS file containing the model PSF image. If None, the PSF should be provided either as a 1D function or a 2D array. Defaults to None.</span>
+<span class="sd">        :type psffile: str</span>
+<span class="sd">        :param psfimage: 2-D array containing an image of the PSF. The pixel size should be passed through the &quot;psfpixsize&quot; argument. If None, the PSF should be provided either as a 1D function or a FITS image. Defaults to None.</span>
+<span class="sd">        :type psfimage: numpy.ndarray</span>
+<span class="sd">        :param psfpixsize: Image pixel size (in arcmin) in case a PSF image is provided.</span>
+<span class="sd">        :type psfpixsize: float</span>
+<span class="sd">        :param sourcemodel: A pyproffit model describing the radial dependence of the emissivity distribution. If provided, the PSF at each point is weighted by the radial model to take the emissivity gradient across the bins into account when computing the PSF mixing matrix. If None, a flat distribution is assumed. Defaults to None.</span>
+<span class="sd">        :type sourcemodel: pyproffit.models.model</span>
+<span class="sd">        :param psfmin: Minimum PSF value (relative to the maximum) below which the effect of the PSF is neglected. Increasing psfmin speeds up the computation at the cost of a lower precision.</span>
+<span class="sd">        :type psfmin: float</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">rad</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rin_sz_am</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">rout_sz_am</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+        <span class="n">erad</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rout_sz_am</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rin_sz_am</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+
+        <span class="k">if</span> <span class="n">psffile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">psfimage</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">psffunc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No PSF model given&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">psffile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">fpsf</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">psffile</span><span class="p">)</span>
+
+                <span class="n">psfimage</span> <span class="o">=</span> <span class="n">fpsf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">psfpixsize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                    <span class="n">psfpixsize</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">psfimage</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CDELT2&#39;</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">psfpixsize</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no pixel size is provided for the PSF image and the CDELT2 keyword is not set&#39;</span><span class="p">)</span>
+
+                        <span class="k">return</span>
+
+                <span class="n">fpsf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">psfimage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="k">if</span> <span class="n">psfpixsize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">psfpixsize</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no pixel size is provided for the PSF image&#39;</span><span class="p">)</span>
+
+                    <span class="k">return</span>
+
+            <span class="n">nbin</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rad</span><span class="p">)</span>
+
+            <span class="n">psfout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbin</span><span class="p">,</span> <span class="n">nbin</span><span class="p">))</span>
+
+            <span class="n">npexp</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">((</span><span class="n">rad</span><span class="p">[</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">erad</span><span class="p">[</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">pixsize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="n">exposure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">npexp</span><span class="p">,</span> <span class="n">npexp</span><span class="p">))</span>
+
+            <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+            <span class="n">rads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">npexp</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">npexp</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixsize</span>  <span class="c1"># arcmin</span>
+
+            <span class="n">kernel</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">psffunc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">psffunc</span><span class="p">(</span><span class="n">rads</span><span class="p">)</span>
+
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
+                <span class="n">frmax</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">psffunc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">norm</span> <span class="o">-</span> <span class="n">psfmin</span>
+
+                <span class="k">if</span> <span class="n">frmax</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">:</span>
+
+                    <span class="n">rmax</span> <span class="o">=</span> <span class="n">brentq</span><span class="p">(</span><span class="n">frmax</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">pixsize</span>  <span class="c1"># pixsize</span>
+
+                    <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rmax</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+                <span class="n">yp</span><span class="p">,</span> <span class="n">xp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">npix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">npix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+                <span class="n">rpix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">xp</span> <span class="o">-</span> <span class="n">npix</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">yp</span> <span class="o">-</span> <span class="n">npix</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixsize</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">psffunc</span><span class="p">(</span><span class="n">rpix</span><span class="p">)</span>
+
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span> <span class="o">/</span> <span class="n">norm</span>
+
+            <span class="k">if</span> <span class="n">psfimage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">psfimage</span><span class="p">)</span>
+
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">psfimage</span> <span class="o">/</span> <span class="n">norm</span>
+
+            <span class="k">if</span> <span class="n">kernel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No kernel provided, bye bye&#39;</span><span class="p">)</span>
+
+                <span class="k">return</span>
+
+            <span class="c1"># Sort pixels into radial bins</span>
+            <span class="n">tol</span> <span class="o">=</span> <span class="mf">0.5e-5</span>
+
+            <span class="n">sort_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbin</span><span class="p">):</span>
+
+                <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+                    <span class="n">sort_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">rads</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rads</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rad</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">erad</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="n">tol</span><span class="p">)))</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">sort_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">rads</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rad</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="n">erad</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="n">tol</span><span class="p">,</span>
+                                                             <span class="n">rads</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rad</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">erad</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="n">tol</span><span class="p">)))</span>
+
+            <span class="c1"># Calculate average of PSF image pixel-by-pixel and sort it by radial bins</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbin</span><span class="p">):</span>
+
+                <span class="c1"># print(&#39;Working with bin&#39;,n+1)</span>
+                <span class="n">region</span> <span class="o">=</span> <span class="n">sort_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+                <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">region</span><span class="p">])</span>
+
+                <span class="n">imgt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">sourcemodel</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">sourcemodel</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                    <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">npt</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">sourcemodel</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">rads</span><span class="p">[</span><span class="n">region</span><span class="p">],</span> <span class="o">*</span><span class="n">sourcemodel</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+                    <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">])</span>
+
+                    <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">imgt</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
+
+                <span class="c1"># FFT-convolve image with kernel</span>
+                <span class="n">blurred</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">imgt</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
+
+                <span class="n">numnoise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">blurred</span> <span class="o">&lt;</span> <span class="mf">1e-15</span><span class="p">)</span>
+
+                <span class="n">blurred</span><span class="p">[</span><span class="n">numnoise</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbin</span><span class="p">):</span>
+
+                    <span class="n">sn</span> <span class="o">=</span> <span class="n">sort_list</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+
+                    <span class="n">psfout</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">blurred</span><span class="p">[</span><span class="n">sn</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">psfmat</span> <span class="o">=</span> <span class="n">psfout</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2022, D. Eckert
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
