@@ -4,6 +4,16 @@ from .nonparametric import *
 from .forward import *
 
 def SaveModel(Mhyd, model, outfile=None):
+    '''
+    Save the output chains of a fitted mass model to an output file. The output file can then be reloaded into a new Mhyd object using the :func:`hydromass.save.ReloadModel` function.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_model.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
+    :type outfile: str
+    '''
     if outfile is None:
         outfile = Mhyd.dir + '/output_model.fits'
 
@@ -89,6 +99,18 @@ def SaveModel(Mhyd, model, outfile=None):
 
 
 def ReloadModel(Mhyd, infile, mstar=None):
+    '''
+    Reload the result of a previous mass model fit within the current live session after it has been saved using the :func:`hydromass.save.SaveModel` function
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveModel` function
+    :type infile: str
+    :param mstar: External cumulative stellar mass profile if available. If none, no stellar mass profile is used. Defaults to none
+    :type mstar: class:`numpy.ndarray`
+    :return: A :class:`hydromass.functions.Model` object with the model definition and parameters
+    :rtype: class:`hydromass.functions.Model`
+    '''
     fin = fits.open(infile)
 
     Mhyd.samples = fin[1].data
@@ -117,9 +139,9 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.pnt = headden['PNT']
 
-    Mhyd.waic = headden['WAIC']
+    #Mhyd.waic = headden['WAIC']
 
-    Mhyd.loo = headden['LOO']
+    #Mhyd.loo = headden['LOO']
 
     modhead = fin[2].header
 
@@ -265,6 +287,14 @@ def ReloadModel(Mhyd, infile, mstar=None):
     return mod
 
 def SaveGP(Mhyd, outfile=None):
+    '''
+    Save the result of a non-parametric GP reconstruction into an output FITS file. The result can be later reloaded through the :func:`hydromass.save.ReloadGP` function
+
+    :param Mhyd:  A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the non-parametric GP reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_GP.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
+    :type outfile: str
+    '''
     if outfile is None:
         outfile = Mhyd.dir + '/output_GP.fits'
 
@@ -307,6 +337,14 @@ def SaveGP(Mhyd, outfile=None):
 
 
 def ReloadGP(Mhyd, infile):
+    '''
+    Reload the result of a non-parametric GP reconstruction previously saved using the :func:`hydromass.save.SaveGP` function into the current session.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveGP` function
+    :type infile: str
+    '''
     fin = fits.open(infile)
 
     Mhyd.samples = fin[1].data
@@ -473,6 +511,15 @@ def ReloadGP(Mhyd, infile):
 
 
 def SaveForward(Mhyd, Forward, outfile=None):
+    '''
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and the output of the forward fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: A :class:`hydromass.forward.Forward` object containing the definition of the forward model
+    :type Forward: class:`hydromass.forward.Forward`
+    :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_forward.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
+    :type outfile: str
+    '''
     if outfile is None:
         outfile = Mhyd.dir + '/output_forward.fits'
 
@@ -532,6 +579,14 @@ def SaveForward(Mhyd, Forward, outfile=None):
     hdus.writeto(outfile, overwrite=True)
 
 def ReloadForward(Mhyd, infile):
+    '''
+    Reload the results of a previous forward fit saved using the :func:`hydromass.save.SaveForward` function into the current live session
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveForward` function
+    :type infile: str
+    '''
     fin = fits.open(infile)
 
     Mhyd.samples = fin[1].data
@@ -691,7 +746,17 @@ def ReloadForward(Mhyd, infile):
 
     return mod
 
-def SaveProfiles(prof_hires, outfile=None, extname='THERMODYNAMIC PROFILES'):
+def SaveProfiles(profiles, outfile=None, extname='THERMODYNAMIC PROFILES'):
+    '''
+    Save the profiles loaded into a profile dictionary into an output FITS file
+
+    :param profiles: Dictionary containing profiles and profile names
+    :type profiles: dict
+    :param outfile: Output FITS file name
+    :type outfile: str
+    :param extname: Name of the extension of the FITS file containing the output data. Defaults to "THERMODYNAMIC PROFILES"
+    :type extname: str
+    '''
 
     if outfile is None:
 
@@ -703,7 +768,7 @@ def SaveProfiles(prof_hires, outfile=None, extname='THERMODYNAMIC PROFILES'):
 
     cols = []
 
-    for key, value in prof_hires.items():
+    for key, value in profiles.items():
 
         col = fits.Column(name=key, format='E', array=value)
 

@@ -11,11 +11,11 @@ def delta_func(r, Mhyd, model, pars):
 
     :param r: Radii in kpc
     :type r: numpy.ndarray or float
-    :param Mhyd: Mhyd object containing mass reconstruction
-    :type Mhyd: class Mhyd
-    :param model:Model object containing the definition of the mass model
-    :type model: class Model
-    :param pars:Parameter vector to be passed to the mass model
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing mass reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.function.Model`
+    :param pars: Parameter vector to be passed to the mass model
     :type pars: numpy.ndarray
     :return: Overdensity as a function of radius
     :rtype: numpy.ndarray
@@ -29,40 +29,21 @@ def delta_func(r, Mhyd, model, pars):
 
     return mass / vol / rhoc
 
-
-def delta_func_GP(r, Mhyd, mass):
-    """
-    Return profile of overdensity Delta with respect to critical density for a given input mass model
-
-    :param r: Radii in kpc
-    :type r: numpy.ndarray or float
-    :param Mhyd: Mhyd object containing mass reconstruction
-    :type Mhyd: class Mhyd
-    :param model:Model object containing the definition of the mass model
-    :type model: class Model
-    :param pars:Parameter vector to be passed to the mass model
-    :type pars: numpy.ndarray
-    :return: Overdensity as a function of radius
-    :rtype: numpy.ndarray
-    """
-    vol = 4. / 3. * np.pi * r ** 3 * cgskpc ** 3
-
-    rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
-
-    return mass / vol / rhoc
-
-
 def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False, rout_m=None):
     """
-    Compute Mgas at an input R_delta
+    Compute Mgas at an input radius R_delta
 
     :param rdelta: R_delta in kpc
     :type rdelta: float
     :param coefs: Coefficients describing the density profile
     :type coefs: numpy.ndarray
-    :param Mhyd: Mhyd object containing reconstruction
-    :type Mhyd: class Mhyd
-    :return: Gas mass evaluated exactly at rdelta
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param fit_bkg: Set whether the background was jointly fitted (True) or subtracted (False). Defaults to False.
+    :type fit_bkg: bool
+    :param rout_m: If a radially dependent conversion factor is used, radius grid on which the conversion factors were computed
+    :type rout_m: numpy.ndarray
+    :return: Gas mass evaluated inside rdelta
     :rtype: numpy.ndarray
     """
 
@@ -104,8 +85,12 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     :type rmax: float
     :param coefs: Coefficients describing the density profile
     :type coefs: numpy.ndarray
-    :param Mhyd: Mhyd object containing reconstruction
-    :type Mhyd: class Mhyd
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param fit_bkg: Set whether the background was jointly fitted (True) or subtracted (False). Defaults to False.
+    :type fit_bkg: bool
+    :param rout_m: If a radially dependent conversion factor is used, radius grid on which the conversion factors were computed
+    :type rout_m: numpy.ndarray
     :return: Radius, Overdensity of Mgas
     :rtype: numpy.ndarray, numpy.ndarray
     """
@@ -167,20 +152,26 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
 
 
 def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
-    """
-    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+    '''
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded mass model reconstruction
 
     :param delta: Overdensity with respect to critical
-    :type float
-    :param Mhyd: Mhyd object containing the results of mass reconstruction run
-    :type Mhyd: class Mhyd
-    :param model: Model object defining the mass model
-    :type model: class Model
+    :type delta: float
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: :class:`hydromass.functions.Model` object defining the mass model
+    :type model: class:`hydromass.functions.Model`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
-    :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
-    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
-    """
+    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
+    :type rmax: float
+    :return:  Dictionary containing values of R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, and figure if plot=True
+    :rtype:
+        - dict{12xfloat}
+        - matplotlib.pyplot.figure
+    '''
 
     nsamp = len(Mhyd.samppar)
 
@@ -269,18 +260,24 @@ from scipy.optimize import brentq
 
 
 def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
-    """
-    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+    '''
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded non-parametric GP reconstruction
 
     :param delta: Overdensity with respect to critical
-    :type float
-    :param Mhyd: Mhyd object containing the results of mass reconstruction run
-    :type Mhyd: class:`hydromass.Mhyd`
+    :type delta: float
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
+    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
+    :type rmax: float
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
-    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
-    """
+    :rtype:
+        - dict{12xfloat}
+        - matplotlib.pyplot.figure
+    '''
 
     nsamp = len(Mhyd.samppar)
 
@@ -385,18 +382,26 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
         return dict
 
 def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax=4000.):
-    """
-    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+    '''
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
     :param delta: Overdensity with respect to critical
-    :type float
-    :param Mhyd: Mhyd object containing the results of mass reconstruction run
-    :type Mhyd: class:`hydromass.Mhyd`
+    :type delta: float
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: :class:`hydromass.forward.Forward` model
+    :type Forward: class:`hydromass.forward.Forward`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
+    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
+    :type rmax: float
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
-    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
-    """
+    :rtype:
+        - dict{12xfloat}
+        - matplotlib.pyplot.figure
+    '''
 
     nsamp = len(Mhyd.samppar)
 
@@ -498,18 +503,26 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
         return dict
 
 def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, rmin=100., rmax=4000.):
-    """
-    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties
+    '''
+    For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
     :param delta: Overdensity with respect to critical
-    :type float
-    :param Mhyd: Mhyd object containing the results of mass reconstruction run
-    :type Mhyd: class:`hydromass.Mhyd`
+    :type delta: float
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object containing the results of mass reconstruction run
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Polytropic: :class:`hydromass.polytropic.Polytropic` model
+    :type Polytropic: class:`hydromass.polytropic.Polytropic`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
+    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
+    :type rmax: float
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
-    :rtype  dict{12xfloat}, class matplotlib.pyplot.figure
-    """
+    :rtype:
+        - dict{12xfloat}
+        - matplotlib.pyplot.figure
+    '''
 
     nsamp = len(Mhyd.samppar)
 
@@ -614,7 +627,7 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, rmin=100.
 
 
 
-def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=2000.):
+def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=4000.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
@@ -624,7 +637,10 @@ def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=2000.):
     :type model: class Model
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
-    :return: None
+    :param rmin: Minimum radius where to search for the overdensity radii (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radii (in kpc). Defaults to 4000
+    :type rmax: float
     """
 
     if outfile is None:
@@ -661,15 +677,18 @@ def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=2000.):
 
     fout.close()
 
-def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=2000.):
+def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=4000.):
     """
-    Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
+    Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file. In case the fitted model is noisy and shows local (or non-local) reversals, the procedure can fail if the function Delta(r)-Delta does not change sign over the range of interest. In this case, consider changing the values of rmin and rmax
 
     :param Mhyd: Mhyd object containing the result of mass reconstruction run
     :type Mhyd: class Mhyd
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
-    :return: None
+    :param rmin: Minimum radius where to search for the overdensity radii (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radii (in kpc). Defaults to 4000
+    :type rmax: float
     """
 
     if outfile is None:
@@ -699,15 +718,18 @@ def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=2000.):
     fout.close()
 
 
-def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=2000.):
+def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=4000.):
     """
-    Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
+    Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file. In case the fitted model is noisy and shows local (or non-local) reversals, the procedure can fail if the function Delta(r)-Delta does not change sign over the range of interest. In this case, consider changing the values of rmin and rmax
 
     :param Mhyd: Mhyd object containing the result of mass reconstruction run
     :type Mhyd: class Mhyd
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
-    :return: None
+    :param rmin: Minimum radius where to search for the overdensity radii (in kpc). Defaults to 100
+    :type rmin: float
+    :param rmax: Maximum radius where to search for the overdensity radii (in kpc). Defaults to 4000
+    :type rmax: float
     """
 
     if outfile is None:

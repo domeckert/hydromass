@@ -1,10 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/delta.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/deproject.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/tpdata.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,27 +79,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00001" summary="iml">
-      <created>1592227867914</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1592227867914</updated>
-    </task>
-    <task id="LOCAL-00002" summary="fixed evaluation of profiles at rref_x">
-      <created>1592246621055</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1592246621055</updated>
-    </task>
-    <task id="LOCAL-00003" summary="added forward pressure model">
-      <created>1592301049891</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1592301049891</updated>
     </task>
     <task id="LOCAL-00004" summary="fixed bugs in mass_forw_from_samples">
       <created>1592308604495</created>
@@ -411,7 +402,28 @@
       <option name="project" value="LOCAL" />
       <updated>1630570659172</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL-00050" summary="Tuned lognormal GP parameters">
+      <created>1631527428848</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1631527428849</updated>
+    </task>
+    <task id="LOCAL-00051" summary="Added computation of WAIC and LOO as well as log-likelihood values">
+      <created>1638970210952</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1638970210953</updated>
+    </task>
+    <task id="LOCAL-00052" summary="Updated plot boundaries">
+      <created>1638970903141</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1638970903141</updated>
+    </task>
+    <option name="localTasksCounter" value="53" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -420,9 +432,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="added option to set the name of the extension in SaveProfiles" />
-    <MESSAGE value="Added function to compute overdensity radii from polytropic reconstruction" />
-    <MESSAGE value="Modified numerical integration of Einasto profile to make it more accurate" />
     <MESSAGE value="Added cooling time calculation" />
     <MESSAGE value="Import package data" />
     <MESSAGE value="Added build" />
@@ -445,6 +454,9 @@
     <MESSAGE value="Switched radius at which the density is evaluated from rref to rout" />
     <MESSAGE value="Replaced linear Gaussian process with log-normal process" />
     <MESSAGE value="Fixed issue in GP mass reconstruction" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed issue in GP mass reconstruction" />
+    <MESSAGE value="Tuned lognormal GP parameters" />
+    <MESSAGE value="Added computation of WAIC and LOO as well as log-likelihood values" />
+    <MESSAGE value="Updated plot boundaries" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated plot boundaries" />
   </component>
 </project>

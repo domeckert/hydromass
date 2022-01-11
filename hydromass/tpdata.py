@@ -8,6 +8,27 @@ from scipy.signal import convolve
 
 class SpecData:
 
+    '''
+    Container class to load a spectroscopic temperature profile and its uncertainties. The data can either be passed all at once by reading a FITS table file or directly as numpy arrays.
+
+    :param redshift: Source redshift
+    :type redshift: float
+    :param spec_data: Link to a FITS file containing the spectroscopic temperature profile to be read. The FITS table should contain the following fields: 'RIN', 'ROUT', 'KT', 'KT_LO', and 'KT_HI' (see the description below). If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None
+    :type spec_data: str
+    :param rin: 1-D array including the inner boundary definition of the spectroscopic bins (in arcmin). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None
+    :type rin: numpy.ndarray
+    :param rout: 1-D array including the outer boundary definition of the spectroscopic bins (in arcmin). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None
+    :type rin: numpy.ndarray
+    :param kt: 1-D array containing the fitted spectroscopic temperature (in keV). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None
+    :type kt: numpy.ndarray
+    :param err_kt_low: 1-D array containing the lower 1-sigma error on the fitted spectroscopic temperature (in keV). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None
+    :type err_kt_low: numpy.ndarray
+    :param err_kt_high: 1-D array containing the upper 1-sigma error on the fitted spectroscopic temperature (in keV). If None, the data should be passed as a FITS file using the spec_data argument. Defaults to None
+    :type err_kt_high: numpy.ndarray
+    :param cosmo: Astropy cosmology object including the cosmology definition
+    :type cosmo: astropy.cosmology
+    '''
+
     def __init__(self, redshift, spec_data=None, rin=None, rout=None, kt=None, err_kt_low=None, err_kt_high=None, cosmo=None):
 
         if spec_data is None and kt is None:
@@ -113,11 +134,26 @@ class SpecData:
 
 
     def PSF(self, pixsize, psffunc=None, psffile=None, psfimage=None, psfpixsize=None, sourcemodel=None, psfmin=1e-7):
-        #####################################################
-        # Function to calculate a PSF convolution matrix given an input PSF image or function
-        # Images of each annuli are convolved with the PSF image using FFT
-        # FFT-convolved images are then used to determine PSF mixing
-        #####################################################
+        '''
+        Compute a point spread function (PSF) mixing matrix for the loaded spectroscopic data. Each row of the PSF mixing matrix corresponding to a given annulus is computed by defining a normalized image into the annulus and zeros elsewhere. The image is then convolved with the PSF model using FFT. See Eckert et al. 2020 for details.
+
+        The PSF model can be provided either in the form of a one-dimensional radial function or of an image.
+
+        :param pixsize: Pixel size in arcmin
+        :type pixsize: float
+        :param psffunc: 1D function transforming an array of radii into the PSF model value. If None, an image should be provided. Defaults to None.
+        :type psffunc: func
+        :param psffile: FITS file containing the model PSF image. If None, the PSF should be provided either as a 1D function or a 2D array. Defaults to None.
+        :type psffile: str
+        :param psfimage: 2-D array containing an image of the PSF. The pixel size should be passed through the "psfpixsize" argument. If None, the PSF should be provided either as a 1D function or a FITS image. Defaults to None.
+        :type psfimage: numpy.ndarray
+        :param psfpixsize: Image pixel size (in arcmin) in case a PSF image is provided.
+        :type psfpixsize: float
+        :param sourcemodel: A pyproffit model describing the radial dependence of the emissivity distribution. If provided, the PSF at each point is weighted by the radial model to take the emissivity gradient across the bins into account when computing the PSF mixing matrix. If None, a flat distribution is assumed. Defaults to None.
+        :type sourcemodel: pyproffit.models.model
+        :param psfmin: Minimum PSF value (relative to the maximum) below which the effect of the PSF is neglected. Increasing psfmin speeds up the computation at the cost of a lower precision.
+        :type psfmin: float
+        '''
 
         rad = (self.rin_x_am + self.rout_x_am) / 2.
 
@@ -264,7 +300,24 @@ class SpecData:
 
 
 class SZData:
+    '''
+    Container class to load a SZ pressure profile and its covariance matrix. The data can either be passed all at once by reading a FITS table file or directly as numpy arrays.
 
+    :param redshift: Source redshift
+    :type redshift: float
+    :param sz_data: Link to a FITS file containing the SZ pressure profile to be read. If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None
+    :type sz_data: str
+    :param rin: 1-D array including the inner boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type rin: numpy.ndarray
+    :param rout: 1-D array including the outer boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type rin: numpy.ndarray
+    :param psz: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type psz: numpy.ndarray
+    :param covmat_sz: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type covmat_sz: numpy.ndarray
+    :param cosmo: Astropy cosmology object including the cosmology definition
+    :type cosmo: astropy.cosmology
+    '''
     def __init__(self, redshift, sz_data=None, rin=None, rout=None, psz=None, covmat_sz=None, cosmo=None):
 
         if sz_data is None and psz is None:
@@ -338,11 +391,26 @@ class SZData:
 
 
     def PSF(self, pixsize, psffunc=None, psffile=None, psfimage=None, psfpixsize=None, sourcemodel=None, psfmin=1e-7):
-        #####################################################
-        # Function to calculate a PSF convolution matrix given an input PSF image or function
-        # Images of each annuli are convolved with the PSF image using FFT
-        # FFT-convolved images are then used to determine PSF mixing
-        #####################################################
+        '''
+        Compute a point spread function (PSF) mixing matrix for the loaded SZ data. Each row of the PSF mixing matrix corresponding to a given annulus is computed by defining a normalized image into the annulus and zeros elsewhere. The image is then convolved with the PSF model using FFT. See Eckert et al. 2020 for details.
+
+        The PSF model can be provided either in the form of a one-dimensional radial function or of an image.
+
+        :param pixsize: Pixel size in arcmin
+        :type pixsize: float
+        :param psffunc: 1D function transforming an array of radii into the PSF model value. If None, an image should be provided. Defaults to None.
+        :type psffunc: func
+        :param psffile: FITS file containing the model PSF image. If None, the PSF should be provided either as a 1D function or a 2D array. Defaults to None.
+        :type psffile: str
+        :param psfimage: 2-D array containing an image of the PSF. The pixel size should be passed through the "psfpixsize" argument. If None, the PSF should be provided either as a 1D function or a FITS image. Defaults to None.
+        :type psfimage: numpy.ndarray
+        :param psfpixsize: Image pixel size (in arcmin) in case a PSF image is provided.
+        :type psfpixsize: float
+        :param sourcemodel: A pyproffit model describing the radial dependence of the emissivity distribution. If provided, the PSF at each point is weighted by the radial model to take the emissivity gradient across the bins into account when computing the PSF mixing matrix. If None, a flat distribution is assumed. Defaults to None.
+        :type sourcemodel: pyproffit.models.model
+        :param psfmin: Minimum PSF value (relative to the maximum) below which the effect of the PSF is neglected. Increasing psfmin speeds up the computation at the cost of a lower precision.
+        :type psfmin: float
+        '''
 
         rad = (self.rin_sz_am + self.rout_sz_am) / 2.
 

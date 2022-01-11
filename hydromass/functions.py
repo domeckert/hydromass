@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline
 import scipy.special as special
 import pymc3 as pm
 import theano
@@ -7,6 +6,9 @@ import theano.tensor as tt
 
 
 class ArcTan(tt.Op):
+    '''
+    Theano arctan class
+    '''
     itypes = [tt.dvector]
     otypes = [tt.dvector]
 
@@ -24,6 +26,16 @@ tt_arctan = ArcTan()
 
 
 def f_ein_mu(x, mu):
+    '''
+    Einasto mass model as a function of mu=1/alpha (see Mamon \& Lokas 2005)
+
+    :param x: Scaled radius
+    :type x: float
+    :param mu: Einasto mu
+    :type mu: float
+    :return: Scaled mass profile
+    :rtype: float
+    '''
     n0 = 2. * mu
 
     n1 = 3. * mu
@@ -43,6 +55,10 @@ def f_ein_mu_der(x, mu):
 
 # Class to implement the 2-parameter Einasto mass profile and its derivative
 class EinastoFx(tt.Op):
+    '''
+    Theano class implementing the 2-parameter Einasto model with fixed mu=5.0
+
+    '''
     itypes = [tt.dvector]
     otypes = [tt.dvector]
 
@@ -59,6 +75,21 @@ tt_einasto = EinastoFx()
 
 # 2-parameter Einasto function
 def f_ein2_pm(xout, c200, r200, delta=200.):
+    '''
+    Theano function returning the 2-parameter Einasto model for a given set of parameters.
+
+    .. math::
+
+        \\rho(r) = \\rho_s \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{r_s} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    with :math:\\mu=5.0
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param delta: Overdensity
+    :return: Enclosed mass
+    '''
 
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
@@ -71,7 +102,21 @@ def f_ein2_pm(xout, c200, r200, delta=200.):
 
 # 3-parameter Einasto function, we need to integrate the density numerically since the gradient is not analytical
 def f_ein3_pm(xout, c200, r200, mu, delta=200.):
+    '''
+    Theano function for the 3-parameter Einasto mass model,
 
+    .. math::
+
+        \\rho(r) = \\rho_s \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{r_s} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param mu: Einasto mu
+    :param delta: Overdensity
+    :return: Enclosed mass
+
+    '''
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
     npt = len(xout)
@@ -96,6 +141,24 @@ def f_ein3_pm(xout, c200, r200, mu, delta=200.):
 
 
 def f_ein2_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the Einasto 2-parameter model
+
+    .. math::
+
+        \\rho(r) = \\rho_s \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{r_s} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    with :math:\\mu=5.0
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: Model parameters (cdelta and rs)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -126,6 +189,22 @@ def f_ein2_np(xout, pars, delta=200.):
 
 
 def f_ein3_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the 3-parameter Einasto mass model,
+
+    .. math::
+
+        \\rho(r) = \\rho_s \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{r_s} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -295,15 +374,6 @@ def f_bur_np(xout, pars, delta=200.):
     fx = np.log(1. + x ** 2) + 2. * np.log(1. + x) - 2. * np.arctan(x)
 
     return r200mul ** 3 * fcc * fx
-
-
-def MyInterp(x_old, y_old, x_new):
-    s = InterpolatedUnivariateSpline(np.log(x_old), np.log(y_old), k=1)
-
-    y_new = np.exp(s(np.log(x_new)))
-
-    return y_new
-
 
 class Model:
     def __init__(self, massmod, delta=200., start=None, sd=None, limits=None, fix=None):
