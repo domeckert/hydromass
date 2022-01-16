@@ -4,124 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/hydromass.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/hydromass.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/mhyd.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mhyd.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="New Mac">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MANIFEST.in" beforeDir="false" afterPath="$PROJECT_DIR$/MANIFEST.in" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/data/coolfunc_table.fits" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/data/coolfunc_table.fits" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/data/pnt_covmat.dat" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/data/pnt_covmat.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/data/pnt_mean.dat" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/data/pnt_mean.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/delta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/deproject.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/emissivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/forward.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/mhyd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/pnt.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/pnt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/save.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/tpdata.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/.readthedocs.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docs/.readthedocs.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/docs/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/environment.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/environment.pickle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/hydromass.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/hydromass.doctree" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/index.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/index.doctree" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/install.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/install.doctree" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/intro.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/intro.doctree" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/modules.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/modules.doctree" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/tutorials.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/tutorials.doctree" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/.buildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/.buildinfo" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/delta.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/delta.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/deproject.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/deproject.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/emissivity.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/emissivity.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/forward.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/forward.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/functions.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/functions.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/mhyd.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/mhyd.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/nonparametric.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/nonparametric.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/plots.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/plots.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/pnt.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/pnt.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/polytropic.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/polytropic.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/save.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/save.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/tpdata.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/tpdata.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/basic.css" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/basic.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/css/badge_only.css" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/css/badge_only.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/css/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/css/theme.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/doctools.js" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/doctools.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/FontAwesome.otf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Bold.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Bold.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Light.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Light.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Regular.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Regular.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Thin.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/Roboto-Slab-Thin.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-bold-italic.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-bold-italic.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-bold.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-bold.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-normal-italic.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-normal-italic.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-normal.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/fonts/lato-normal.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/js/theme.js" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/js/theme.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/pygments.css" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/pygments.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/searchtools.js" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/searchtools.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/underscore-1.12.0.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/_static/underscore.js" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_static/underscore.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/genindex.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/genindex.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/hydromass.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/hydromass.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/install.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/install.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/intro.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/intro.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/modules.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/modules.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/py-modindex.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/py-modindex.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/search.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/search.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/searchindex.js" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/searchindex.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/build/html/tutorials.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/tutorials.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/make.bat" beforeDir="false" afterPath="$PROJECT_DIR$/docs/make.bat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/populate_doc.txt" beforeDir="false" afterPath="$PROJECT_DIR$/docs/populate_doc.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/recalc.sh" beforeDir="false" afterPath="$PROJECT_DIR$/docs/recalc.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/conf.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/conf.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/hydromass.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/hydromass.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/install.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/install.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/intro.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/intro.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/modules.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/modules.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/tutorials.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/tutorials.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/data/coolfunc_table.fits" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/data/coolfunc_table.fits" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/data/pnt_covmat.dat" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/data/pnt_covmat.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/data/pnt_mean.dat" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/data/pnt_mean.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/delta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/deproject.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/pnt.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/pnt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/tpdata.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -188,13 +73,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00004" summary="fixed bugs in mass_forw_from_samples">
-      <created>1592308604495</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1592308604495</updated>
     </task>
     <task id="LOCAL-00005" summary="using Deterministic to fix parameters in forward">
       <created>1592316087418</created>
@@ -532,8 +410,26 @@
       <option name="project" value="LOCAL" />
       <updated>1638970903141</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="New Mac">
+      <created>1642326918039</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1642326918039</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <ignored-roots>
@@ -541,7 +437,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Added cooling time calculation" />
     <MESSAGE value="Import package data" />
     <MESSAGE value="Added build" />
     <MESSAGE value="Fixed bug in get_coolfunc" />
@@ -566,6 +461,7 @@
     <MESSAGE value="Tuned lognormal GP parameters" />
     <MESSAGE value="Added computation of WAIC and LOO as well as log-likelihood values" />
     <MESSAGE value="Updated plot boundaries" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updated plot boundaries" />
+    <MESSAGE value="New Mac" />
+    <option name="LAST_COMMIT_MESSAGE" value="New Mac" />
   </component>
 </project>
