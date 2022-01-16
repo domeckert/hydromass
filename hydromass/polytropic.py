@@ -1,6 +1,6 @@
 import numpy as np
 from .deproject import *
-from .plots import rads_more, get_coolfunc
+from .plots import rads_more, get_coolfunc, plt
 from .functions import ArcTan
 
 tt_arctan = ArcTan()
@@ -836,11 +836,11 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
                 start = pm.find_MAP()
 
-                trace = pm.sample(nmcmc, start=start, tune=tune)
+                trace = pm.sample(nmcmc, start=start, tune=tune, init='ADVI',  return_inferencedata=True, target_accept=0.9)
 
             else:
 
-                trace = pm.sample(nmcmc, tune=tune)
+                trace = pm.sample(nmcmc, tune=tune, init='ADVI',  return_inferencedata=True, target_accept=0.9)
 
         print('Done.')
 
@@ -851,11 +851,15 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
         Mhyd.trace = trace
 
         # Get chains and save them to file
-        sampc = trace.get_values('coefs')
+        chain_coefs = np.array(trace.posterior['coefs'])
+
+        sc_coefs = chain_coefs.shape
+
+        sampc = chain_coefs.reshape(sc_coefs[0] * sc_coefs[1], sc_coefs[2])
 
         if fit_bkg:
 
-            sampb = trace.get_values('bkg')
+            sampb = np.array(trace.posterior['bkg']).flatten()
 
             samples = np.append(sampc, sampb, axis=1)
 
@@ -913,10 +917,12 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
             if name == 'p0':
 
-                samppar[:, i] = np.exp(trace.get_values(name))
+                samppar[:, i] = np.exp(np.array(trace.posterior[name]).flatten())
 
             else:
-                samppar[:, i] = trace.get_values(name)
+
+                samppar[:, i] = np.array(trace.posterior[name]).flatten()
+
         Mhyd.samppar = samppar
 
         Mhyd.K = K

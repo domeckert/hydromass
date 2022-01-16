@@ -1,11 +1,33 @@
 import numpy as np
 import pymc3 as pm
 from .deproject import *
-from .plots import rads_more, get_coolfunc
+from .plots import rads_more, get_coolfunc, plt
 from .constants import *
 
 # GNFW function should work both for numpy.ndarray and pymc3/theano formats
 def gnfw_pm(rad, p0, c500, gamma, alfa, beta):
+    '''
+    Theano function defining the generalized NFW profile
+
+    .. math::
+
+        P_{gNFW}(r) = \\frac{P_0} {(c_{500} r)^\\gamma (1+(c_{500} r)^\\alpha)^{(\\beta-\\gamma)/\\alpha}}
+
+    :param rad: Radius
+    :type rad: theano.tensor
+    :param p0: :math:`P_0` parameter
+    :type p0: theano.tensor
+    :param c500: :math:`c_{500}` parameter
+    :type c500: theano.tensor
+    :param gamma: :math:`\\gamma` parameter
+    :type gamma: theano.tensor
+    :param alfa: :math:`\\alpha` parameter
+    :type alfa: theano.tensor
+    :param beta: :math:`\\beta` parameter
+    :type beta: theano.tensor
+    :return: Model pressure
+    :rtype: theano.tensor
+    '''
 
     x = c500 * rad
 
@@ -19,6 +41,21 @@ def gnfw_pm(rad, p0, c500, gamma, alfa, beta):
 
 
 def gnfw_np(xout, pars):
+    '''
+    Numpy function defining the generalized NFW profile
+
+    .. math::
+
+        P_{gNFW}(r) = \\frac{P_0} {(c_{500} r)^\\gamma (1+(c_{500} r)^\\alpha)^{(\\beta-\\gamma)/\\alpha}}
+
+    :param rad: 1-D array with radius definition
+    :type rad: numpy.ndarray
+    :param pars: 2-D array including the parameter samples
+    :type pars: numpy.ndarray
+    :return: 2-D array including all the realizations of the model pressure profile
+    :rtype: numpy.ndarray
+    '''
+
 
     p0 = pars[:, 0]
 
@@ -58,6 +95,20 @@ def gnfw_np(xout, pars):
 
 # Pressure gradient from GNFW function
 def der_lnP_np(xout, pars):
+    '''
+    Analytic logarithmic derivative of the generalized NFW function
+
+    .. math::
+
+        \\frac{d \\ln P}{d \\ln r} = - \\left( \\gamma + \\frac{(\\beta - \\gamma)(c_{500}r)^{\\alpha}} {1 + (c_{500}r)^{\\alpha} } \\right)
+
+    :param xout: 1-D array of radii
+    :type xout: numpy.ndarray
+    :param pars: 2-D array including the parameter samples
+    :type pars: numpy.ndarray
+    :return: Pressure gradient profiles for all realizations
+    :rtype: numpy.ndarray
+    '''
     p0 = pars[:, 0]
 
     c500 = pars[:, 1]
@@ -96,11 +147,14 @@ def der_lnP_np(xout, pars):
 def kt_forw_from_samples(Mhyd, Forward, nmore=5):
     """
 
-    Compute model temperature profile from Forward Mhyd reconstruction evaluated at reference X-ray temperature radii
+    Compute model temperature profile from forward mass reconstruction run evaluated at reference X-ray temperature radii
 
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
-    :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: :class:`hydromass.forward.Forward` object defining the forward model
+    :type Forward: class:`hydromass.forward.Forward`
+    :return: Dictionary including the median temperature and 1-sigma percentiles, both 3D and spectroscopic-like
+    :rtype: dict(9xnpt)
     """
 
     if Mhyd.spec_data is None:
@@ -167,11 +221,14 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
 def P_forw_from_samples(Mhyd, Forward, nmore=5):
     """
 
-    Compute model pressure profile from Forward Mhyd reconstruction evaluated at the reference SZ radii
+    Compute model pressure profile from Forward mass reconstruction run evaluated at the reference SZ radii
 
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: :class:`hydromass.forward.Forward` object defining the forward model
+    :type Forward: class:`hydromass.forward.Forward`
     :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :rtype: float
     """
 
     if Mhyd.sz_data is None:
@@ -698,11 +755,11 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, start=start, tune=tune)
+            trace = pm.sample(nmcmc, init='ADVI', start=start, tune=tune, return_inferencedata=True, target_accept=0.9)
 
         else:
 
-            trace = pm.sample(nmcmc, tune=tune)
+            trace = pm.sample(nmcmc, tune=tune, init='ADVI',  return_inferencedata=True, target_accept=0.9)
 
     print('Done.')
 
@@ -713,11 +770,15 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
     Mhyd.trace = trace
 
     # Get chains and save them to file
-    sampc = trace.get_values('coefs')
+    chain_coefs = np.array(trace.posterior['coefs'])
+
+    sc_coefs = chain_coefs.shape
+
+    sampc = chain_coefs.reshape(sc_coefs[0] * sc_coefs[1], sc_coefs[2])
 
     if fit_bkg:
 
-        sampb = trace.get_values('bkg')
+        sampb = np.array(trace.posterior['bkg']).flatten()
 
         samples = np.append(sampc, sampb, axis=1)
 
@@ -786,10 +847,12 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         if name == 'p0':
 
-            samppar[:, i] = np.exp(trace.get_values(name))
+            samppar[:, i] = np.exp(np.array(trace.posterior[name]).flatten())
 
         else:
-            samppar[:, i] = trace.get_values(name)
+
+            samppar[:, i] = np.array(trace.posterior[name]).flatten()
+
     Mhyd.samppar = samppar
 
     Mhyd.K = K
