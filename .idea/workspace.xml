@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added requirements.txt" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Removed build" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -70,13 +70,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00008" summary="fixed bug when reading SZ data from file">
-      <created>1592936193007</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1592936193007</updated>
     </task>
     <task id="LOCAL-00009" summary="fixed mstar modeling in DM-only fit">
       <created>1592994463090</created>
@@ -414,7 +407,14 @@
       <option name="project" value="LOCAL" />
       <updated>1645633738786</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="Removed build">
+      <created>1645634115675</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1645634115675</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -434,7 +434,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Set unit of cooling time to year" />
     <MESSAGE value="Fixed missing abundance argument" />
     <MESSAGE value="Added cf_prof=None when reloading data" />
     <MESSAGE value="Propagated rmin and rmax to calculation of Rdelta" />
@@ -459,6 +458,7 @@
     <MESSAGE value="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;" />
     <MESSAGE value="Added lots of docstrings" />
     <MESSAGE value="Added requirements.txt" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added requirements.txt" />
+    <MESSAGE value="Removed build" />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed build" />
   </component>
 </project>
