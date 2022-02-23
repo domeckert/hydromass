@@ -4,9 +4,28 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="New Mac">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MACS0451.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/MACS0451.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/environment.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/environment.pickle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/doctrees/hydromass.doctree" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/doctrees/hydromass.doctree" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/deproject.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/deproject.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/forward.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/forward.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/functions.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/functions.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/mhyd.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/mhyd.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/nonparametric.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/nonparametric.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/pnt.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/pnt.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/polytropic.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/polytropic.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/save.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/_modules/hydromass/save.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/hydromass.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/hydromass.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/build/html/searchindex.js" beforeDir="false" afterPath="$PROJECT_DIR$/docs/build/html/searchindex.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/deproject.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/pnt.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/pnt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/polytropic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,13 +92,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00005" summary="using Deterministic to fix parameters in forward">
-      <created>1592316087418</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1592316087418</updated>
     </task>
     <task id="LOCAL-00006" summary="added checks of parameters before running">
       <created>1592316134009</created>
@@ -417,7 +429,14 @@
       <option name="project" value="LOCAL" />
       <updated>1642326918039</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;">
+      <created>1642328489704</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1642328489704</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -437,7 +456,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Import package data" />
     <MESSAGE value="Added build" />
     <MESSAGE value="Fixed bug in get_coolfunc" />
     <MESSAGE value="Set unit of cooling time to year" />
@@ -462,6 +480,7 @@
     <MESSAGE value="Added computation of WAIC and LOO as well as log-likelihood values" />
     <MESSAGE value="Updated plot boundaries" />
     <MESSAGE value="New Mac" />
-    <option name="LAST_COMMIT_MESSAGE" value="New Mac" />
+    <MESSAGE value="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;" />
   </component>
 </project>

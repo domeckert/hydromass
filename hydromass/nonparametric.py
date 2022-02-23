@@ -1,11 +1,43 @@
 import numpy as np
 from .deproject import *
-from .plots import rads_more, get_coolfunc, estimate_P0
+from .plots import rads_more, get_coolfunc, estimate_P0, plt
 from scipy.interpolate import interp1d
 
 # Function to compute linear operator transforming norms of GP model into radial profile
 
 def calc_gp_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
+    '''
+    Set up a linear operator transforming the model coefficients into the temperature profile as a sum of Gaussian functions,
+
+    .. math::
+
+        T(r) = \\sum_{i=1}^P N_i G_i(r)
+
+    with :math:`N_i` the model coefficients and :math:`G_i(r)` the defined Gaussian functions outputted by this task,
+
+    .. math::
+
+        G_i(r) = \\frac{1}{\\sqrt{2\\pi}\\sigma_i}\\exp \\left( \\frac{(r - \\mu_{i})^2}{2\\sigma_i^2} \\right)
+
+    :param npt: Number of Gaussians to decompose the model into
+    :type npt: int
+    :param rads: Profile radii at which the model will be evaluated
+    :type rads: numpy.ndarray
+    :param rin: Inner boundaries of the profile radii
+    :type rin: numpy.ndarray
+    :param rout: Outer boundaries of the profile radii
+    :type rout: numpy.ndarray
+    :param bin_fact: Binning factor for the definition of the Gaussian standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.
+    :type bin_fact: float
+    :param smin: Minimum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smin: float
+    :param smax: Maximum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smax: float
+    :return:
+        - rg: Linear operator (2D array)
+        - rgaus: Mean radii of the Gaussians (1D array)
+        - sig: Standard deviations of the Gaussians (1D array)
+    '''
     # Set up the Gaussian Process model
     rmin = (rin[0] + rout[0]) / 2.
 
@@ -40,6 +72,33 @@ def calc_gp_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
     return rg , rgaus, sig
 
 def calc_gp_operator_lognormal(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
+    '''
+    Same as :func:`hydromass.nonparametric.calc_gp_operator` with log-normal functions instead of Gaussians
+
+    .. math::
+
+        G_i(r) = \\frac{1}{\\sqrt{2\\pi}\\sigma_i}\\exp \\left( \\frac{(\\ln(r) - \\ln(\\mu_{i}))^2}{2\\sigma_i^2} \\right)
+
+    :param npt: Number of log-normal functions to decompose the model into
+    :type npt: int
+    :param rads: Profile radii at which the model will be evaluated
+    :type rads: numpy.ndarray
+    :param rin: Inner boundaries of the profile radii
+    :type rin: numpy.ndarray
+    :param rout: Outer boundaries of the profile radii
+    :type rout: numpy.ndarray
+    :param bin_fact: Binning factor for the definition of the log-normal standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.
+    :type bin_fact: float
+    :param smin: Minimum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smin: float
+    :param smax: Maximum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smax: float
+    :return:
+        - rg: Linear operator (2D array)
+        - rgaus: Mean radii of the log-normals (1D array)
+        - sig: Standard deviations of the log-normals (1D array)
+    '''
+
     # Set up the Gaussian Process model
     rmin = (rin[0] + rout[0]) / 2.
 
@@ -81,6 +140,26 @@ def calc_gp_operator_lognormal(npt, rads, rin, rout, bin_fact=1.0, smin=None, sm
 # Analytical gradient of the Gaussian process model
 
 def calc_gp_grad_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
+    '''
+    Compute a linear operator transforming a parameter vector into a temperature gradient profile for the Gaussian mixture model
+
+    :param npt: Number of Gaussians to decompose the model into
+    :type npt: int
+    :param rads: Profile radii at which the model will be evaluated
+    :type rads: numpy.ndarray
+    :param rin: Inner boundaries of the profile radii
+    :type rin: numpy.ndarray
+    :param rout: Outer boundaries of the profile radii
+    :type rout: numpy.ndarray
+    :param bin_fact: Binning factor for the definition of the Gaussian standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.
+    :type bin_fact: float
+    :param smin: Minimum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smin: float
+    :param smax: Maximum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smax: float
+    :return: Linear operator (2D array)
+    :rtype: numpy.ndarray
+    '''
     # Set up the Gaussian Process model
     rmin = (rin[0] + rout[0]) / 2.
 
@@ -118,6 +197,26 @@ def calc_gp_grad_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=No
 # Analytical gradient of the Gaussian process model
 
 def calc_gp_grad_operator_lognormal(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
+    '''
+    Compute a linear operator transforming a parameter vector into a temperature gradient profile for the log-normal mixture model
+
+    :param npt: Number of Gaussians to decompose the model into
+    :type npt: int
+    :param rads: Profile radii at which the model will be evaluated
+    :type rads: numpy.ndarray
+    :param rin: Inner boundaries of the profile radii
+    :type rin: numpy.ndarray
+    :param rout: Outer boundaries of the profile radii
+    :type rout: numpy.ndarray
+    :param bin_fact: Binning factor for the definition of the Gaussian standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.
+    :type bin_fact: float
+    :param smin: Minimum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smin: float
+    :param smax: Maximum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smax: float
+    :return: Linear operator (2D array)
+    :rtype: numpy.ndarray
+    '''
     # Set up the Gaussian Process model
     rmin = (rin[0] + rout[0]) / 2.
 
@@ -159,12 +258,12 @@ def calc_gp_grad_operator_lognormal(npt, rads, rin, rout, bin_fact=1.0, smin=Non
 
 def kt_GP_from_samples(Mhyd, nmore=5):
     """
+    Compute the model temperature profile from the output of a non-parametric reconstruction run, evaluated at reference X-ray spectral radii
 
-    Compute model temperature profile from Forward Mhyd reconstruction evaluated at reference X-ray temperature radii
-
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
     :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :rtype: numpy.ndarray
     """
 
     if Mhyd.spec_data is None:
@@ -265,11 +364,12 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
 def P_GP_from_samples(Mhyd, nmore=5):
     """
+    Compute the model pressure profile from the output of a non-parametric reconstruction run, evaluated at the reference SZ radii
 
-    Compute model pressure profile from Forward Mhyd reconstruction evaluated at the reference SZ radii
-
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
     :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :rtype: numpy.ndarray
     """
 
     if Mhyd.sz_data is None:
@@ -336,13 +436,33 @@ def P_GP_from_samples(Mhyd, nmore=5):
 
 
 def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
+    '''
+    Compute the hydrostatic mass profile from an existing non-parametric reconstruction run. The gradient of the basis functions for the temperature and the density are computed analytically and the best-fit coefficients are used to determine the posterior distributions of hydrostatic mass,
+
+    .. math::
+
+        M(<r) = -\\frac{r k T}{G \mu m_p}\\left[ \\frac{\\partial \\log T}{\\partial \\log r} + \\frac{\\partial \\log n_e}{\\partial \\log r} \\right]
+
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param rin: Minimum radius of the output profile. If None, the innermost data point is used. Defaults to None
+    :type rin: float
+    :param rout: Maximum radius of the output profile. If None, the outermost data point is used. Defaults to None
+    :type rout: float
+    :param npt: Number of points in output profile. Defaults to 200
+    :type npt: int
+    :param plot: If True, produce a plot of the mass profile and gas mass profile. Defaults to False
+    :type plot: bool
+    :return: Dictionary containing the profiles of hydrostatic mass, gas mass, and gas fraction
+    :rtype: dict(11xnpt)
+    '''
 
     nsamp = len(Mhyd.samples)
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if rin is None:
-        rin = np.min(rin_m)
+        rin = np.min((rin_m+rout_m)/2.)
 
         if rin == 0:
             rin = 1.
@@ -527,12 +647,18 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
 def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
     """
-    Compute best-fitting profiles and error envelopes from fitted data
+    Compute the best-fitting thermodynamic profiles and error envelopes from a non-parametric reconstruction run. The output profiles include gas density, temperature, pressure, entropy, cooling function, and radiative cooling time.
 
-    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction
-    :param model:
-    :param nmore:
-    :return:
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param rin: Minimum radius of the output profiles. If None, the innermost data point is used. Defaults to None
+    :type rin: float
+    :param npt: Number of points in the output profiles. Defaults to 200
+    :type npt: int
+    :param Z: Gas metallicity relative to Solar for the calculation of the cooling function. Defaults to 0.3
+    :type Z: float
+    :return: Dictionary including the thermodynamic profiles
+    :rtype: dict(24xnpt)
     """
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
@@ -700,18 +826,40 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
                    samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
                    tune=500, bin_fact=1.0, smin=None, smax=None, ngauss=100, find_map=True):
     """
+    Run non-parametric log-normal mixture reconstruction. Following Eckert et al. (2022), the temperature profile is described as a linear combination of a large number of log-normal functions, whereas the gas density profile is decomposed on a basis of King functions. The number of log-normal functions as well as the smoothing scales can be adjusted by the user.
 
-    :param Mhyd:
-    :param bkglim:
-    :param nmcmc:
-    :param fit_bkg:
-    :param back:
-    :param samplefile:
-    :param nrc:
-    :param nbetas:
-    :param min_beta:
-    :param tune:
-    :return:
+    :param Mhyd: An input :class:`hydromass.mhyd.Mhyd` object including the data and the source definition
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param bkglim: Radius (in arcmin) beyond which it is assumed that the background fully dominates the profile. If None, the entire radial range is fitted as source + background. Defaults to None.
+    :type bkglim: float
+    :param nmcmc: Number of NUTS samples. Defaults to 1000
+    :type nmcmc: int
+    :param fit_bkg: Define whether we will fit the counts as source + background (True) or the background subtracted surface brightness as source only (False). Defaults to False.
+    :type fit_bkg: bool
+    :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+    :type back: float
+    :param samplefile: Name of ASCII file to output the final PyMC3 samples
+    :type samplefile: str
+    :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+    :type nrc: int
+    :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+    :type nbetas: int
+    :param min_beta: Minimum beta value (default = 0.6)
+    :type min_beta: float
+    :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+    :type nmore: int
+    :param tune: Number of NUTS tuning steps. Defaults to 500
+    :type tune: int
+    :param bin_fact: bin_fact: Binning factor for the definition of the log-normal standard deviations, i.e. the standard deviations of the log-normals will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.
+    :type bin_fact: float
+    :param smin: Minimum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smin: float
+    :param smax: Maximum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+    :type smax: float
+    :param ngauss: Number of log-normal functions. Defaults to 100
+    :type ngauss: int
+    :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+    :type find_map: bool
     """
 
     prof = Mhyd.sbprof

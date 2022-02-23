@@ -153,12 +153,44 @@
   <h1>Source code for hydromass.nonparametric</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">.deproject</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">.plots</span> <span class="kn">import</span> <span class="n">rads_more</span><span class="p">,</span> <span class="n">get_coolfunc</span><span class="p">,</span> <span class="n">estimate_P0</span>
+<span class="kn">from</span> <span class="nn">.plots</span> <span class="kn">import</span> <span class="n">rads_more</span><span class="p">,</span> <span class="n">get_coolfunc</span><span class="p">,</span> <span class="n">estimate_P0</span><span class="p">,</span> <span class="n">plt</span>
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
 
 <span class="c1"># Function to compute linear operator transforming norms of GP model into radial profile</span>
 
 <div class="viewcode-block" id="calc_gp_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.calc_gp_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_gp_operator</span><span class="p">(</span><span class="n">npt</span><span class="p">,</span> <span class="n">rads</span><span class="p">,</span> <span class="n">rin</span><span class="p">,</span> <span class="n">rout</span><span class="p">,</span> <span class="n">bin_fact</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">smin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Set up a linear operator transforming the model coefficients into the temperature profile as a sum of Gaussian functions,</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        T(r) = \\sum_{i=1}^P N_i G_i(r)</span>
+
+<span class="sd">    with :math:`N_i` the model coefficients and :math:`G_i(r)` the defined Gaussian functions outputted by this task,</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        G_i(r) = \\frac{1}{\\sqrt{2\\pi}\\sigma_i}\\exp \\left( \\frac{(r - \\mu_{i})^2}{2\\sigma_i^2} \\right)</span>
+
+<span class="sd">    :param npt: Number of Gaussians to decompose the model into</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param rads: Profile radii at which the model will be evaluated</span>
+<span class="sd">    :type rads: numpy.ndarray</span>
+<span class="sd">    :param rin: Inner boundaries of the profile radii</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param rout: Outer boundaries of the profile radii</span>
+<span class="sd">    :type rout: numpy.ndarray</span>
+<span class="sd">    :param bin_fact: Binning factor for the definition of the Gaussian standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.</span>
+<span class="sd">    :type bin_fact: float</span>
+<span class="sd">    :param smin: Minimum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smin: float</span>
+<span class="sd">    :param smax: Maximum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smax: float</span>
+<span class="sd">    :return:</span>
+<span class="sd">        - rg: Linear operator (2D array)</span>
+<span class="sd">        - rgaus: Mean radii of the Gaussians (1D array)</span>
+<span class="sd">        - sig: Standard deviations of the Gaussians (1D array)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1"># Set up the Gaussian Process model</span>
     <span class="n">rmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.</span>
 
@@ -193,6 +225,33 @@
     <span class="k">return</span> <span class="n">rg</span> <span class="p">,</span> <span class="n">rgaus</span><span class="p">,</span> <span class="n">sig</span></div>
 
 <div class="viewcode-block" id="calc_gp_operator_lognormal"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.calc_gp_operator_lognormal">[docs]</a><span class="k">def</span> <span class="nf">calc_gp_operator_lognormal</span><span class="p">(</span><span class="n">npt</span><span class="p">,</span> <span class="n">rads</span><span class="p">,</span> <span class="n">rin</span><span class="p">,</span> <span class="n">rout</span><span class="p">,</span> <span class="n">bin_fact</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">smin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Same as :func:`hydromass.nonparametric.calc_gp_operator` with log-normal functions instead of Gaussians</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        G_i(r) = \\frac{1}{\\sqrt{2\\pi}\\sigma_i}\\exp \\left( \\frac{(\\ln(r) - \\ln(\\mu_{i}))^2}{2\\sigma_i^2} \\right)</span>
+
+<span class="sd">    :param npt: Number of log-normal functions to decompose the model into</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param rads: Profile radii at which the model will be evaluated</span>
+<span class="sd">    :type rads: numpy.ndarray</span>
+<span class="sd">    :param rin: Inner boundaries of the profile radii</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param rout: Outer boundaries of the profile radii</span>
+<span class="sd">    :type rout: numpy.ndarray</span>
+<span class="sd">    :param bin_fact: Binning factor for the definition of the log-normal standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.</span>
+<span class="sd">    :type bin_fact: float</span>
+<span class="sd">    :param smin: Minimum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smin: float</span>
+<span class="sd">    :param smax: Maximum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smax: float</span>
+<span class="sd">    :return:</span>
+<span class="sd">        - rg: Linear operator (2D array)</span>
+<span class="sd">        - rgaus: Mean radii of the log-normals (1D array)</span>
+<span class="sd">        - sig: Standard deviations of the log-normals (1D array)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
     <span class="c1"># Set up the Gaussian Process model</span>
     <span class="n">rmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.</span>
 
@@ -234,6 +293,26 @@
 <span class="c1"># Analytical gradient of the Gaussian process model</span>
 
 <div class="viewcode-block" id="calc_gp_grad_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.calc_gp_grad_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_gp_grad_operator</span><span class="p">(</span><span class="n">npt</span><span class="p">,</span> <span class="n">rads</span><span class="p">,</span> <span class="n">rin</span><span class="p">,</span> <span class="n">rout</span><span class="p">,</span> <span class="n">bin_fact</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">smin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute a linear operator transforming a parameter vector into a temperature gradient profile for the Gaussian mixture model</span>
+
+<span class="sd">    :param npt: Number of Gaussians to decompose the model into</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param rads: Profile radii at which the model will be evaluated</span>
+<span class="sd">    :type rads: numpy.ndarray</span>
+<span class="sd">    :param rin: Inner boundaries of the profile radii</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param rout: Outer boundaries of the profile radii</span>
+<span class="sd">    :type rout: numpy.ndarray</span>
+<span class="sd">    :param bin_fact: Binning factor for the definition of the Gaussian standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.</span>
+<span class="sd">    :type bin_fact: float</span>
+<span class="sd">    :param smin: Minimum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smin: float</span>
+<span class="sd">    :param smax: Maximum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smax: float</span>
+<span class="sd">    :return: Linear operator (2D array)</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1"># Set up the Gaussian Process model</span>
     <span class="n">rmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.</span>
 
@@ -271,6 +350,26 @@
 <span class="c1"># Analytical gradient of the Gaussian process model</span>
 
 <div class="viewcode-block" id="calc_gp_grad_operator_lognormal"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.calc_gp_grad_operator_lognormal">[docs]</a><span class="k">def</span> <span class="nf">calc_gp_grad_operator_lognormal</span><span class="p">(</span><span class="n">npt</span><span class="p">,</span> <span class="n">rads</span><span class="p">,</span> <span class="n">rin</span><span class="p">,</span> <span class="n">rout</span><span class="p">,</span> <span class="n">bin_fact</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">smin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute a linear operator transforming a parameter vector into a temperature gradient profile for the log-normal mixture model</span>
+
+<span class="sd">    :param npt: Number of Gaussians to decompose the model into</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param rads: Profile radii at which the model will be evaluated</span>
+<span class="sd">    :type rads: numpy.ndarray</span>
+<span class="sd">    :param rin: Inner boundaries of the profile radii</span>
+<span class="sd">    :type rin: numpy.ndarray</span>
+<span class="sd">    :param rout: Outer boundaries of the profile radii</span>
+<span class="sd">    :type rout: numpy.ndarray</span>
+<span class="sd">    :param bin_fact: Binning factor for the definition of the Gaussian standard deviations, i.e. the standard deviations of the Gaussians will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.</span>
+<span class="sd">    :type bin_fact: float</span>
+<span class="sd">    :param smin: Minimum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smin: float</span>
+<span class="sd">    :param smax: Maximum value of the Gaussian standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smax: float</span>
+<span class="sd">    :return: Linear operator (2D array)</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1"># Set up the Gaussian Process model</span>
     <span class="n">rmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">rin</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.</span>
 
@@ -312,12 +411,12 @@
 
 <div class="viewcode-block" id="kt_GP_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.kt_GP_from_samples">[docs]</a><span class="k">def</span> <span class="nf">kt_GP_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the model temperature profile from the output of a non-parametric reconstruction run, evaluated at reference X-ray spectral radii</span>
 
-<span class="sd">    Compute model temperature profile from Forward Mhyd reconstruction evaluated at reference X-ray temperature radii</span>
-
-<span class="sd">    :param Mhyd: mhyd.Mhyd object including the reconstruction</span>
-<span class="sd">    :param model: mhyd.Model object defining the mass model</span>
+<span class="sd">    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run</span>
+<span class="sd">    :type Mhyd: :class:`hydromass.mhyd.Mhyd`</span>
 <span class="sd">    :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">spec_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -418,11 +517,12 @@
 
 <div class="viewcode-block" id="P_GP_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.P_GP_from_samples">[docs]</a><span class="k">def</span> <span class="nf">P_GP_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the model pressure profile from the output of a non-parametric reconstruction run, evaluated at the reference SZ radii</span>
 
-<span class="sd">    Compute model pressure profile from Forward Mhyd reconstruction evaluated at the reference SZ radii</span>
-
-<span class="sd">    :param Mhyd: mhyd.Mhyd object including the reconstruction</span>
+<span class="sd">    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run</span>
+<span class="sd">    :type Mhyd: :class:`hydromass.mhyd.Mhyd`</span>
 <span class="sd">    :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sz_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -489,13 +589,33 @@
 
 
 <div class="viewcode-block" id="mass_GP_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.mass_GP_from_samples">[docs]</a><span class="k">def</span> <span class="nf">mass_GP_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">rin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">npt</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute the hydrostatic mass profile from an existing non-parametric reconstruction run. The gradient of the basis functions for the temperature and the density are computed analytically and the best-fit coefficients are used to determine the posterior distributions of hydrostatic mass,</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        M(&lt;r) = -\\frac{r k T}{G \mu m_p}\\left[ \\frac{\\partial \\log T}{\\partial \\log r} + \\frac{\\partial \\log n_e}{\\partial \\log r} \\right]</span>
+
+<span class="sd">    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run</span>
+<span class="sd">    :type Mhyd: :class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param rin: Minimum radius of the output profile. If None, the innermost data point is used. Defaults to None</span>
+<span class="sd">    :type rin: float</span>
+<span class="sd">    :param rout: Maximum radius of the output profile. If None, the outermost data point is used. Defaults to None</span>
+<span class="sd">    :type rout: float</span>
+<span class="sd">    :param npt: Number of points in output profile. Defaults to 200</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param plot: If True, produce a plot of the mass profile and gas mass profile. Defaults to False</span>
+<span class="sd">    :type plot: bool</span>
+<span class="sd">    :return: Dictionary containing the profiles of hydrostatic mass, gas mass, and gas fraction</span>
+<span class="sd">    :rtype: dict(11xnpt)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span>
 
     <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">rin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">rin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">rin_m</span><span class="p">)</span>
+        <span class="n">rin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="n">rin_m</span><span class="o">+</span><span class="n">rout_m</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">rin</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">rin</span> <span class="o">=</span> <span class="mf">1.</span>
@@ -680,12 +800,18 @@
 
 <div class="viewcode-block" id="prof_GP_hires"><a class="viewcode-back" href="../../hydromass.html#hydromass.nonparametric.prof_GP_hires">[docs]</a><span class="k">def</span> <span class="nf">prof_GP_hires</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">rin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">npt</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">Z</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute best-fitting profiles and error envelopes from fitted data</span>
+<span class="sd">    Compute the best-fitting thermodynamic profiles and error envelopes from a non-parametric reconstruction run. The output profiles include gas density, temperature, pressure, entropy, cooling function, and radiative cooling time.</span>
 
-<span class="sd">    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction</span>
-<span class="sd">    :param model:</span>
-<span class="sd">    :param nmore:</span>
-<span class="sd">    :return:</span>
+<span class="sd">    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the result of the non-parametric reconstruction run</span>
+<span class="sd">    :type Mhyd: :class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param rin: Minimum radius of the output profiles. If None, the innermost data point is used. Defaults to None</span>
+<span class="sd">    :type rin: float</span>
+<span class="sd">    :param npt: Number of points in the output profiles. Defaults to 200</span>
+<span class="sd">    :type npt: int</span>
+<span class="sd">    :param Z: Gas metallicity relative to Solar for the calculation of the cooling function. Defaults to 0.3</span>
+<span class="sd">    :type Z: float</span>
+<span class="sd">    :return: Dictionary including the thermodynamic profiles</span>
+<span class="sd">    :rtype: dict(24xnpt)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">nmore</span><span class="p">)</span>
@@ -853,18 +979,40 @@
                    <span class="n">samplefile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                    <span class="n">tune</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">bin_fact</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">smin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">smax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ngauss</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">find_map</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run non-parametric log-normal mixture reconstruction. Following Eckert et al. (2022), the temperature profile is described as a linear combination of a large number of log-normal functions, whereas the gas density profile is decomposed on a basis of King functions. The number of log-normal functions as well as the smoothing scales can be adjusted by the user.</span>
 
-<span class="sd">    :param Mhyd:</span>
-<span class="sd">    :param bkglim:</span>
-<span class="sd">    :param nmcmc:</span>
-<span class="sd">    :param fit_bkg:</span>
-<span class="sd">    :param back:</span>
-<span class="sd">    :param samplefile:</span>
-<span class="sd">    :param nrc:</span>
-<span class="sd">    :param nbetas:</span>
-<span class="sd">    :param min_beta:</span>
-<span class="sd">    :param tune:</span>
-<span class="sd">    :return:</span>
+<span class="sd">    :param Mhyd: An input :class:`hydromass.mhyd.Mhyd` object including the data and the source definition</span>
+<span class="sd">    :type Mhyd: :class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param bkglim: Radius (in arcmin) beyond which it is assumed that the background fully dominates the profile. If None, the entire radial range is fitted as source + background. Defaults to None.</span>
+<span class="sd">    :type bkglim: float</span>
+<span class="sd">    :param nmcmc: Number of NUTS samples. Defaults to 1000</span>
+<span class="sd">    :type nmcmc: int</span>
+<span class="sd">    :param fit_bkg: Define whether we will fit the counts as source + background (True) or the background subtracted surface brightness as source only (False). Defaults to False.</span>
+<span class="sd">    :type fit_bkg: bool</span>
+<span class="sd">    :param back: Input value for the background. If None then the mean surface brightness in the region outside &quot;bkglim&quot; is used. Relevant only if fit_bkg = True. Defaults to None.</span>
+<span class="sd">    :type back: float</span>
+<span class="sd">    :param samplefile: Name of ASCII file to output the final PyMC3 samples</span>
+<span class="sd">    :type samplefile: str</span>
+<span class="sd">    :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4</span>
+<span class="sd">    :type nrc: int</span>
+<span class="sd">    :param nbetas: Number of beta values to set up the multiscale model (default = 6)</span>
+<span class="sd">    :type nbetas: int</span>
+<span class="sd">    :param min_beta: Minimum beta value (default = 0.6)</span>
+<span class="sd">    :type min_beta: float</span>
+<span class="sd">    :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.</span>
+<span class="sd">    :type nmore: int</span>
+<span class="sd">    :param tune: Number of NUTS tuning steps. Defaults to 500</span>
+<span class="sd">    :type tune: int</span>
+<span class="sd">    :param bin_fact: bin_fact: Binning factor for the definition of the log-normal standard deviations, i.e. the standard deviations of the log-normals will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.</span>
+<span class="sd">    :type bin_fact: float</span>
+<span class="sd">    :param smin: Minimum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smin: float</span>
+<span class="sd">    :param smax: Maximum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.</span>
+<span class="sd">    :type smax: float</span>
+<span class="sd">    :param ngauss: Number of log-normal functions. Defaults to 100</span>
+<span class="sd">    :type ngauss: int</span>
+<span class="sd">    :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True</span>
+<span class="sd">    :type find_map: bool</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span>

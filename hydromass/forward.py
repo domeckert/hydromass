@@ -50,7 +50,7 @@ def gnfw_np(xout, pars):
 
     :param rad: 1-D array with radius definition
     :type rad: numpy.ndarray
-    :param pars: 2-D array including the parameter samples
+    :param pars: 2-D array including the parameter samples. Column order is: p0, c500, gamma, alpha, beta
     :type pars: numpy.ndarray
     :return: 2-D array including all the realizations of the model pressure profile
     :rtype: numpy.ndarray
@@ -249,6 +249,20 @@ def P_forw_from_samples(Mhyd, Forward, nmore=5):
 
 
 def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
+    '''
+    Compute the best-fit forward mass model and its 1-sigma error envelope from a loaded Forward run. 
+
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: :class:`hydromass.forward.Forward` object defining the forward model
+    :type Forward: class:`hydromass.forward.Forward`
+    :param plot: Produce a plot of the mass profile from the result of the forward fit. Defaults to False
+    :type plot: bool
+    :param nmore: Number of points defining fine grid, must be equal to the value used for the mass reconstruction. Defaults to 5
+    :type nmore: int
+    :return: Dictionary containing the profiles of hydrostatic mass, gas mass, and gas fraction
+    :rtype: dict(11xnpt)
+    '''
 
     nsamp = len(Mhyd.samples)
 
@@ -346,10 +360,16 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3):
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
-    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction
-    :param model:
-    :param nmore:
-    :return:
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: :class:`hydromass.forward.Forward` object defining the forward model
+    :type Forward: class:`hydromass.forward.Forward`
+    :param nmore: Number of points defining fine grid, must be equal to the value used for the mass reconstruction. Defaults to 5
+    :type nmore: int
+    :param Z: Metallicity relative to Solar for the computation of the cooling function. Defaults to 0.3
+    :type Z: float
+    :return: Dictionary containing the profiles of thermodynamic quantities (temperature, pressure, gas density, and entropy), cooling function and cooling time
+    :rtype: dict(23xnpt)
     """
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
@@ -426,7 +446,17 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3):
 
 class Forward:
     """
-    Class for definition of forward model to the pressure using a GNFW model
+    Class allowing the user to define a parametric forward model to the gas pressure. Currently only supports the generalized NFW model (Nagai et al. 2007), :func:`hydromass.forward.gnfw_pm`.
+
+    :param start: 1-D array including the central values of the Gaussian priors on the gNFW model parameters. If None, the starting values are set automatically using the average gNFW model of Planck Collaboration V (2013). Defaults to None.
+    :type start: numpy.ndarray
+    :param sd: 1-D array including the standard deviation values of the Gaussian priors on the gNFW model parameters. If None, the standard deviations are set automatically to encompass the variety of pressure profiles of Planck Collaboration V (2013). Defaults to None.
+    :type sd: numpy.ndarray
+    :param limits: 2-D array including the minimum and maximum allowed values for each gNFW parameter. If None, very broad automatic boundaries are used. Defaults to None.
+    :type limits: numpy.ndarray
+    :param fix: 1-D array of booleans describing whether each parameter is fitted (False) or fixed to the input value given by the "start" parameter (True). If None all the parameters are fitted. Defaults to None.
+    :type fix: numpy.ndarray
+
     """
     def __init__(self, start=None, sd=None, limits=None, fix=None):
 
@@ -510,18 +540,42 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    tune=500, find_map=True):
     """
+    Set up parametric forward model fit and optimize with PyMC3. The routine takes a parametric function for the 3D gas pressure profile as input and optimizes jointly for the gas density and pressure profiles. The mass profile is then computed point by point using the analytic derivative of the model pressure profile:
 
-    :param Mhyd:
-    :param bkglim:
-    :param nmcmc:
-    :param fit_bkg:
-    :param back:
-    :param samplefile:
-    :param nrc:
-    :param nbetas:
-    :param min_beta:
-    :param tune:
-    :return:
+    .. math::
+
+        M_{forw}(<r) = - \\frac{r^2}{\\rho_{gas}(r) G} \\frac{d \\ln P}{d \\ln r}
+
+    The gas density profile is fitted to the surface brightness profile and described as a linear combination of King functions. The definition of the parametric forward model should be defined using the :class:`hydromass.forward.Forward` class, which implements the generalized NFW model and can be used to implement any parametric model for the gas pressure. The 3D pressure profile is then projected along the line of sight an weighted by spectroscopic-like weights to predict the spectroscopic temperature profile.
+
+    The parameters of the forward model and of the gas density profile are fitted jointly to the data. Priors on the input parameters can be set by the user in the definition of the forward model.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model:  A :class:`hydromass.forward.Forward` object including the definition of the forward model and its input values (mandatory input)
+    :type model: class:`hydromass.forward.Forward`
+    :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+    :type bkglim: float
+    :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+    :type nmcmc: int
+    :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+    :type fit_bkg: bool
+    :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+    :type back: float
+    :param samplefile: Name of ASCII file to output the final PyMC3 samples
+    :type samplefile: str
+    :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+    :type nrc: int
+    :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+    :type nbetas: int
+    :param min_beta: Minimum beta value (default = 0.6)
+    :type min_beta: float
+    :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+    :type nmore: int
+    :param tune: Number of NUTS tuning steps. Defaults to 500
+    :type tune: int
+    :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+    :type find_map: bool
     """
 
     prof = Mhyd.sbprof

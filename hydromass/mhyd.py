@@ -765,6 +765,7 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None):
         '''
+        Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
         :param model:  A :class:`hydromass.functions.Model` object including the chosen mass model and its input values (mandatory input)
         :type model: class:`hydromass.functions.Model`
@@ -833,6 +834,36 @@ class Mhyd:
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
 
+        '''
+        Optimize a parametric forward fit to the gas pressure profile using the :func:`hydromass.forward.Run_Forward_PyMC3` function
+
+        :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)
+        :type Mhyd: class:`hydromass.mhyd.Mhyd`
+        :param model:  A :class:`hydromass.forward.Forward` object including the definition of the forward model and its input values (mandatory input)
+        :type model: class:`hydromass.forward.Forward`
+        :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+        :type bkglim: float
+        :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+        :type nmcmc: int
+        :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+        :type fit_bkg: bool
+        :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+        :type back: float
+        :param samplefile: Name of ASCII file to output the final PyMC3 samples
+        :type samplefile: str
+        :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+        :type nrc: int
+        :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+        :type nbetas: int
+        :param min_beta: Minimum beta value (default = 0.6)
+        :type min_beta: float
+        :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+        :type nmore: int
+        :param tune: Number of NUTS tuning steps. Defaults to 500
+        :type tune: int
+        :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+        :type find_map: bool
+        '''
         if forward is None:
 
             print('Error no forward model provided')
@@ -901,17 +932,39 @@ class Mhyd:
                                 ngauss=ngauss)
 
     def SaveModel(self, model, outfile=None):
+        '''
+        Save the output of a mass model fit into a FITS file through the :func:`hydromass.save.SaveModel` function
+
+        :param model: :class:`hydromass.functions.Model` defining the chosen mass model
+        :type model: :class:`hydromass.functions.Model`
+        :param outfile: Name of output FITS file. If None, the file is outputted to a file called "output_model.fits" under the default output directory specified in the current object. Defaults to None
+        :type outfile: str
+        '''
 
         SaveModel(self,
                   model,
                   outfile)
 
     def SaveGP(self, outfile=None):
+        '''
+        Save the output of a non-parametric reconstruction into a FITS file through the :func:`hydromass.save.SaveGP` function
+
+        :param outfile: Name of output FITS file. If None, the file is outputted to a file called "output_GP.fits" under the default output directory specified in the current object. Defaults to None
+        :type outfile: str
+        '''
 
         SaveGP(self,
                outfile)
 
     def SaveForward(self, Forward, outfile=None):
+        '''
+        Save the output of a parametric forward reconstruction into a FITS file through the :func:`hydromass.save.SaveForward` function
+
+        :param Forward: A :class:`hydromass.forward.Forward` object containing the definition of the forward model
+        :type Forward: class:`hydromass.forward.Forward`
+        :param outfile: Name of output FITS file. If None, the file is outputted to a file called "output_forward.fits" under the default output directory specified in the current object. Defaults to None
+        :type outfile: str
+        '''
 
         SaveForward(self,
                     Forward,

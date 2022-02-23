@@ -161,6 +161,32 @@
 <span class="c1"># Function to calculate a linear operator transforming parameter vector into predicted model counts</span>
 
 <div class="viewcode-block" id="calc_linear_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_linear_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_linear_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span><span class="n">sourcereg</span><span class="p">,</span><span class="n">pars</span><span class="p">,</span><span class="n">area</span><span class="p">,</span><span class="n">expo</span><span class="p">,</span><span class="n">psf</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Function to calculate a linear operator transforming parameter vector into predicted model counts</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        C(r) = \\sum_{i=1}^P \\alpha_i C_i(r)</span>
+
+<span class="sd">    with :math:`\\alpha_i` the parameter values and :math:`C_i(r)` the count profiles of each basis function, i.e. the indices of the output matrix</span>
+
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param sourcereg: Selection array for the source region</span>
+<span class="sd">    :type sourcereg: numpy.ndarray</span>
+<span class="sd">    :param pars: List of beta model parameters obtained through :func:`hydromass.deproject.list_params`</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :param area: Bin area in arcmin^2</span>
+<span class="sd">    :type area: numpy.ndarray</span>
+<span class="sd">    :param expo: Bin effective exposure in s</span>
+<span class="sd">    :type expo: numpy.ndarray</span>
+<span class="sd">    :param psf: PSF mixing matrix</span>
+<span class="sd">    :type psf: numpy.ndarray</span>
+<span class="sd">    :return: Linear projection and PSF mixing operator</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
     <span class="c1"># Select values in the source region</span>
     <span class="n">rfit</span><span class="o">=</span><span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
     <span class="n">npt</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
@@ -192,6 +218,22 @@
 <span class="n">nsh</span><span class="o">=</span><span class="mf">4.</span> <span class="c1"># number of basis functions to set</span>
 
 <div class="viewcode-block" id="list_params"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.list_params">[docs]</a><span class="k">def</span> <span class="nf">list_params</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span><span class="n">sourcereg</span><span class="p">,</span><span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span><span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Define a list of parameters to define the dictionary of basis functions</span>
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param sourcereg: Selection array for the source region</span>
+<span class="sd">    :type sourcereg: numpy.ndarray</span>
+<span class="sd">    :param nrc: Number of core radii. If nrc=None (default), the number of core radiis will be defined adaptively as one per each set of 4 data points</span>
+<span class="sd">    :type nrc: int</span>
+<span class="sd">    :param nbetas: Number of beta values. Defaults to 6</span>
+<span class="sd">    :type nbetas: int</span>
+<span class="sd">    :param min_beta: Minimum value of beta. Defaults to 0.6</span>
+<span class="sd">    :type min_beta: float</span>
+<span class="sd">    :return: Array containing sets of values to set up the function dictionary</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">rfit</span><span class="o">=</span><span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
     <span class="n">npfit</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nrc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -211,6 +253,27 @@
 <span class="c1"># Function to create a linear operator transforming parameters into surface brightness</span>
 
 <div class="viewcode-block" id="calc_sb_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_sb_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_sb_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span><span class="n">sourcereg</span><span class="p">,</span><span class="n">pars</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to calculate a linear operator transforming a parameter vector into a model surface brightness profile</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        S_X(r) = \\sum_{i=1}^P \\alpha_i S_i(r)</span>
+
+<span class="sd">    with :math:`\\alpha_i` the parameter values and :math:`S_i(r)` the brightness profiles of each basis functions, i.e. the indices of the output matrix</span>
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param sourcereg: Selection array for the source region</span>
+<span class="sd">    :type sourcereg: numpy.ndarray</span>
+<span class="sd">    :param pars: List of beta model parameters obtained through list_params</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :param withbkg: Set whether the background is fitted jointly (True) or subtracted (False). Defaults to True.</span>
+<span class="sd">    :type withbkg: bool</span>
+<span class="sd">    :return: Linear projection operator</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="c1"># Select values in the source region</span>
     <span class="n">rfit</span><span class="o">=</span><span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
     <span class="n">npt</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
@@ -237,6 +300,27 @@
 
 
 <div class="viewcode-block" id="calc_sb_operator_psf"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_sb_operator_psf">[docs]</a><span class="k">def</span> <span class="nf">calc_sb_operator_psf</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">expo</span><span class="p">,</span> <span class="n">psf</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Same as :func:`hydromass.deproject.calc_sb_operator` but convolving the model surface brightness with the PSF model</span>
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param sourcereg: Selection array for the source region</span>
+<span class="sd">    :type sourcereg: numpy.ndarray</span>
+<span class="sd">    :param pars: List of beta model parameters obtained through list_params</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :param area: Bin area in arcmin^2</span>
+<span class="sd">    :type area: numpy.ndarray</span>
+<span class="sd">    :param expo: Bin effective exposure in s</span>
+<span class="sd">    :type expo: numpy.ndarray</span>
+<span class="sd">    :param psf: PSF mixing matrix</span>
+<span class="sd">    :type psf: numpy.ndarray</span>
+<span class="sd">    :param withbkg: Set whether the background is fitted jointly (True) or subtracted (False). Defaults to False.</span>
+<span class="sd">    :type withbkg: bool</span>
+<span class="sd">    :return: Linear projection and PSF mixing operator</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="c1"># Select values in the source region</span>
     <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
     <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
@@ -271,6 +355,24 @@
 
 
 <div class="viewcode-block" id="calc_int_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_int_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_int_operator</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">pars</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute a linear operator to integrate analytically the basis functions within some radial range and return count rate and luminosities</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        CR = \\sum_{i=1}^P \\alpha_i (F_i(b) - F_i(a))</span>
+
+<span class="sd">    with a,b the inner and outer radii of the chosen radial range, :math:`\\alpha_i` the parameter values and :math:`F_i(a), F_i(b)` the analytic integral of the basis functions, i.e. the indices of the output matrix</span>
+
+<span class="sd">    :param a: Lower integration boundary</span>
+<span class="sd">    :type a: float</span>
+<span class="sd">    :param b: Upper integration boundary</span>
+<span class="sd">    :type b: float</span>
+<span class="sd">    :param pars: List of beta model parameters obtained through list_params</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :return: Linear integration operator</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Select values in the source region</span>
     <span class="n">npars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
     <span class="n">rads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">])</span>
@@ -291,6 +393,24 @@
 
 
 <div class="viewcode-block" id="list_params_density"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.list_params_density">[docs]</a><span class="k">def</span> <span class="nf">list_params_density</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">sourcereg</span><span class="p">,</span> <span class="n">kpcp</span><span class="p">,</span> <span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Define a list of parameters to transform the basis functions into gas density profiles</span>
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param sourcereg: Selection array for the source region</span>
+<span class="sd">    :type sourcereg: numpy.ndarray</span>
+<span class="sd">    :param z: Source redshift</span>
+<span class="sd">    :type z: float</span>
+<span class="sd">    :param nrc: Number of core radii. If nrc=None (default), the number of core radiis will be defined adaptively as one per each set of 4 data points.</span>
+<span class="sd">    :type nrc: int</span>
+<span class="sd">    :param nbetas: Number of beta values. Defaults to 6</span>
+<span class="sd">    :type nbetas: int</span>
+<span class="sd">    :param min_beta: Minimum value of beta. Defaults to 0.6</span>
+<span class="sd">    :type min_beta: float</span>
+<span class="sd">    :return: Array containing sets of values to set up the function dictionary</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span><span class="p">[</span><span class="n">sourcereg</span><span class="p">]</span>
     <span class="n">npfit</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">nrc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -311,6 +431,26 @@
 <span class="c1"># Linear operator to transform parameters into density</span>
 
 <div class="viewcode-block" id="calc_density_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_density_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_density_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">kpcp</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute linear operator to transform a parameter vector into a gas density profile</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        n_e(r) = \\sum_{i=1}^P \\alpha_i f_i(r)</span>
+
+<span class="sd">    with :math:`\\alpha_i` the parameter values and :math:`f_i(r)` the profiles of each basis function, i.e. the indices of the output matrix</span>
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param pars: List of beta model parameters obtained through :func:`hydromass.deproject.list_params_density`</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :param kpcp: Kiloparsec equivalent of 1 arcmin at the redshift of the source</span>
+<span class="sd">    :type kpcp: float</span>
+<span class="sd">    :param withbkg: Set whether the background is fitted jointly (True) or subtracted (False). Defaults to True.</span>
+<span class="sd">    :type withbkg: bool</span>
+<span class="sd">    :return: Linear operator for gas density</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Select values in the source region</span>
     <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">kpcp</span>
     <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
@@ -339,6 +479,26 @@
 
 <span class="c1"># Function to compute d(log n)/d(log r)</span>
 <div class="viewcode-block" id="calc_grad_operator"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.calc_grad_operator">[docs]</a><span class="k">def</span> <span class="nf">calc_grad_operator</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">kpcp</span><span class="p">,</span> <span class="n">withbkg</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute a linear operator transforming a parameter vector into a density gradient profile</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\frac{\\partial \\log n_e}{\\partial \\log r} = \\sum_{i=1}^P \\alpha_i g_i(r)</span>
+
+<span class="sd">    with :math:`\\alpha_i` the parameter values and :math:`g_i(r)` the log gradients of each basis functions, i.e. the indices of the output matrix</span>
+
+<span class="sd">    :param rad: Array of input radii in arcmin</span>
+<span class="sd">    :type rad: numpy.ndarray</span>
+<span class="sd">    :param pars: List of beta model parameters obtained through :func:`hydromass.deproject.list_params_density`</span>
+<span class="sd">    :type pars: numpy.ndarray</span>
+<span class="sd">    :param kpcp: Kiloparsec equivalent of 1 arcmin at the redshift of the source</span>
+<span class="sd">    :type kpcp: float</span>
+<span class="sd">    :param withbkg: Set whether the background is fitted jointly (True) or subtracted (False). Defaults to True.</span>
+<span class="sd">    :type withbkg: bool</span>
+<span class="sd">    :return: Linear operator for gas density</span>
+<span class="sd">    :rtype: numpy.ndarray</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1"># Select values in the source region</span>
     <span class="n">rfit</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">kpcp</span>
     <span class="n">npt</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rfit</span><span class="p">)</span>
@@ -369,9 +529,14 @@
 
 
 <div class="viewcode-block" id="MyDeprojVol"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.MyDeprojVol">[docs]</a><span class="k">class</span> <span class="nc">MyDeprojVol</span><span class="p">:</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Mydeproj</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the projection volumes in spherical symmetry following Kriss et al. (1983)</span>
+
+<span class="sd">    :param radin: Array of inner radii of the bins</span>
+<span class="sd">    :type radin: class:`numpy.ndarray`</span>
+<span class="sd">    :param radout: Array of outer radii of the bins</span>
+<span class="sd">    :type radout: class:`numpy.ndarray`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radin</span><span class="p">,</span> <span class="n">radot</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 
@@ -384,6 +549,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
 
 <div class="viewcode-block" id="MyDeprojVol.deproj_vol"><a class="viewcode-back" href="../../hydromass.html#hydromass.deproject.MyDeprojVol.deproj_vol">[docs]</a>    <span class="k">def</span> <span class="nf">deproj_vol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the projection volumes</span>
+
+<span class="sd">        :return: Volume matrix</span>
+<span class="sd">        :rtype: numpy.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">###############volume=deproj_vol(radin,radot)</span>
         <span class="n">ri</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radin</span><span class="p">)</span>
         <span class="n">ro</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radot</span><span class="p">)</span>

@@ -10,7 +10,7 @@ def SaveModel(Mhyd, model, outfile=None):
     :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the mass model fit
     :type Mhyd: class:`hydromass.mhyd.Mhyd`
     :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
-    :type model: class:`hydromass.functions.Model`
+    :type model: :class:`hydromass.functions.Model`
     :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_model.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
     :type outfile: str
     '''

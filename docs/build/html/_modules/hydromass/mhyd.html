@@ -918,6 +918,7 @@
             <span class="n">samplefile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
             <span class="n">p0_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">dmonly</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mstar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">find_map</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pnt</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.</span>
 
 <span class="sd">        :param model:  A :class:`hydromass.functions.Model` object including the chosen mass model and its input values (mandatory input)</span>
 <span class="sd">        :type model: class:`hydromass.functions.Model`</span>
@@ -986,6 +987,36 @@
 <div class="viewcode-block" id="Mhyd.run_forward"><a class="viewcode-back" href="../../hydromass.html#hydromass.mhyd.Mhyd.run_forward">[docs]</a>    <span class="k">def</span> <span class="nf">run_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">forward</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bkglim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nmcmc</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">fit_bkg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">back</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">samplefile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">find_map</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Optimize a parametric forward fit to the gas pressure profile using the :func:`hydromass.forward.Run_Forward_PyMC3` function</span>
+
+<span class="sd">        :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)</span>
+<span class="sd">        :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">        :param model:  A :class:`hydromass.forward.Forward` object including the definition of the forward model and its input values (mandatory input)</span>
+<span class="sd">        :type model: class:`hydromass.forward.Forward`</span>
+<span class="sd">        :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.</span>
+<span class="sd">        :type bkglim: float</span>
+<span class="sd">        :param nmcmc: Number of PyMC3 steps. Defaults to 1000</span>
+<span class="sd">        :type nmcmc: int</span>
+<span class="sd">        :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)</span>
+<span class="sd">        :type fit_bkg: bool</span>
+<span class="sd">        :param back: Input value for the background. If None then the mean surface brightness in the region outside &quot;bkglim&quot; is used. Relevant only if fit_bkg = True. Defaults to None.</span>
+<span class="sd">        :type back: float</span>
+<span class="sd">        :param samplefile: Name of ASCII file to output the final PyMC3 samples</span>
+<span class="sd">        :type samplefile: str</span>
+<span class="sd">        :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4</span>
+<span class="sd">        :type nrc: int</span>
+<span class="sd">        :param nbetas: Number of beta values to set up the multiscale model (default = 6)</span>
+<span class="sd">        :type nbetas: int</span>
+<span class="sd">        :param min_beta: Minimum beta value (default = 0.6)</span>
+<span class="sd">        :type min_beta: float</span>
+<span class="sd">        :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.</span>
+<span class="sd">        :type nmore: int</span>
+<span class="sd">        :param tune: Number of NUTS tuning steps. Defaults to 500</span>
+<span class="sd">        :type tune: int</span>
+<span class="sd">        :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True</span>
+<span class="sd">        :type find_map: bool</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">forward</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error no forward model provided&#39;</span><span class="p">)</span>
@@ -1054,17 +1085,39 @@
                                 <span class="n">ngauss</span><span class="o">=</span><span class="n">ngauss</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Mhyd.SaveModel"><a class="viewcode-back" href="../../hydromass.html#hydromass.mhyd.Mhyd.SaveModel">[docs]</a>    <span class="k">def</span> <span class="nf">SaveModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Save the output of a mass model fit into a FITS file through the :func:`hydromass.save.SaveModel` function</span>
+
+<span class="sd">        :param model: :class:`hydromass.functions.Model` defining the chosen mass model</span>
+<span class="sd">        :type model: :class:`hydromass.functions.Model`</span>
+<span class="sd">        :param outfile: Name of output FITS file. If None, the file is outputted to a file called &quot;output_model.fits&quot; under the default output directory specified in the current object. Defaults to None</span>
+<span class="sd">        :type outfile: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">SaveModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                   <span class="n">model</span><span class="p">,</span>
                   <span class="n">outfile</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Mhyd.SaveGP"><a class="viewcode-back" href="../../hydromass.html#hydromass.mhyd.Mhyd.SaveGP">[docs]</a>    <span class="k">def</span> <span class="nf">SaveGP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Save the output of a non-parametric reconstruction into a FITS file through the :func:`hydromass.save.SaveGP` function</span>
+
+<span class="sd">        :param outfile: Name of output FITS file. If None, the file is outputted to a file called &quot;output_GP.fits&quot; under the default output directory specified in the current object. Defaults to None</span>
+<span class="sd">        :type outfile: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">SaveGP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                <span class="n">outfile</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Mhyd.SaveForward"><a class="viewcode-back" href="../../hydromass.html#hydromass.mhyd.Mhyd.SaveForward">[docs]</a>    <span class="k">def</span> <span class="nf">SaveForward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Forward</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Save the output of a parametric forward reconstruction into a FITS file through the :func:`hydromass.save.SaveForward` function</span>
+
+<span class="sd">        :param Forward: A :class:`hydromass.forward.Forward` object containing the definition of the forward model</span>
+<span class="sd">        :type Forward: class:`hydromass.forward.Forward`</span>
+<span class="sd">        :param outfile: Name of output FITS file. If None, the file is outputted to a file called &quot;output_forward.fits&quot; under the default output directory specified in the current object. Defaults to None</span>
+<span class="sd">        :type outfile: str</span>
+<span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">SaveForward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                     <span class="n">Forward</span><span class="p">,</span>

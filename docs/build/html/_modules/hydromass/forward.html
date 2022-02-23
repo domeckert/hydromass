@@ -154,7 +154,7 @@
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pymc3</span> <span class="k">as</span> <span class="nn">pm</span>
 <span class="kn">from</span> <span class="nn">.deproject</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">.plots</span> <span class="kn">import</span> <span class="n">rads_more</span><span class="p">,</span> <span class="n">get_coolfunc</span>
+<span class="kn">from</span> <span class="nn">.plots</span> <span class="kn">import</span> <span class="n">rads_more</span><span class="p">,</span> <span class="n">get_coolfunc</span><span class="p">,</span> <span class="n">plt</span>
 <span class="kn">from</span> <span class="nn">.constants</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="c1"># GNFW function should work both for numpy.ndarray and pymc3/theano formats</span>
@@ -203,7 +203,7 @@
 
 <span class="sd">    :param rad: 1-D array with radius definition</span>
 <span class="sd">    :type rad: numpy.ndarray</span>
-<span class="sd">    :param pars: 2-D array including the parameter samples</span>
+<span class="sd">    :param pars: 2-D array including the parameter samples. Column order is: p0, c500, gamma, alpha, beta</span>
 <span class="sd">    :type pars: numpy.ndarray</span>
 <span class="sd">    :return: 2-D array including all the realizations of the model pressure profile</span>
 <span class="sd">    :rtype: numpy.ndarray</span>
@@ -402,6 +402,20 @@
 
 
 <div class="viewcode-block" id="mass_forw_from_samples"><a class="viewcode-back" href="../../hydromass.html#hydromass.forward.mass_forw_from_samples">[docs]</a><span class="k">def</span> <span class="nf">mass_forw_from_samples</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">Forward</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute the best-fit forward mass model and its 1-sigma error envelope from a loaded Forward run. </span>
+
+<span class="sd">    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the reconstruction</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param Forward: :class:`hydromass.forward.Forward` object defining the forward model</span>
+<span class="sd">    :type Forward: class:`hydromass.forward.Forward`</span>
+<span class="sd">    :param plot: Produce a plot of the mass profile from the result of the forward fit. Defaults to False</span>
+<span class="sd">    :type plot: bool</span>
+<span class="sd">    :param nmore: Number of points defining fine grid, must be equal to the value used for the mass reconstruction. Defaults to 5</span>
+<span class="sd">    :type nmore: int</span>
+<span class="sd">    :return: Dictionary containing the profiles of hydrostatic mass, gas mass, and gas fraction</span>
+<span class="sd">    :rtype: dict(11xnpt)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="n">nsamp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mhyd</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span>
 
@@ -499,10 +513,16 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute best-fitting profiles and error envelopes from fitted data</span>
 
-<span class="sd">    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction</span>
-<span class="sd">    :param model:</span>
-<span class="sd">    :param nmore:</span>
-<span class="sd">    :return:</span>
+<span class="sd">    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the reconstruction</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param Forward: :class:`hydromass.forward.Forward` object defining the forward model</span>
+<span class="sd">    :type Forward: class:`hydromass.forward.Forward`</span>
+<span class="sd">    :param nmore: Number of points defining fine grid, must be equal to the value used for the mass reconstruction. Defaults to 5</span>
+<span class="sd">    :type nmore: int</span>
+<span class="sd">    :param Z: Metallicity relative to Solar for the computation of the cooling function. Defaults to 0.3</span>
+<span class="sd">    :type Z: float</span>
+<span class="sd">    :return: Dictionary containing the profiles of thermodynamic quantities (temperature, pressure, gas density, and entropy), cooling function and cooling time</span>
+<span class="sd">    :rtype: dict(23xnpt)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">rin_m</span><span class="p">,</span> <span class="n">rout_m</span><span class="p">,</span> <span class="n">index_x</span><span class="p">,</span> <span class="n">index_sz</span><span class="p">,</span> <span class="n">sum_mat</span><span class="p">,</span> <span class="n">ntm</span> <span class="o">=</span> <span class="n">rads_more</span><span class="p">(</span><span class="n">Mhyd</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="n">nmore</span><span class="p">)</span>
@@ -579,7 +599,17 @@
 
 <div class="viewcode-block" id="Forward"><a class="viewcode-back" href="../../hydromass.html#hydromass.forward.Forward">[docs]</a><span class="k">class</span> <span class="nc">Forward</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Class for definition of forward model to the pressure using a GNFW model</span>
+<span class="sd">    Class allowing the user to define a parametric forward model to the gas pressure. Currently only supports the generalized NFW model (Nagai et al. 2007), :func:`hydromass.forward.gnfw_pm`.</span>
+
+<span class="sd">    :param start: 1-D array including the central values of the Gaussian priors on the gNFW model parameters. If None, the starting values are set automatically using the average gNFW model of Planck Collaboration V (2013). Defaults to None.</span>
+<span class="sd">    :type start: numpy.ndarray</span>
+<span class="sd">    :param sd: 1-D array including the standard deviation values of the Gaussian priors on the gNFW model parameters. If None, the standard deviations are set automatically to encompass the variety of pressure profiles of Planck Collaboration V (2013). Defaults to None.</span>
+<span class="sd">    :type sd: numpy.ndarray</span>
+<span class="sd">    :param limits: 2-D array including the minimum and maximum allowed values for each gNFW parameter. If None, very broad automatic boundaries are used. Defaults to None.</span>
+<span class="sd">    :type limits: numpy.ndarray</span>
+<span class="sd">    :param fix: 1-D array of booleans describing whether each parameter is fitted (False) or fixed to the input value given by the &quot;start&quot; parameter (True). If None all the parameters are fitted. Defaults to None.</span>
+<span class="sd">    :type fix: numpy.ndarray</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
@@ -663,18 +693,42 @@
                    <span class="n">samplefile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nbetas</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span><span class="n">min_beta</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">nmore</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                    <span class="n">tune</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">find_map</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set up parametric forward model fit and optimize with PyMC3. The routine takes a parametric function for the 3D gas pressure profile as input and optimizes jointly for the gas density and pressure profiles. The mass profile is then computed point by point using the analytic derivative of the model pressure profile:</span>
 
-<span class="sd">    :param Mhyd:</span>
-<span class="sd">    :param bkglim:</span>
-<span class="sd">    :param nmcmc:</span>
-<span class="sd">    :param fit_bkg:</span>
-<span class="sd">    :param back:</span>
-<span class="sd">    :param samplefile:</span>
-<span class="sd">    :param nrc:</span>
-<span class="sd">    :param nbetas:</span>
-<span class="sd">    :param min_beta:</span>
-<span class="sd">    :param tune:</span>
-<span class="sd">    :return:</span>
+<span class="sd">    .. math::</span>
+
+<span class="sd">        M_{forw}(&lt;r) = - \\frac{r^2}{\\rho_{gas}(r) G} \\frac{d \\ln P}{d \\ln r}</span>
+
+<span class="sd">    The gas density profile is fitted to the surface brightness profile and described as a linear combination of King functions. The definition of the parametric forward model should be defined using the :class:`hydromass.forward.Forward` class, which implements the generalized NFW model and can be used to implement any parametric model for the gas pressure. The 3D pressure profile is then projected along the line of sight an weighted by spectroscopic-like weights to predict the spectroscopic temperature profile.</span>
+
+<span class="sd">    The parameters of the forward model and of the gas density profile are fitted jointly to the data. Priors on the input parameters can be set by the user in the definition of the forward model.</span>
+
+<span class="sd">    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)</span>
+<span class="sd">    :type Mhyd: class:`hydromass.mhyd.Mhyd`</span>
+<span class="sd">    :param model:  A :class:`hydromass.forward.Forward` object including the definition of the forward model and its input values (mandatory input)</span>
+<span class="sd">    :type model: class:`hydromass.forward.Forward`</span>
+<span class="sd">    :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.</span>
+<span class="sd">    :type bkglim: float</span>
+<span class="sd">    :param nmcmc: Number of PyMC3 steps. Defaults to 1000</span>
+<span class="sd">    :type nmcmc: int</span>
+<span class="sd">    :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)</span>
+<span class="sd">    :type fit_bkg: bool</span>
+<span class="sd">    :param back: Input value for the background. If None then the mean surface brightness in the region outside &quot;bkglim&quot; is used. Relevant only if fit_bkg = True. Defaults to None.</span>
+<span class="sd">    :type back: float</span>
+<span class="sd">    :param samplefile: Name of ASCII file to output the final PyMC3 samples</span>
+<span class="sd">    :type samplefile: str</span>
+<span class="sd">    :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4</span>
+<span class="sd">    :type nrc: int</span>
+<span class="sd">    :param nbetas: Number of beta values to set up the multiscale model (default = 6)</span>
+<span class="sd">    :type nbetas: int</span>
+<span class="sd">    :param min_beta: Minimum beta value (default = 0.6)</span>
+<span class="sd">    :type min_beta: float</span>
+<span class="sd">    :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.</span>
+<span class="sd">    :type nmore: int</span>
+<span class="sd">    :param tune: Number of NUTS tuning steps. Defaults to 500</span>
+<span class="sd">    :type tune: int</span>
+<span class="sd">    :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True</span>
+<span class="sd">    :type find_map: bool</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">prof</span> <span class="o">=</span> <span class="n">Mhyd</span><span class="o">.</span><span class="n">sbprof</span>
@@ -908,11 +962,11 @@
 
             <span class="n">start</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">find_MAP</span><span class="p">()</span>
 
-            <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">nmcmc</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="n">tune</span><span class="p">)</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">nmcmc</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s1">&#39;ADVI&#39;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="n">tune</span><span class="p">,</span> <span class="n">return_inferencedata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">target_accept</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">nmcmc</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="n">tune</span><span class="p">)</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">nmcmc</span><span class="p">,</span> <span class="n">tune</span><span class="o">=</span><span class="n">tune</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s1">&#39;ADVI&#39;</span><span class="p">,</span>  <span class="n">return_inferencedata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">target_accept</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span>
 
@@ -923,11 +977,15 @@
     <span class="n">Mhyd</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">trace</span>
 
     <span class="c1"># Get chains and save them to file</span>
-    <span class="n">sampc</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s1">&#39;coefs&#39;</span><span class="p">)</span>
+    <span class="n">chain_coefs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">posterior</span><span class="p">[</span><span class="s1">&#39;coefs&#39;</span><span class="p">])</span>
+
+    <span class="n">sc_coefs</span> <span class="o">=</span> <span class="n">chain_coefs</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">sampc</span> <span class="o">=</span> <span class="n">chain_coefs</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sc_coefs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">sc_coefs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sc_coefs</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
 
     <span class="k">if</span> <span class="n">fit_bkg</span><span class="p">:</span>
 
-        <span class="n">sampb</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s1">&#39;bkg&#39;</span><span class="p">)</span>
+        <span class="n">sampb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">posterior</span><span class="p">[</span><span class="s1">&#39;bkg&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
 
         <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sampc</span><span class="p">,</span> <span class="n">sampb</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
@@ -996,10 +1054,12 @@
 
         <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;p0&#39;</span><span class="p">:</span>
 
-            <span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">posterior</span><span class="p">[</span><span class="n">name</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
 
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="n">samppar</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">posterior</span><span class="p">[</span><span class="n">name</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
     <span class="n">Mhyd</span><span class="o">.</span><span class="n">samppar</span> <span class="o">=</span> <span class="n">samppar</span>
 
     <span class="n">Mhyd</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">K</span>

@@ -4,6 +4,16 @@ import numpy as np
 import pymc3 as pm
 
 def r200m_from_params(c, z):
+    '''
+    Approximate the ratio of :math:`R_{200m}` to :math:`R_{200c}` as a function of NFW concentration and redshift
+
+    :param c: NFW concentration
+    :type c: float
+    :param z: Source redshift
+    :type z: float
+    :return: Ratio
+    :rtype: float
+    '''
 
     R0 = 1.79
 
@@ -17,6 +27,20 @@ def r200m_from_params(c, z):
 
 
 def alpha_turb_pm(rad, r200c, c200, z, pars):
+    '''
+    Theano function implementing the model non-thermal pressure fraction following Angelinelli et al. (2020),
+
+    .. math::
+
+        \\frac{P_{NT}}{P_{TOT}} = a_0 \\left(\\frac{r}{R_{200c}}\\right)^{a_1} + a_2
+
+    :param rad: Radius
+    :param r200c: Value of :math:`R_{200c}`
+    :param c200: NFW concentration
+    :param z: Redshift
+    :param pars: Non-thermal pressure model parameters
+    :return: Non-thermal pressure fraction
+    '''
 
     a0 = pars[0,0]
 
@@ -34,6 +58,20 @@ def alpha_turb_pm(rad, r200c, c200, z, pars):
 
 
 def alpha_turb_np(rad, pars, z, pnt_pars):
+    '''
+    Numpy function for the non-thermal pressure fraction, see :func:`hydromass.pnt.alpha_turb_pm`
+
+    :param rad: Radii
+    :type rad: numpy.ndarray
+    :param pars: Samples of NFW concentration and overdensity radii
+    :type pars: numpy.ndarray
+    :param z: Source redshift
+    :type z: float
+    :param pnt_pars:  Non-thermal pressure parameter samples
+    :type pnt_pars: numpy.ndarray
+    :return: Profiles of non-thermal pressure fraction
+    :rtype: numpy.ndarray
+    '''
 
     a0 = pnt_pars[:, 0]
 
@@ -69,8 +107,8 @@ def alpha_turb_np(rad, pars, z, pnt_pars):
 def get_data_file_path(data_file):
     """
     Returns the absolute path to the required data files.
-    :param data_file: relative path to the data file, relative to the astromodels/data path.
-    So to get the path to data/dark_matter/gammamc_dif.dat you need to use data_file="dark_matter/gammamc_dif.dat"
+
+    :param data_file: relative path to the data file, relative to the hydromass/data path.
     :return: absolute path of the data file
     """
 

@@ -7,6 +7,15 @@ tt_arctan = ArcTan()
 
 # Gamma(R) function
 def func_poly_rad_pm(x, pars, dens, grad_dens):
+    '''
+
+
+    :param x:
+    :param pars:
+    :param dens:
+    :param grad_dens:
+    :return:
+    '''
 
     p0 = pars[0]
 
