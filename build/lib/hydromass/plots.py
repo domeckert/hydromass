@@ -4,6 +4,9 @@ from .deproject import *
 from .constants import *
 from .pnt import *
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
+import copy
+import pyproffit
 
 def get_coolfunc(Z):
     """
@@ -46,6 +49,8 @@ def get_coolfunc(Z):
 
         lambdalow = hdulow.data['LAMBDA']
 
+        ktgrid = hdulow.data['KT']
+
         hduhigh = fcf['COOLFUNC_Z%1.2lf' % (Zhigh)]
 
         lambdahigh = hduhigh.data['LAMBDA']
@@ -58,16 +63,20 @@ def get_coolfunc(Z):
 
         lambda_interp = thdu.data['LAMBDA']
 
-    return lambda_interp
+        ktgrid = thdu.data['KT']
+
+    return lambda_interp, ktgrid
 
 def cumsum_mat(nval):
     """
 
     Function to create a matrix that flips a vector, makes a cumulative sum and adds a 0 as the first element
-    Then dot(mat, vector) returns the desired vector
+    Then dot(mat, vector) returns the Riemann integral as a cumulative sum
 
-    :param nval: (int) Vector size
-    :return: (2d-array) Cumulative sum operator
+    :param nval: Vector size
+    :type nval: int
+    :return: Cumulative sum operator
+    :type nval: numpy.ndarray
     """
     onemat = np.ones((nval - 1, nval - 1))
 
@@ -90,9 +99,15 @@ def rads_more(Mhyd, nmore=5):
     Return grid of (in, out) radii from X-ray, SZ data or both. Concatenates radii if necessary, then computes a grid of radii.
     Returns the output arrays and the indices corresponding to the input X-ray and/or SZ radii.
 
-    :param Mhyd: (hydromass.Mhyd) Hydromass class containing loaded X-ray and/or SZ loaded data.
-    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Default = 20.
-    :return: rin, rout, index_x, index_sz, with rin, rout the grids of fine binning, and index_x, index_sz the indices corresponding to the actual input values
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing loaded X-ray and/or SZ loaded data.
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Defaults to 5.
+    :type nmore: int
+    :return:
+        - rin, rout: the inner and outer radii of the fine grid
+        - index_x, index_sz: lists of indices corresponding to the position of the input values in the grid
+        - sum_mat: matrix containing the number of values in each subgrid bin
+        - ntm: total number of grid points
     """
     if Mhyd.spec_data is not None and Mhyd.sz_data is None:
 
@@ -128,13 +143,31 @@ def rads_more(Mhyd, nmore=5):
 
     ntotjoint = len(tot_joint)
 
-    rout_more = np.empty(int((ntotjoint - 0.5) * nmore))
+    ntm = int((ntotjoint - 0.5) * nmore)
+
+    rout_more = np.empty(ntm)
 
     for i in range(ntotjoint - 1):
 
         rout_more[i * nmore:(i + 1) * nmore] = np.linspace(tot_joint[i], tot_joint[i + 1], nmore + 1)[1:]
 
     rout_more[(ntotjoint - 1) * nmore:] = np.linspace(rref_joint[njoint - 1], rout_joint[njoint - 1], int(nmore / 2.) + 1)[1:]
+
+    # Move the outer boundary to the edge of the SB profile if it is farther out
+    sbprof = Mhyd.sbprof
+
+    rmax_sb = np.max(sbprof.bins) * Mhyd.amin2kpc
+
+    if rmax_sb > np.max(rout_more):
+        nvm = len(rout_more)
+
+        dx_out = rout_more[nvm - 1] - rout_more[nvm - 2]
+
+        rout_2add = np.arange(np.max(rout_more), rmax_sb, dx_out)
+
+        rout_2add = np.append(rout_2add[1:], rmax_sb)
+
+        rout_more = np.append(rout_more, rout_2add)
 
     rin_more = np.roll(rout_more, 1)
 
@@ -168,11 +201,92 @@ def rads_more(Mhyd, nmore=5):
 
             sum_mat[i, :][ix] = 1. / nval
 
-    return rin_more, rout_more, index_x, index_sz, sum_mat
+    return rin_more, rout_more, index_x, index_sz, sum_mat, ntm
 
+def gnfw_p0(x,pars):
+    '''
+    Generalized NFW function to estimate the pressure at the outer boundary, P0
+
+    .. math::
+
+        P_{gNFW}(r) = \\frac{P_0} {(r/r_s)^\\gamma (1+(r/rs)^\\alpha)^{(\\beta-\\gamma)/\\alpha}}
+
+    :param x: Radius
+    :type x: numpy.ndarray
+    :param pars: Array containing the five parameters (P0, rs, alpha, beta, and gamma) of the gNFW function
+    :type pars: numpy.ndarray
+    :return: Model pressure
+    :rtype: numpy.ndarray
+    '''
+    P0=pars[0]
+    rs=pars[1]
+    alpha=pars[2]
+    beta=pars[3]
+    gamma=pars[4]
+    t1=np.power(x/rs,gamma)
+    t2=np.power(1.+np.power(x/rs,alpha),(beta-gamma)/alpha)
+    return P0/t1/t2
+
+def estimate_P0(Mhyd):
+    '''
+    Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. A rough electron density profile is estimated by deprojecting the surface brightness profile using the onion peeling techique, and temperature deprojection is neglected. The resulting pressure profile is fitted with a gNFW profile using the scipy.minimize function and the best-fit function is used to extrapolate the pressure to the outer boundary to provide a rough estimate of :math:`P_0`.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the loaded data
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :return: Estimated value of :math:`P_0`
+    :rtype: float
+    '''
+    spec_data = Mhyd.spec_data
+
+    sbprof = copy.copy(Mhyd.sbprof)
+
+    sbprof.profile = np.abs(sbprof.profile)
+
+    deprop = pyproffit.Deproject(z=Mhyd.redshift, cf=Mhyd.ccf, profile=sbprof)
+
+    deprop.OnionPeeling()
+
+    pars_press = np.array([3.28, 1200., 1.33, 4.72, 0.59])
+
+    ne_interp = np.interp(spec_data.rref_x_am, sbprof.bins, deprop.dens) * Mhyd.nhc
+
+    p_interp = ne_interp * spec_data.temp_x
+    ep_interp = ne_interp * spec_data.errt_x
+
+    def chi2_gnfw(pars):
+        pars_press[0] = pars[0]
+        pars_press[1] = pars[1]
+        mm = gnfw_p0(spec_data.rref_x, pars_press)
+        chi2 = np.sum((p_interp - mm) ** 2 / ep_interp ** 2)
+        return chi2
+
+    res = minimize(chi2_gnfw, np.array([1e-4, 1200.]), method='Nelder-Mead')
+
+    maxrad = np.max(sbprof.bins * Mhyd.amin2kpc)
+
+    pars_press[:2] = res['x']
+
+    p0 = gnfw_p0(maxrad, pars_press)
+
+    return p0
 
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
+    '''
+    Compute the model 3D density and pressure profiles from the output NUTS sample on an arbitrary output grid
 
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :param rin_m: A 1-D array containing the inner boundaries of the chosen bins
+    :type rin_m: numpy.ndarray
+    :param rout_m: A 1-D array containing the outer boundaries of the chosen bins
+    :type rout_m: numpy.ndarray
+    :return:
+        - dens_m: A 2-D array containing the gas density profiles for all the samples
+        - press_out: A 2-D array containing the total 3D pressure profile
+        - pth: A 2-D array containing the thermal pressure profile. If non-thermal pressure is not modeled then this is equal to the total pressure
+    '''
     samples = Mhyd.samples
 
     nsamp = len(samples)
@@ -187,13 +301,25 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         cf_prof = Mhyd.ccf
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
+    rref_m = (rin_m + rout_m) / 2.
 
-    mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
+    if Mhyd.fit_bkg:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
+
+    mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
     rout_mul = np.tile(rout_m, nsamp).reshape(nsamp, nvalm)
 
     rin_mul = np.tile(rin_m, nsamp).reshape(nsamp, nvalm)
+
+    rref_mul = np.tile(rref_m, nsamp).reshape(nsamp, nvalm)
 
     # Adding baryonic mass contribution in case of DM-only fit
     if Mhyd.dmonly:
@@ -229,7 +355,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
         mass = mass + mbar.T
 
     # Pressure gradient
-    dpres = - mass / rout_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
+    dpres = - mass / rref_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
 
     press00 = np.exp(Mhyd.samplogp0)
 
@@ -239,7 +365,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     if Mhyd.pnt:
 
-        alpha_turb = alpha_turb_np(rout_m, Mhyd.samppar, Mhyd.redshift, Mhyd.pnt_pars)
+        alpha_turb = alpha_turb_np(rref_m, Mhyd.samppar, Mhyd.redshift, Mhyd.pnt_pars)
 
         pth = press_out * (1. - alpha_turb)
 
@@ -247,17 +373,18 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         pth = press_out
 
-    return  dens_m, press_out, pth
-
+    return dens_m, press_out, pth
 
 def kt_from_samples(Mhyd, model, nmore=5):
     """
+    Compute model temperature profile from a mass reconstruction run, evaluated at reference X-ray temperature radii
 
-    Compute model temperature profile from Mhyd reconstruction evaluated at reference X-ray temperature radii
-
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
-    :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :return: Dictionary containing the model temperature profile and uncertainties, 3D and spectroscopic-like
+    :rtype: dict(9xnval)
     """
 
     if Mhyd.spec_data is None:
@@ -268,7 +395,7 @@ def kt_from_samples(Mhyd, model, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -321,12 +448,14 @@ def kt_from_samples(Mhyd, model, nmore=5):
 
 def P_from_samples(Mhyd, model, nmore=5):
     """
+    Compute model pressure profile from an existing mass reconstruction run and evaluate it at the reference SZ radii
 
-    Compute model pressure profile from Mhyd reconstruction evaluated at the reference SZ radii
-
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
-    :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :return: Arrays containing the median 3D pressure profile and the 16th and 84th percentiles
+    :rtype: numpy.ndarray
     """
 
     if Mhyd.sz_data is None:
@@ -335,7 +464,7 @@ def P_from_samples(Mhyd, model, nmore=5):
 
         return
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     dens_m, press_tot, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
@@ -346,17 +475,47 @@ def P_from_samples(Mhyd, model, nmore=5):
     return pmed, plo, phi
 
 
-def mass_from_samples(Mhyd, model, nmore=5, plot=False):
+def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
+    """
+    Compute the median and percentile mass profile, gas mass and gas fraction from an existing mass reconstruction run
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :param rin: Minimum radius of the output profiles
+    :type rin: float
+    :param rout: Maximum radius of the output profiles
+    :type rout: float
+    :param npt: Number of radial points in the output profiles. Defaults to 200
+    :type npt: int
+    :param plot: Plot the mass and gas mass profiles and return a matplotlib figure. Defaults to False.
+    :type plot: bool
+    :return: Dictionary containing the median mass [in M_sun], Lower 1-sigma percentile, Upper 1-sigma percentile, Median Mgas, Lower, Upper, Median Fgas, Lower, Upper
+    :rtype: dict(16xnpt)
     """
 
-    Compute median and percentile mass profile, gas mass and gas fraction from Mhyd reconstruction
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
-    :return: Median mass [in M_sun], Lower 1-sigma percentile, Upper 1-sigma percentile, Median Mgas, Lower, Upper, Median Fgas, Lower, Upper
-    """
+    if rin is None:
+        rin = np.min(rin_m)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+        if rin == 0:
+            rin = 1.
+
+    if rout is None:
+        rout = np.max(rout_m)
+
+    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+
+    if rin == 1.:
+        bins[0] = 0.
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
+
+    rref_m = (rin_m + rout_m) / 2.
 
     mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, model.delta) * 1e13
 
@@ -372,7 +531,15 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
 
         cf_prof = Mhyd.ccf
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    if Mhyd.fit_bkg:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    alldens = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     # Matrix containing integration volumes
     volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
@@ -426,6 +593,7 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
     dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        "R_REF": rref_m,
         "MASS": mtotm,
         "MASS_LO": mtotlo,
         "MASS_HI": mtothi,
@@ -489,18 +657,43 @@ def mass_from_samples(Mhyd, model, nmore=5, plot=False):
         return dict
 
 
-
-def prof_hires(Mhyd, model, nmore=5, Z=0.3):
+def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
     """
-    Compute best-fitting profiles and error envelopes from fitted data
+    Compute best-fitting thermodynamic profiles and error envelopes from an existing mass reconstruction run
 
-    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction
-    :param model:
-    :param nmore:
-    :return:
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :param rin: Minimum radius of the output profiles
+    :type rin: float
+    :param npt: Number of radial points in the output profiles. Defaults to 200
+    :type npt: int
+    :param Z: Gas metallicity for cooling function calculation. Defaults to 0.3
+    :type Z: float
+    :return: Dictionary containing the median profiles and 1-sigma percentiles of temperature, pressure, gas density, entropy, and cooling time
+    :rtype: dict(30xnpt)
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    if rin is None:
+        rin = np.min(rin_m)
+
+        if rin == 0:
+            rin = 1.
+
+    rout = np.max(rout_m)
+
+    bins = np.linspace(np.sqrt(rin), np.sqrt(rout), npt + 1)
+
+    bins = bins ** 2
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
+
+    rref_m = (rin_m + rout_m) / 2.
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -536,7 +729,8 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
     lambda3d = np.interp(t3d, ktgrid, coolfunc)
 
-    tcool = 3./2. * dens_m * (1. + 1./Mhyd.nhc) * t3d * kev2erg / (lambda3d * dens_m **2 / Mhyd.nhc)
+    tcool = 3. / 2. * dens_m * (1. + 1. / Mhyd.nhc) * t3d * kev2erg / (
+                lambda3d * dens_m ** 2 / Mhyd.nhc) / year
 
     mtc, mtcl, mtch = np.percentile(tcool, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
@@ -552,9 +746,10 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
         mpnt, mpntl, mpnth = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
 
-    dict={
+    dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        "R_REF": rref_m,
         "P_TOT": mptot,
         "P_TOT_LO": mptotl,
         "P_TOT_HI": mptoth,
@@ -586,8 +781,19 @@ def prof_hires(Mhyd, model, nmore=5, Z=0.3):
 
     return dict
 
-
 def mgas_pm(rin_m, rout_m, dens):
+    '''
+    Theano function to compute the gas mass
+
+    :param rin_m: 1-D array containing the inner edges of radial bins
+    :type rin_m: numpy.ndarray
+    :param rout_m: 1-D array containing the outer edges of radial bins
+    :type rout_m: numpy.ndarray
+    :param dens: Theano tensor including the density profile evaluated at the chosen radial bins
+    :type dens: theano.tensor
+    :return: Cumulative gas mass profile
+    :rtype: theano.tensor
+    '''
 
     # Integration volumes
     volint = 4. /3. * np.pi * (rout_m ** 3 - rin_m ** 3)
@@ -603,16 +809,19 @@ def mgas_pm(rin_m, rout_m, dens):
     return mgas
 
 
-
 def PlotMgas(Mhyd, plot=False, outfile=None, nmore=5):
     """
     Compute Mgas profile and error envelope from mass reconstruction run
 
-    :param Mhyd: (hydromass.Mhyd) Mhyd object containing the results of the mass reconstruction
-    :param plot: (bool) Plot the gas mass profile (default=False)
-    :param outfile: (str) If plot=True, file name to output the plotted Mgas profile (default=None)
-    :param nmore: (int) Number of points defining fine grid, must be equal to the value used for the mass reconstruction (default=5)
-    :return:
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param plot: Plot the gas mass profile. Defaults to False
+    :type plot: bool
+    :param outfile: If plot=True, file name to output the plotted Mgas profile. If none, the plot is displayed on stdout. Defaults to None
+    :type outfile: str
+    :param nmore: Number of points defining fine grid, must be equal to the value used for the mass reconstruction. Defaults to 5
+    :type nmore: int
+    :return: 1-D arrays containing the median gas mass and 16th and 84th percentiles. If plot=True, a matplotlib figure is also returned.
     """
 
     if Mhyd.samples is None or Mhyd.redshift is None or Mhyd.ccf is None:
@@ -623,7 +832,7 @@ def PlotMgas(Mhyd, plot=False, outfile=None, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
     nvalm = len(rin_m)
 

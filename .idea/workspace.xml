@@ -4,7 +4,25 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Removed build" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Removed .readthedocs.yml">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/delta.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/deproject.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/emissivity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/forward.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/pnt.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/pnt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/save.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/tpdata.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -70,13 +88,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00009" summary="fixed mstar modeling in DM-only fit">
-      <created>1592994463090</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1592994463090</updated>
     </task>
     <task id="LOCAL-00010" summary="speed up profile computation">
       <created>1600422441067</created>
@@ -414,7 +425,14 @@
       <option name="project" value="LOCAL" />
       <updated>1645634115675</updated>
     </task>
-    <option name="localTasksCounter" value="58" />
+    <task id="LOCAL-00058" summary="Removed .readthedocs.yml">
+      <created>1645634668832</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1645634668832</updated>
+    </task>
+    <option name="localTasksCounter" value="59" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -434,7 +452,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Fixed missing abundance argument" />
     <MESSAGE value="Added cf_prof=None when reloading data" />
     <MESSAGE value="Propagated rmin and rmax to calculation of Rdelta" />
     <MESSAGE value="Added variable CCF option to Forward" />
@@ -459,6 +476,7 @@
     <MESSAGE value="Added lots of docstrings" />
     <MESSAGE value="Added requirements.txt" />
     <MESSAGE value="Removed build" />
-    <option name="LAST_COMMIT_MESSAGE" value="Removed build" />
+    <MESSAGE value="Removed .readthedocs.yml" />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed .readthedocs.yml" />
   </component>
 </project>

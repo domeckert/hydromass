@@ -11,26 +11,64 @@ from astropy.io import fits
 import os
 import pymc3 as pm
 from .save import *
+import arviz as az
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False):
+                   pnt=False, rmin=None, rmax=None):
     """
 
-    Set up hydrostatic mass model and optimize with PyMC3
+    Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
 
-    :param Mhyd: (Mhyd) Object including the loaded data and initial setup (mandatory input)
-    :param model: (Model) Object including the chosen mass model and its input values (mandatory input)
-    :param bkglim: (float) Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered (default = None)
-    :param nmcmc: (integer) Number of PyMC3 steps (default = 1000)
-    :param fit_bkg: (boolean) Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
-    :param back: (float) Input value for the background. If back = None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True (default = None).
-    :param samplefile: (string) Name of ASCII file to output the final PyMC3 samples
-    :param nrc: (integer) Number of core radii values to set up the multiscale model (default = number of data points / 4)
-    :param nbetas: (integer) Number of beta values to set up the multiscale model (default = 6)
-    :param min_beta: (float) Minimum beta value (default = 0.6)
-    :return:
+    .. math::
+
+        P_{3D}(r) = P_0 + \\int_{r}^{r_0} \\rho_{gas}(r) \\frac{G M_{mod}(<r)}{r^2} dr
+
+    with :math:`r_0` the outer radial boundary of the input data and :math:`P_0` the pressure at :math:`r_0`.
+
+    The gas density profile is fitted to the surface brightness profile and described as a linear combination of King functions. The mass model should be defined using the :class:`hydromass.functions.Model` class, which implements a number of popular mass models. The 3D mass profile is then projected along the line of sight an weighted by spectroscopic-like weights to predict the spectroscopic temperature profile.
+
+    The parameters of the mass model and of the gas density profile are fitted jointly to the data. Priors on the input parameters can be set by the user in the definition of the mass model.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model:  A :class:`hydromass.functions.Model` object including the chosen mass model and its input values (mandatory input)
+    :type model: class:`hydromass.functions.Model`
+    :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+    :type bkglim: float
+    :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+    :type nmcmc: int
+    :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+    :type fit_bkg: bool
+    :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+    :type back: float
+    :param samplefile: Name of ASCII file to output the final PyMC3 samples
+    :type samplefile: str
+    :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+    :type nrc: int
+    :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+    :type nbetas: int
+    :param min_beta: Minimum beta value (default = 0.6)
+    :type min_beta: float
+    :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+    :type nmore: int
+    :param p0_prior: Set of two values defining the mean and standard deviation of the Gaussian prior on p0. If None, the code attempts to determine the value of P0 using the :func:`hydromass.plots.estimate_P0` function, which fits a rough gNFW function to estimate the shape of the pressure profile and uses the fitted function to approximate the value of P0.
+    :type p0_prior: numpy.ndarray
+    :param tune: Number of NUTS tuning steps. Defaults to 500
+    :type tune: int
+    :param dmonly: Specify whether the mass model is fitted to the total mass (dmonly=False) or to the dark matter only after subtracting the gas mass and the stellar mass if provided (dmonly=True). Defaults to False.
+    :type dmonly: bool
+    :param mstar: If dmonly=True, provide an array containing the cumulative stellar mass profile, which will be subtracted when adjusting the mass model to the dark matter only.
+    :type mstar: numpy.ndarray
+    :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+    :type find_map: bool
+    :param pnt: Attempt to model the non-thermal pressure profile. If pnt=True, the non-thermal pressure profile of Angelinelli et al. 2020 and the corresponding parameters are used to marginalize over the impact of non-thermal pressure. Defaults to False.
+    :type pnt: bool
+    :param rmin: Minimum limiting radius (in arcmin) of the active region for the surface brightness. If rmin=None, no minimum radius is applied. Defaults to None.
+    :type rmin: float
+    :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied. Defaults to None.
+    :type rmax: float
 
     """
     prof = Mhyd.sbprof
@@ -42,6 +80,29 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     area = prof.area
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
+
+    if rmin is not None:
+        valid = np.where(rad>=rmin)
+        sb = sb[valid]
+        esb = esb[valid]
+        rad = rad[valid]
+        erad = erad[valid]
+        counts = counts[valid]
+        area = area[valid]
+        exposure = exposure[valid]
+        bkgcounts = bkgcounts[valid]
+
+    if rmax is not None:
+        valid = np.where(rad <= rmax)
+        sb = sb[valid]
+        esb = esb[valid]
+        rad = rad[valid]
+        erad = erad[valid]
+        counts = counts[valid]
+        area = area[valid]
+        exposure = exposure[valid]
+        bkgcounts = bkgcounts[valid]
+
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -64,14 +125,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     npt = len(pars)
 
     if prof.psfmat is not None:
-        psfmat = np.transpose(prof.psfmat)
+        psfmat = prof.psfmat
     else:
         psfmat = np.eye(prof.nbin)
 
     # Compute linear combination kernel
     if fit_bkg:
 
-        K = calc_linear_operator(rad, sourcereg, pars, area, exposure, psfmat) # transformation to counts
+        K = calc_linear_operator(rad, sourcereg, pars, area, exposure, np.transpose(psfmat)) # transformation to counts
 
     else:
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
@@ -104,7 +165,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Kdens = calc_density_operator(rad, pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
+
+    rref_m = (rin_m + rout_m)/2.
 
     if dmonly and mstar is not None:
 
@@ -145,7 +208,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             print('Interpolating conversion factor profile onto the radial grid')
 
-            cf = np.interp(rout_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+            cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
 
             Mhyd.cf_prof = cf
 
@@ -164,11 +227,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     if fit_bkg:
 
-        Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc)
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc)
 
     else:
 
-        Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc, withbkg=False)
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc, withbkg=False)
 
     hydro_model = pm.Model()
 
@@ -186,13 +249,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             file_cov = get_data_file_path('pnt_covmat.dat')
 
-            #pnt_mean = np.loadtxt(file_means).astype(np.float32)
+            pnt_mean = np.loadtxt(file_means).astype(np.float32)
 
-            pnt_mean = np.array([[0.15288539, 1.07588625, 0.05624287]])
+            #pnt_mean = np.array([[0.15288539, 1.07588625, 0.05624287]])
 
-            #pnt_cov = np.loadtxt(file_cov).astype(np.float32)
+            pnt_cov = np.loadtxt(file_cov).astype(np.float32)
 
-            pnt_cov = np.array([[ 0.00400375, -0.0199079, -0.0022997 ], [-0.0199079, 0.54718882, 0.02912699],[-0.0022997, 0.02912699, 0.00343748]])
+            #pnt_cov = np.array([[ 0.00400375, -0.0199079, -0.0022997 ], [-0.0199079, 0.54718882, 0.02912699],[-0.0022997, 0.02912699, 0.00343748]])
 
     with hydro_model:
         # Priors for unknown model parameters
@@ -244,9 +307,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            P0_est = 1e-4 * 5. # 5 keV and R500 density
+            P0_est = estimate_P0(Mhyd=Mhyd)
 
-            err_P0_est = P0_est # 1-dex
+            print('Estimated value of P0: %g' % (P0_est))
+
+            err_P0_est = P0_est # 1 in ln
 
         logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
@@ -264,7 +329,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
         # Evaluate mass model
-        mass = Mhyd.mfact * model.func_pm(rout_m, *pmod, delta=model.delta) / Mhyd.mfact0
+        mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
 
         if dmonly:
 
@@ -284,17 +349,18 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             mass = mass + mbar
 
         # Pressure gradient
-        dpres = - mass / rout_m ** 2 * dens_m * (rout_m - rin_m)
+        dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
 
         press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
 
+        # Non-thermal pressure correction, if any
         if pnt:
 
             c200 = pmod[0]
 
             r200c = pmod[1]
 
-            alpha_turb = alpha_turb_pm(rout_m, r200c, c200, Mhyd.redshift, pnt_pars)
+            alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
 
             pth = press_out * (1. - alpha_turb)
 
@@ -335,10 +401,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
 
-
     tinit = time.time()
 
-    print('Running MCMC...')
+    print('Running HMC...')
 
     with hydro_model:
 
@@ -346,11 +411,23 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, start=start, tune=tune)
+            trace = pm.sample(nmcmc, init='ADVI', start=start, tune=tune, return_inferencedata=True,
+                              target_accept=0.9)
 
         else:
 
-            trace = pm.sample(nmcmc, tune=tune)
+            trace = pm.sample(nmcmc, init='ADVI', tune=tune, return_inferencedata=True, target_accept=0.9)
+
+
+        Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
+
+        if Mhyd.spec_data is not None:
+
+            Mhyd.ppc_kt = pm.sample_posterior_predictive(trace, var_names=['kt'])
+
+        if Mhyd.sz_data is not None:
+
+            Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
 
     print('Done.')
 
@@ -360,12 +437,18 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     Mhyd.trace = trace
 
+    Mhyd.hydro_model = hydro_model
+
     # Get chains and save them to file
-    sampc = trace.get_values('coefs')
+    chain_coefs = np.array(trace.posterior['coefs'])
+
+    sc_coefs = chain_coefs.shape
+
+    sampc = chain_coefs.reshape(sc_coefs[0]*sc_coefs[1], sc_coefs[2])
 
     if fit_bkg:
 
-        sampb = trace.get_values('bkg')
+        sampb = np.array(trace.posterior['bkg']).flatten()
 
         samples = np.append(sampc, sampb, axis=1)
 
@@ -422,7 +505,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.mstar = mstar
     Mhyd.pnt = pnt
     if pnt:
-        Mhyd.pnt_pars = trace.get_values('Pnt')[:, 0]
+        Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
     pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
@@ -436,9 +519,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     for i in range(model.npar):
 
         name = model.parnames[i]
-        samppar[:, i] = trace.get_values(name)
+        samppar[:, i] = np.array(trace.posterior[name]).flatten()
 
-    samplogp0 = trace.get_values('logp0')
+    samplogp0 = np.array(trace.posterior['logp0']).flatten()
 
     Mhyd.samppar = samppar
     Mhyd.samplogp0 = samplogp0
@@ -463,26 +546,67 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.pmod_lo = plo
         Mhyd.pmod_hi = phi
 
+    totlike = 0.
+    nptot = model.npar + 1
+    thermolike = 0.
+    npthermo = model.npar + 1
+    Mhyd.trace.log_likelihood['tot'] = 0.
+
+    if fit_bkg:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
+        nptot = nptot + npt + 1
+        #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
+
+    else:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
+        nptot = nptot + npt
+        #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
+
+    if Mhyd.spec_data is not None:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
+
+
+    if Mhyd.sz_data is not None:
+        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
+
+    if pnt:
+        nptot = nptot + 3
+        npthermo = npthermo + 3
+
+    Mhyd.totlike = totlike
+    Mhyd.nptot = nptot
+    Mhyd.thermolike = thermolike
+    Mhyd.npthermo = npthermo
+    Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
+    Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
 
 
 class Mhyd:
     """
-    Class Mhyd
 
+    The Mhyd class is the core class of hydromass. It allows the user to pass one or more datasets to be fitted, chose the mass reconstruction method, set options like change cosmology, Solar abundance table, NUTS options, model choice, and more.
+
+    :param sbprofile: A pyproffit Profile object (https://pyproffit.readthedocs.io/en/latest/pyproffit.html#module-pyproffit.profextract) including the surface brightness data
+    :type sbprofile: class:`pyproffit.profextract.Profile`
+    :param spec_data: A :class:`hydromass.tpdata.SpecData` object including a spectroscopic X-ray temperature profile and its associated uncertainties
+    :type spec_data: class:`hydromass.tpdata.SpecData`
+    :param sz_data: A :class:`hydromass.tpdata.SZData` object containing an SZ pressure profile and its covariance matrix
+    :type sz_data: class:`hydromass.tpdata.SZData`
+    :param directory: Name of output file directory. Defaults to 'mhyd'
+    :type directory: str
+    :param redshift: Source redshift
+    :type redshift: float
+    :param cosmo: Astropy cosmological model
+    :type cosmo: class:`astropy.cosmology`
+    :param f_abund: Solar abundance table. Available are 'angr', 'aspl', and 'grsa'. Defaults to 'angr'
+    :type f_abund: str
     """
 
     def __init__(self, sbprofile=None, spec_data=None, sz_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
-        """
-
-        Constructor from class Mhyd
-
-        :param sbprofile: (pyproffit.Profile) Object including the surface brightness data
-        :param spec_data: (string) Path to FITS file including results of surface brightness reconstruction
-        :param directory: (string) Name of output file directory (default='mhyd')
-        :param redshift: (float) Source redshift
-        :param cosmo: (astropy.cosmology) Astropy cosmological model
-        :param f_abund: (string) Solar abundance table. Available are 'angr', 'aspl', and 'grsa' (default = 'angr')
-        """
 
         if f_abund == 'angr':
             nhc = 1 / 0.8337
@@ -588,7 +712,27 @@ class Mhyd:
         self.mgas_fact = cgsamu * self.mu_e / Msun
 
 
-    def emissivity(self, nh, rmf, kt=None, Z=0.3, elow=0.5, ehigh=2.0, arf=None):
+    def emissivity(self, nh, rmf, kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None):
+        '''
+        Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
+
+        :param nh: Source NH in units of 1e22 cm**(-2)
+        :type nh: float
+        :param kt: Source temperature in keV
+        :type kt: float
+        :param rmf: Path to response file (RMF/RSP)
+        :type rmf: str
+        :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
+        :type abund: str
+        :param Z: Metallicity with respect to solar. Defaults to 0.3
+        :type Z: float
+        :param elow: Low-energy bound of the input image in keV. Defaults to 0.5
+        :type elow: float
+        :param ehigh: High-energy bound of the input image in keV. Defaults to 2.0
+        :type ehigh: float
+        :param arf: Path to on-axis ARF (optional, in case response file is RMF)
+        :type arf: str
+        '''
 
         if kt is None:
 
@@ -610,6 +754,7 @@ class Mhyd:
                                         nh=nh,
                                         kt=kt,
                                         rmf=rmf,
+                                        abund=abund,
                                         Z=Z,
                                         elow=elow,
                                         ehigh=ehigh,
@@ -618,8 +763,47 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None):
+        '''
+        Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
+        :param model:  A :class:`hydromass.functions.Model` object including the chosen mass model and its input values (mandatory input)
+        :type model: class:`hydromass.functions.Model`
+        :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+        :type bkglim: float
+        :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+        :type nmcmc: int
+        :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+        :type fit_bkg: bool
+        :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+        :type back: float
+        :param samplefile: Name of ASCII file to output the final PyMC3 samples
+        :type samplefile: str
+        :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+        :type nrc: int
+        :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+        :type nbetas: int
+        :param min_beta: Minimum beta value (default = 0.6)
+        :type min_beta: float
+        :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+        :type nmore: int
+        :param p0_prior: Set of two values defining the mean and standard deviation of the Gaussian prior on p0. If None, the code attempts to determine the value of P0 using the :func:`hydromass.plots.estimate_P0` function, which fits a rough gNFW function to estimate the shape of the pressure profile and uses the fitted function to approximate the value of P0.
+        :type p0_prior: numpy.ndarray
+        :param tune: Number of NUTS tuning steps. Defaults to 500
+        :type tune: int
+        :param dmonly: Specify whether the mass model is fitted to the total mass (dmonly=False) or to the dark matter only after subtracting the gas mass and the stellar mass if provided (dmonly=True). Defaults to False.
+        :type dmonly: bool
+        :param mstar: If dmonly=True, provide an array containing the cumulative stellar mass profile, which will be subtracted when adjusting the mass model to the dark matter only.
+        :type mstar: numpy.ndarray
+        :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+        :type find_map: bool
+        :param pnt: Attempt to model the non-thermal pressure profile. If pnt=True, the non-thermal pressure profile of Angelinelli et al. 2020 and the corresponding parameters are used to marginalize over the impact of non-thermal pressure. Defaults to False.
+        :type pnt: bool
+        :param rmin: Minimum limiting radius (in arcmin) of the active region for the surface brightness. If rmin=None, no minimum radius is applied. Defaults to None.
+        :type rmin: float
+        :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied. Defaults to None.
+        :type rmax: float
+        '''
         if model is None:
 
             print('Error: No mass model provided')
@@ -642,12 +826,44 @@ class Mhyd:
                        dmonly=dmonly,
                        mstar=mstar,
                        find_map=find_map,
-                       pnt=pnt)
+                       pnt=pnt,
+                       rmin=rmin,
+                       rmax=rmax)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
 
+        '''
+        Optimize a parametric forward fit to the gas pressure profile using the :func:`hydromass.forward.Run_Forward_PyMC3` function
+
+        :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)
+        :type Mhyd: class:`hydromass.mhyd.Mhyd`
+        :param model:  A :class:`hydromass.forward.Forward` object including the definition of the forward model and its input values (mandatory input)
+        :type model: class:`hydromass.forward.Forward`
+        :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+        :type bkglim: float
+        :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+        :type nmcmc: int
+        :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+        :type fit_bkg: bool
+        :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+        :type back: float
+        :param samplefile: Name of ASCII file to output the final PyMC3 samples
+        :type samplefile: str
+        :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+        :type nrc: int
+        :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+        :type nbetas: int
+        :param min_beta: Minimum beta value (default = 0.6)
+        :type min_beta: float
+        :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+        :type nmore: int
+        :param tune: Number of NUTS tuning steps. Defaults to 500
+        :type tune: int
+        :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+        :type find_map: bool
+        '''
         if forward is None:
 
             print('Error no forward model provided')
@@ -716,17 +932,39 @@ class Mhyd:
                                 ngauss=ngauss)
 
     def SaveModel(self, model, outfile=None):
+        '''
+        Save the output of a mass model fit into a FITS file through the :func:`hydromass.save.SaveModel` function
+
+        :param model: :class:`hydromass.functions.Model` defining the chosen mass model
+        :type model: :class:`hydromass.functions.Model`
+        :param outfile: Name of output FITS file. If None, the file is outputted to a file called "output_model.fits" under the default output directory specified in the current object. Defaults to None
+        :type outfile: str
+        '''
 
         SaveModel(self,
                   model,
                   outfile)
 
     def SaveGP(self, outfile=None):
+        '''
+        Save the output of a non-parametric reconstruction into a FITS file through the :func:`hydromass.save.SaveGP` function
+
+        :param outfile: Name of output FITS file. If None, the file is outputted to a file called "output_GP.fits" under the default output directory specified in the current object. Defaults to None
+        :type outfile: str
+        '''
 
         SaveGP(self,
                outfile)
 
     def SaveForward(self, Forward, outfile=None):
+        '''
+        Save the output of a parametric forward reconstruction into a FITS file through the :func:`hydromass.save.SaveForward` function
+
+        :param Forward: A :class:`hydromass.forward.Forward` object containing the definition of the forward model
+        :type Forward: class:`hydromass.forward.Forward`
+        :param outfile: Name of output FITS file. If None, the file is outputted to a file called "output_forward.fits" under the default output directory specified in the current object. Defaults to None
+        :type outfile: str
+        '''
 
         SaveForward(self,
                     Forward,

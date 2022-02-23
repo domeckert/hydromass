@@ -4,6 +4,16 @@ from .nonparametric import *
 from .forward import *
 
 def SaveModel(Mhyd, model, outfile=None):
+    '''
+    Save the output chains of a fitted mass model to an output file. The output file can then be reloaded into a new Mhyd object using the :func:`hydromass.save.ReloadModel` function.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: :class:`hydromass.functions.Model`
+    :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_model.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
+    :type outfile: str
+    '''
     if outfile is None:
         outfile = Mhyd.dir + '/output_model.fits'
 
@@ -49,6 +59,14 @@ def SaveModel(Mhyd, model, outfile=None):
 
     cols.append(col)
 
+    col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
+
+    cols.append(col)
+
+    col = fits.Column(name='LogLikeTH', format='E', array=Mhyd.thermolike)
+
+    cols.append(col)
+
     coldefs = fits.ColDefs(cols)
 
     modhdu = fits.BinTableHDU.from_columns(coldefs)
@@ -59,6 +77,10 @@ def SaveModel(Mhyd, model, outfile=None):
     modhead['MASSMOD'] = model.massmod
 
     modhead['DELTA'] = model.delta
+
+    modhead['WAIC'] = Mhyd.waic['waic']
+
+    modhead['LOO'] = Mhyd.loo['loo']
 
     for i in range(model.npar):
         parname = model.parnames[i]
@@ -77,6 +99,18 @@ def SaveModel(Mhyd, model, outfile=None):
 
 
 def ReloadModel(Mhyd, infile, mstar=None):
+    '''
+    Reload the result of a previous mass model fit within the current live session after it has been saved using the :func:`hydromass.save.SaveModel` function
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveModel` function
+    :type infile: str
+    :param mstar: External cumulative stellar mass profile if available. If none, no stellar mass profile is used. Defaults to none
+    :type mstar: class:`numpy.ndarray`
+    :return: A :class:`hydromass.functions.Model` object with the model definition and parameters
+    :rtype: class:`hydromass.functions.Model`
+    '''
     fin = fits.open(infile)
 
     Mhyd.samples = fin[1].data
@@ -104,6 +138,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
     Mhyd.mstar = mstar
 
     Mhyd.pnt = headden['PNT']
+
+    #Mhyd.waic = headden['WAIC']
+
+    #Mhyd.loo = headden['LOO']
 
     modhead = fin[2].header
 
@@ -137,6 +175,8 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.samplogp0 = dpar['logP0']
 
+    Mhyd.cf_prof = None
+
     # Now recreate operators
 
     prof = Mhyd.sbprof
@@ -169,12 +209,14 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     else:
 
-        Mhyd.K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to surface brightness
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        Mhyd.K = np.dot(prof.psfmat, Ksb) # transformation to surface brightness
+
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if Mhyd.fit_bkg:
 
@@ -195,15 +237,26 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
 
+        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
     pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
     Mhyd.sb = pmc
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch
@@ -234,6 +287,14 @@ def ReloadModel(Mhyd, infile, mstar=None):
     return mod
 
 def SaveGP(Mhyd, outfile=None):
+    '''
+    Save the result of a non-parametric GP reconstruction into an output FITS file. The result can be later reloaded through the :func:`hydromass.save.ReloadGP` function
+
+    :param Mhyd:  A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and and the output of the non-parametric GP reconstruction
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_GP.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
+    :type outfile: str
+    '''
     if outfile is None:
         outfile = Mhyd.dir + '/output_GP.fits'
 
@@ -276,6 +337,14 @@ def SaveGP(Mhyd, outfile=None):
 
 
 def ReloadGP(Mhyd, infile):
+    '''
+    Reload the result of a non-parametric GP reconstruction previously saved using the :func:`hydromass.save.SaveGP` function into the current session.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveGP` function
+    :type infile: str
+    '''
     fin = fits.open(infile)
 
     Mhyd.samples = fin[1].data
@@ -310,6 +379,8 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.ngauss = modhead['NGAUSS']
 
+    Mhyd.cf_prof = None
+
     # Now recreate operators
 
     prof = Mhyd.sbprof
@@ -333,6 +404,9 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.pardens = list_params_density(rad, sourcereg, Mhyd.amin2kpc, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
 
+    # Define the fine grid onto which the mass model will be computed
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
     # Compute linear combination kernel
     if Mhyd.fit_bkg:
 
@@ -340,28 +414,21 @@ def ReloadGP(Mhyd, infile):
                                                 psfmat)  # transformation to counts
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc)
 
-    else:
-
-        Mhyd.K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to surface brightness
-        Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
-
-    # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
-
-    if Mhyd.fit_bkg:
-
         Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
 
         Mhyd.Kdens_grad = calc_grad_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
-
     else:
 
-        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
-                                                       withbkg=False)
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
+        Mhyd.K = np.dot(prof.psfmat, Ksb)  # transformation to surface brightness
+
+        Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
+                                             withbkg=False)
         Mhyd.Kdens_grad = calc_grad_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
-                                                       withbkg=False)
+                                             withbkg=False)
 
     if Mhyd.fit_bkg:
 
@@ -373,11 +440,29 @@ def ReloadGP(Mhyd, infile):
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+
+        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
+    pmc = np.median(allsb, axis=1)
+    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb = pmc
+    Mhyd.sb_lo = pmcl
+    Mhyd.sb_hi = pmch
 
     if Mhyd.spec_data is not None and Mhyd.sz_data is None:
 
@@ -395,18 +480,11 @@ def ReloadGP(Mhyd, infile):
 
     rin_joint[0] = 0.
 
-    Mhyd.GPop, rgauss, sig = calc_gp_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint,
+    Mhyd.GPop, rgauss, sig = calc_gp_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint,
                                                         bin_fact=Mhyd.bin_fact, smin=Mhyd.smin, smax=Mhyd.smax)
 
-    Mhyd.GPgrad = calc_gp_grad_operator(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact,
+    Mhyd.GPgrad = calc_gp_grad_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact,
                                                   smin=Mhyd.smin, smax=Mhyd.smax)
-
-    pmc = np.median(allsb, axis=1)
-    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
-    Mhyd.sb = pmc
-    Mhyd.sb_lo = pmcl
-    Mhyd.sb_hi = pmch
 
     alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
     pmc = np.median(alldens, axis=1)
@@ -433,6 +511,15 @@ def ReloadGP(Mhyd, infile):
 
 
 def SaveForward(Mhyd, Forward, outfile=None):
+    '''
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the definition of the fitted data and the output of the forward fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Forward: A :class:`hydromass.forward.Forward` object containing the definition of the forward model
+    :type Forward: class:`hydromass.forward.Forward`
+    :param outfile: Name of output FITS file. If none, the file is outputted to a file called "output_forward.fits" under the default output directory specified in the :class:`hydromass.mhyd.Mhyd` object. Defaults to none
+    :type outfile: str
+    '''
     if outfile is None:
         outfile = Mhyd.dir + '/output_forward.fits'
 
@@ -492,6 +579,14 @@ def SaveForward(Mhyd, Forward, outfile=None):
     hdus.writeto(outfile, overwrite=True)
 
 def ReloadForward(Mhyd, infile):
+    '''
+    Reload the results of a previous forward fit saved using the :func:`hydromass.save.SaveForward` function into the current live session
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object into which the previously saved data will be stored
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param infile: Name of input FITS file containing the data saved using the :func:`hydromass.save.SaveForward` function
+    :type infile: str
+    '''
     fin = fits.open(infile)
 
     Mhyd.samples = fin[1].data
@@ -515,6 +610,8 @@ def ReloadForward(Mhyd, infile):
     Mhyd.nmore = headden['NMORE']
 
     modhead = fin[2].header
+
+    Mhyd.cf_prof = None
 
     mod = Forward()
 
@@ -572,12 +669,14 @@ def ReloadForward(Mhyd, infile):
 
     else:
 
-        Mhyd.K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to surface brightness
+        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+        Mhyd.K = np.dot(prof.psfmat, Ksb)  # transformation to surface brightness
+
         Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
 
     # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat = rads_more(Mhyd, nmore=Mhyd.nmore)
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
     if Mhyd.fit_bkg:
 
@@ -598,15 +697,26 @@ def ReloadForward(Mhyd, infile):
 
         Mhyd.bkg = bfit
 
+        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
     else:
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
 
+        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
     pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+    Mhyd.sb_dec = pmc
+    Mhyd.sb_dec_lo = pmcl
+    Mhyd.sb_dec_hi = pmch
+
+    pmc = np.median(allsb_conv, axis=1)
+    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
     Mhyd.sb = pmc
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch
@@ -636,7 +746,17 @@ def ReloadForward(Mhyd, infile):
 
     return mod
 
-def SaveProfiles(prof_hires, outfile=None, extname='THERMODYNAMIC PROFILES'):
+def SaveProfiles(profiles, outfile=None, extname='THERMODYNAMIC PROFILES'):
+    '''
+    Save the profiles loaded into a profile dictionary into an output FITS file
+
+    :param profiles: Dictionary containing profiles and profile names
+    :type profiles: dict
+    :param outfile: Output FITS file name
+    :type outfile: str
+    :param extname: Name of the extension of the FITS file containing the output data. Defaults to "THERMODYNAMIC PROFILES"
+    :type extname: str
+    '''
 
     if outfile is None:
 
@@ -648,7 +768,7 @@ def SaveProfiles(prof_hires, outfile=None, extname='THERMODYNAMIC PROFILES'):
 
     cols = []
 
-    for key, value in prof_hires.items():
+    for key, value in profiles.items():
 
         col = fits.Column(name=key, format='E', array=value)
 

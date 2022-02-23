@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline
 import scipy.special as special
 import pymc3 as pm
 import theano
@@ -7,6 +6,9 @@ import theano.tensor as tt
 
 
 class ArcTan(tt.Op):
+    '''
+    Theano arctan class
+    '''
     itypes = [tt.dvector]
     otypes = [tt.dvector]
 
@@ -24,6 +26,16 @@ tt_arctan = ArcTan()
 
 
 def f_ein_mu(x, mu):
+    '''
+    Einasto mass model as a function of :math:`\\mu=1/\\alpha` (Mamon & Lokas 2005)
+
+    :param x: Scaled radius
+    :type x: float
+    :param mu: Einasto mu
+    :type mu: float
+    :return: Scaled mass profile
+    :rtype: float
+    '''
     n0 = 2. * mu
 
     n1 = 3. * mu
@@ -34,6 +46,16 @@ def f_ein_mu(x, mu):
 
 
 def f_ein_mu_der(x, mu):
+    '''
+    Analytical derivative of the Einasto mass profile
+
+    :param x: Scaled radius
+    :type x: float
+    :param mu: Einasto mu
+    :type mu: float
+    :return: Derivative of the scaled mass profile
+    :rtype: float
+    '''
     n0 = 2. * mu
 
     fx = x ** 2 * np.exp(n0) * np.exp(- n0 * x ** (1. / mu))
@@ -43,6 +65,10 @@ def f_ein_mu_der(x, mu):
 
 # Class to implement the 2-parameter Einasto mass profile and its derivative
 class EinastoFx(tt.Op):
+    '''
+    Theano class implementing the 2-parameter Einasto model with fixed mu=5.0
+
+    '''
     itypes = [tt.dvector]
     otypes = [tt.dvector]
 
@@ -59,6 +85,21 @@ tt_einasto = EinastoFx()
 
 # 2-parameter Einasto function
 def f_ein2_pm(xout, c200, r200, delta=200.):
+    '''
+    Theano function returning the 2-parameter Einasto model for a given set of parameters.
+
+    .. math::
+
+        \\rho(r) = \\rho_s \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{r_s} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    with :math:\\mu=5.0
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param delta: Overdensity
+    :return: Enclosed mass
+    '''
 
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
@@ -71,7 +112,33 @@ def f_ein2_pm(xout, c200, r200, delta=200.):
 
 # 3-parameter Einasto function, we need to integrate the density numerically since the gradient is not analytical
 def f_ein3_pm(xout, c200, r200, mu, delta=200.):
+    '''
+    Theano function for the 3-parameter Einasto mass model,
 
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\int_{0}^{r} 4 \\pi r^2 \\rho(r) dr
+
+    with
+
+    .. math::
+
+        \\rho(x) = \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{R_{\\Delta}} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param mu: Einasto mu
+    :param delta: Overdensity
+    :return: Enclosed mass
+
+    '''
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
     npt = len(xout)
@@ -96,6 +163,24 @@ def f_ein3_pm(xout, c200, r200, mu, delta=200.):
 
 
 def f_ein2_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the Einasto 2-parameter model
+
+    .. math::
+
+        \\rho(r) = \\rho_s \\exp \\left[ -2\\mu \\left( \\left( \\frac{r}{r_s} \\right) ^ {1 /\\mu} - 1 \\right) \\right]
+
+    with :math:\\mu=5.0
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: Model parameters (cdelta and rs)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -126,6 +211,18 @@ def f_ein2_np(xout, pars, delta=200.):
 
 
 def f_ein3_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the numerically integrated 3-parameter Einasto mass model (see :func:`hydromass.functions.f_ein3_pm`)
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -159,6 +256,26 @@ def f_ein3_np(xout, pars, delta=200.):
 
 # Isothermal sphere function
 def f_iso_pm(xout, c200, r200, delta=200.):
+    '''
+    Theano function for the cored isothermal sphere mass profile (King 1962)
+
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\left[ \\ln(x + \\sqrt{1+x^2}) - \\frac{x}{\\sqrt{1+x^2}} \\right]
+
+    with :math:`x=r/R_{\\Delta}` and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param delta: Overdensity
+    :return: Enclosed mass
+    '''
+
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
     x = xout / r200
@@ -169,6 +286,19 @@ def f_iso_pm(xout, c200, r200, delta=200.):
 
 
 def f_iso_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the cored isothermal sphere mass profile (see :func:`hydromass.functions.f_iso_pm`)
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
+
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -194,6 +324,26 @@ def f_iso_np(xout, pars, delta=200.):
 
 # NFW function
 def f_nfw_pm(xout, c200, r200, delta=200.):
+    '''
+    Theano function for the Navarro-Frenk-White mass profile (Navarro et al. 1996)
+
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\left[ \\ln(1 + x) - \\frac{x}{1+x}\\right]
+
+    with :math:`x=r/R_{\\Delta}` and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param delta: Overdensity
+    :return: Enclosed mass
+    '''
+
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
     x = xout / r200 * c200
@@ -204,6 +354,18 @@ def f_nfw_pm(xout, c200, r200, delta=200.):
 
 
 def f_nfw_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the NFW profile (see :func:`hydromass.functions.f_nfw_pm`)
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -229,6 +391,25 @@ def f_nfw_np(xout, pars, delta=200.):
 
 # Hernquist function
 def f_her_pm(xout, c200, r200, delta=200.):
+    '''
+    Theano function for the Hernquist (1990) mass profile,
+
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\frac{x^2}{(x+1)^2}
+
+    with :math:`x=r/R_{\\Delta}` and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param delta: Overdensity
+    :return: Enclosed mass
+    '''
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
     x = xout / r200
@@ -239,6 +420,18 @@ def f_her_pm(xout, c200, r200, delta=200.):
 
 
 def f_her_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the Hernquist (1990) mass profile (see :func:`hydromass.functions.f_her_pm`)
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -264,6 +457,25 @@ def f_her_np(xout, pars, delta=200.):
 
 # Burkert function
 def f_bur_pm(xout, c200, r200, delta=200.):
+    '''
+    Theano function for the Burkert mass profile (Salucci & Burkert 2000),
+
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\left[ \\ln(1+x^2) + 2\\ln(1+x) -2\\arctan(x) \\right]
+
+    with :math:`x=r/R_{\\Delta}` and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param delta: Overdensity
+    :return: Enclosed mass
+    '''
     fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
 
     x = xout / r200
@@ -274,6 +486,18 @@ def f_bur_pm(xout, c200, r200, delta=200.):
 
 
 def f_bur_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the Burkert mass profile (Salucci & Burkert 2000), see :func:`hydromass.functions.f_bur_pm`
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+    '''
     c200 = pars[:, 0]
 
     r200 = pars[:, 1]
@@ -296,16 +520,30 @@ def f_bur_np(xout, pars, delta=200.):
 
     return r200mul ** 3 * fcc * fx
 
-
-def MyInterp(x_old, y_old, x_new):
-    s = InterpolatedUnivariateSpline(np.log(x_old), np.log(y_old), k=1)
-
-    y_new = np.exp(s(np.log(x_new)))
-
-    return y_new
-
-
 class Model:
+    '''
+    Class defining mass models to be passed to the hydromass :class:`hydromass.mhyd.Mhyd` class for optimization.
+
+    :param massmod:
+        Name of the chosen mass model. Currently available mass models are:
+            - 'NFW': Navarro-Frenk-White (1996) model, :func:`hydromass.functions.f_nfw_pm`
+            - 'EIN2': Analytic 2-parameter Einasto (1965) model with :math:`\\alpha=0.2` (Mamon & Lokas 2005), :func:`hydromass.functions.f_ein2_pm`
+            - 'EIN3': Numerically integrated 3-parameter Einasto (1965) model with free :math:`\alpha`, :func:`hydromass.functions.f_ein3_pm`
+            - 'HER': Hernquist (1990) model, :func:`hydromass.functions.f_her_pm`
+            - 'ISO': Cored isothermal sphere model (King 1962), :func:`hydromass.functions.f_iso_pm`
+            - 'BUR': Salucci & Burkert (2000) model, :func:`hydromass.functions.f_bur_pm`
+    :type massmod: str
+    :param delta: Chosen fit overdensity. Defaults to 200
+    :type delta: float
+    :param start: 1D array containing the central values of the Gaussian prior on the model parameters. If None, the priors are set automatically to "sensible" values (for the galaxy cluster case...)
+    :type start: numpy.ndarray
+    :param sd: 1D array containing the standard deviations of the Gaussian prior on the model parameters. If None, weak priors are set automatically to remain within "sensible" values
+    :type sd: numpy.ndarray
+    :param limits: 2D array including the upper and lower boundaries of the parameter values. If None, the boundaries are set automatically to remain within "sensible" values
+    :type limits: numpy.ndarray
+    :param fix: 1D array setting whether each parameter of the mass model is fitted (False) or fixed (True). If None, all the parameters are free to vary.
+    :type fix: numpy.ndarray
+    '''
     def __init__(self, massmod, delta=200., start=None, sd=None, limits=None, fix=None):
 
         if massmod == 'NFW':

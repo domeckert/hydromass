@@ -14,3 +14,5 @@ cgsamu=con.m_u*1e3
 Msun=const.M_sun.value * 1e3
 
 cgskpc = cgsMpc / 1e3
+
+year = 60. * 60. * 24. * 365.
