@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added first tutorial">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/intro.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/intro.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/Mass model.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/Mass_model.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/tutorials.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/tutorials.rst" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,13 +73,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00012" summary="added high-resolution profile calculation to Forward">
-      <created>1601043848891</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1601043848891</updated>
     </task>
     <task id="LOCAL-00013" summary="added saving/reloading options">
       <created>1601289092245</created>
@@ -417,7 +410,14 @@
       <option name="project" value="LOCAL" />
       <updated>1645718270077</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="Added first tutorial">
+      <created>1645720371541</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1645720371541</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
