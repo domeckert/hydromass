@@ -718,7 +718,7 @@ class Mhyd:
 
         :param nh: Source NH in units of 1e22 cm**(-2)
         :type nh: float
-        :param kt: Source temperature in keV
+        :param kt: Source temperature in keV. If None, the code will search for a loaded spectroscopic temperature profile and use the weighted mean temperature. Defaults to None
         :type kt: float
         :param rmf: Path to response file (RMF/RSP)
         :type rmf: str
@@ -885,10 +885,39 @@ class Mhyd:
                           tune=tune,
                           find_map=find_map)
 
-    def run_polytropic(self, polytropic=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
+    def run_polytropic(self, Polytropic=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
+        '''
+        Run a polytropic reconstruction with an effective polytropic index model set by the :class:`hydromass.polytropic.Polytropic` class. See :func:`hydromass.polytropic.Run_Polytropic_PyMC3`
 
-        if polytropic is None:
+        :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)
+        :type Mhyd: class:`hydromass.mhyd.Mhyd`
+        :param Polytropic: Polytropic model defined using the :class:`hydromass.polytropic.Polytropic` class
+        :type Polytropic: :class:`hydromass.polytropic.Polytropic`
+        :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+        :type bkglim: float
+        :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+        :type nmcmc: int
+        :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+        :type fit_bkg: bool
+        :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+        :type back: float
+        :param samplefile: Name of ASCII file to output the final PyMC3 samples
+        :type samplefile: str
+        :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+        :type nrc: int
+        :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+        :type nbetas: int
+        :param min_beta: Minimum beta value (default = 0.6)
+        :type min_beta: float
+        :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+        :type nmore: int
+        :param tune: Number of NUTS tuning steps. Defaults to 500
+        :type tune: int
+        :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+        :type find_map: bool
+        '''
+        if Polytropic is None:
 
             print('Error no polytropic model provided')
 
@@ -896,7 +925,7 @@ class Mhyd:
 
 
         Run_Polytropic_PyMC3(self,
-                          Polytropic=polytropic,
+                          Polytropic=Polytropic,
                           bkglim=bkglim,
                           nmcmc=nmcmc,
                           fit_bkg=fit_bkg,

@@ -8,13 +8,23 @@ tt_arctan = ArcTan()
 # Gamma(R) function
 def func_poly_rad_pm(x, pars, dens, grad_dens):
     '''
+    Theano model of the effective polytropic index as a function of radius following Ghirardini et al. (2019), modified to avoid the divergence in the core.
 
+    .. math::
 
-    :param x:
-    :param pars:
-    :param dens:
-    :param grad_dens:
-    :return:
+        \\Gamma(r) = 1 + \\Gamma_0 + \\Gamma_R \\frac{\\partial \\log R}{\\partial \\log n_e} \\frac{1}{1 + r/Rs}
+
+    The function returns the model pressure as
+
+    .. math::
+
+        P_{3D}(r) =  P_0 n_e(r) ^ {\\Gamma(r)}
+
+    :param x: Scaled radius
+    :param pars: Parameters of the radial polytropic index model
+    :param dens: Density profile
+    :param grad_dens: Logarithmic density gradient
+    :return: Pressure
     '''
 
     p0 = pars[0]
@@ -32,6 +42,20 @@ def func_poly_rad_pm(x, pars, dens, grad_dens):
     return p3d
 
 def func_poly_rad_np(xout, pars, dens, grad_dens):
+    '''
+    Numpy function for the radial polytropic index model (see :func:`hydromass.polytropic.func_poly_rad_pm`)
+
+    :param xout: Scaled radius
+    :type xout: numpy.ndarray
+    :param pars: List of parameters of the radial polytropic index model
+    :type pars: numpy.ndarray
+    :param dens: Density profile realizations
+    :type dens: numpy.ndarray
+    :param grad_dens: Logarithmic density gradient realizations
+    :type grad_dens: numpy.ndarray
+    :return: Pressure profile samples
+    :rtype: numpy.ndarray
+    '''
 
     p0 = pars[:, 0]
 
@@ -63,6 +87,25 @@ def func_poly_rad_np(xout, pars, dens, grad_dens):
 
 # Gamma(n) function
 def func_poly_dens_pm(x, pars, dens, grad_dens):
+    '''
+    Theano model of the effective polytropic index as a function of gas density
+
+    .. math::
+
+        \\Gamma(n_e) = \\Gamma_0 \\left[ 1 + \\Gamma_S \\arctan\\left( \\frac{\\log(n_e E(z)^{-2}/n_0)}{\\Gamma_T} \\right) \\right]
+
+    The function returns the model pressure as
+
+    .. math::
+
+        P_{3D} = P_0 \\left( \\frac{n_e E(z)^{-2}}{n_0} \\right)^{\\Gamma(n_e)}
+
+    :param x: Radius
+    :param pars: Parameter vector of the polytropic model (:math:`P_0`, :math:`n_0`, :math:`\\Gamma_T`, :math:`\\Gamma_0`, and :math:`\\Gamma_S`)
+    :param dens: Density profile
+    :param grad_dens: Logarithmic density gradient
+    :return: Pressure profile
+    '''
 
     p0 = pars[0]
 
@@ -84,6 +127,20 @@ def func_poly_dens_pm(x, pars, dens, grad_dens):
 
 
 def func_poly_dens_np(xout, pars, dens, grad_dens):
+    '''
+    Numpy function for the density dependent polytropic index model (see :func:`hydromass.polytropic.func_poly_dens_pm`)
+
+    :param xout: Scaled radius
+    :type xout: numpy.ndarray
+    :param pars: List of parameters of the density dependent polytropic index model
+    :type pars: numpy.ndarray
+    :param dens: Density profile realizations
+    :type dens: numpy.ndarray
+    :param grad_dens: Logarithmic density gradient realizations
+    :type grad_dens: numpy.ndarray
+    :return: Pressure profile samples
+    :rtype: numpy.ndarray
+    '''
 
     p0 = pars[:, 0]
 
@@ -118,6 +175,30 @@ def func_poly_dens_np(xout, pars, dens, grad_dens):
 
 # Pressure gradient from Gamma(n) function
 def gradP_gamman(xout, pars, dens, grad_dens):
+    '''
+    Numpy function for the pressure gradient in the density dependent polytropic index model
+
+    .. math::
+
+        \\frac{d\\log P}{d\\log r} = \\left[ \\Gamma + \\log(n)\\frac{d\\Gamma}{d\\log n} \\right]\\frac{\\partial \\log n}{\\partial \\log r}
+
+    with
+
+    .. math::
+
+        \\frac{d\\Gamma}{d\\log n} = \\frac{\\Gamma_0 \\Gamma_S}{\\Gamma_T}\\left[ 1 + \\left(\\frac{\\log(n/n_0)}{\\Gamma_T}\\right)^2 \\right]^{-1}
+
+    :param xout: Scaled radius
+    :type xout: numpy.ndarray
+    :param pars: List of parameters of the density dependent polytropic index model
+    :type pars: numpy.ndarray
+    :param dens: Density profile realizations
+    :type dens: numpy.ndarray
+    :param grad_dens: Logarithmic density gradient realizations
+    :type grad_dens: numpy.ndarray
+    :return: Pressure gradient samples
+    :rtype: numpy.ndarray
+    '''
 
     logn0 = pars[:, 1]
 
@@ -152,12 +233,16 @@ def gradP_gamman(xout, pars, dens, grad_dens):
 
 def kt_poly_from_samples(Mhyd, Polytropic, nmore=5):
     """
+    Compute the model temperature profile from an existing polytropic reconstruction evaluated at reference X-ray temperature radii
 
-    Compute model temperature profile from Forward Mhyd reconstruction evaluated at reference X-ray temperature radii
-
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
-    :return: Median temperature, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the polytropic reconstruction results
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param Polytropic: Polytropic model defined using the :class:`hydromass.polytropic.Polytropic` class
+    :type Polytropic: :class:`hydromass.polytropic.Polytropic`
+    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Defaults to 5.
+    :type nmore: int
+    :return: Dictionary including the 3D and spectroscopic-like model temperatures and their uncertainties
+    :rtype: dict(9xnpt)
     """
 
     if Mhyd.spec_data is None:
@@ -228,12 +313,16 @@ def kt_poly_from_samples(Mhyd, Polytropic, nmore=5):
 
 def P_poly_from_samples(Mhyd, Polytropic, nmore=5):
     """
+    Compute the model pressure profile from an existing polytropic reconstruction evaluated at the reference SZ radii
 
-    Compute model pressure profile from Forward Mhyd reconstruction evaluated at the reference SZ radii
-
-    :param Mhyd: mhyd.Mhyd object including the reconstruction
-    :param model: mhyd.Model object defining the mass model
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the polytropic reconstruction results
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param Polytropic: Polytropic model defined using the :class:`hydromass.polytropic.Polytropic` class
+    :type Polytropic: :class:`hydromass.polytropic.Polytropic`
+    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Defaults to 5.
+    :type nmore: int
     :return: Median pressure, Lower 1-sigma percentile, Upper 1-sigma percentile
+    :rtype: numpy.ndarray
     """
 
     if Mhyd.sz_data is None:
@@ -266,6 +355,20 @@ def P_poly_from_samples(Mhyd, Polytropic, nmore=5):
 
 
 def mass_poly_from_samples(Mhyd, Polytropic, plot=False, nmore=5):
+    '''
+    Compute the hydrostatic moass profile and its uncertainties from an existing polytropic reconstruction
+
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the polytropic reconstruction results
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param Polytropic: Polytropic model defined using the :class:`hydromass.polytropic.Polytropic` class
+    :type Polytropic: :class:`hydromass.polytropic.Polytropic`
+    :param plot: If True, produce a plot of the hydrostatic mass and gas mass. Defaults to False
+    :type plot: bool
+    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Defaults to 5.
+    :type nmore: int
+    :return: Dictionary including the profiles of hydrostatic mass, gas mass, and gas fraction
+    :rtype: dict(11xnpt)
+    '''
 
     nsamp = len(Mhyd.samples)
 
@@ -363,12 +466,18 @@ def mass_poly_from_samples(Mhyd, Polytropic, plot=False, nmore=5):
 
 def prof_poly_hires(Mhyd, Polytropic, nmore=5, Z=0.3):
     """
-    Compute best-fitting profiles and error envelopes from fitted data
+    Extract the best-fitting thermodynamic profiles and their error envelopes from an existing polytropic reconstruction run. The output thermodynamic profiles include pressure, gas density, temperature, entropy, cooling function, and radiative cooling time.
 
-    :param Mhyd: (hydromass.Mhyd) Object containing results of mass reconstruction
-    :param model:
-    :param nmore:
-    :return:
+    :param Mhyd: :class:`hydromass.mhyd.Mhyd` object including the polytropic reconstruction results
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param Polytropic: Polytropic model defined using the :class:`hydromass.polytropic.Polytropic` class
+    :type Polytropic: :class:`hydromass.polytropic.Polytropic`
+    :param nmore: Number of subgrid values to compute the fine binning. Each input bin will be split into nmore values. Defaults to 5.
+    :type nmore: int
+    :param Z: Metallicity respective to Solar for the calculation of the cooling function. Defaults to 0.3.
+    :type Z: float
+    :return: Dictionary including the thermodynamic profiles
+    :rtype: dict(23xnpt)
     """
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
@@ -445,6 +554,35 @@ def prof_poly_hires(Mhyd, Polytropic, nmore=5, Z=0.3):
 
 
 class Polytropic:
+    '''
+    Class defining a polytropic model. The pressure profile is defined as a function of the gas density
+
+    .. math::
+
+        P_{3D}(r) = P_{0} n_e^{\\Gamma}
+
+    The polytropic index :math:`\\Gamma` is usually not constant in galaxy clusters, therefore hydromass provides two ways of accounting for the variations of :math:`\\Gamma`:
+
+            - Radial model: this is a slight modification of the radial polytropic model proposed by Ghirardini et al. (2019). Here the polytropic index is modified by a term that depends both on radius and on the local density gradient. See :func:`hydromass.polytropic.func_poly_rad_pm`
+            - Density dependent model: a new model in which the polytropic index depends only on the local gas density. We introduce a functional form for the P(n) relation of Ghirardini et al. (2019), which provides a good description of the data for the X-COP sample. See :func:`hydromass.polytropic.func_poly_dens_pm`
+
+    The hydrostatic mass profile can then be worked out directly from the gas density and the model polytropic index.
+
+    :param model: Choice of polytropic model. Current implementations are 'GammaR' (radial) and 'GammaN' (density dependent).
+    :type model: str
+    :param start: Central values for the polytropic model parameters. If None, the best-fitting values for the X-COP sample are used. Defaults to None.
+    :type start: numpy.ndarray
+    :param sd: Standard deviations of the Normal priors on the polytropic model parameters. If None, "sensible" priors based on X-COP data are used. Defaults to None.
+    :type sd: numpy.ndarray
+    :param limits: Upper and lower boundaries of the polytropic model parameters. If None, "sensible" boundaries are used. Defaults to None.
+    :type limits: numpy.ndarray
+    :param fix: Array of boolean values setting which parameters are free while fitting (False) and which are fixed (True). If None, default choices are set. Defaults to None.
+    :type fix: numpy.ndarray
+    :param redshift: Source redshift. If None, no self-similar scaling is applied to the density, i.e. E(z)=1. Defaults to None
+    :type redshift: float
+    :param cosmo: Cosmology definition in astropy format. If None, Planck 2015 cosmology is assumed. Defaults to None.
+    :type cosmo: astropy.cosmology
+    '''
 
     def __init__(self, model, start=None, sd=None, limits=None, fix=None, redshift=None, cosmo=None):
 
@@ -621,18 +759,40 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    tune=500, find_map=True):
     """
+    Fit the data within a :class:`hydromass.mhyd.Mhyd` object with an effective polytropic index model. Here the pressure and temperature profiles are defined as a function of the gas density according to an effective polytropic relation,
 
-    :param Mhyd:
-    :param bkglim:
-    :param nmcmc:
-    :param fit_bkg:
-    :param back:
-    :param samplefile:
-    :param nrc:
-    :param nbetas:
-    :param min_beta:
-    :param tune:
-    :return:
+    .. math::
+
+        P_{3D}(r) = P_0 n_e(r)^{\\Gamma}
+
+    In most practical cases :math:`\\Gamma` is not a constant across the entire radial range. The code provides two ways of modeling the variations of :math:`\\Gamma` across a cluster: either as a function of radius or as a function of gas density. The relation between density and pressure is a very universal one (see Ghirardini et al. 2019), thus this physically motivated model allows to determine the 3D profiles and hydrostatic mass of clusters even when the available data quality is quite low, e.g. with a single temperature measurement or a low-quality SZ profile. The variation of the pressure and temperature is then modeled directly from the gas density, which is usually much easier to determine.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object including the loaded data and initial setup (mandatory input)
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param Polytropic: Polytropic model defined using the :class:`hydromass.polytropic.Polytropic` class
+    :type Polytropic: :class:`hydromass.polytropic.Polytropic`
+    :param bkglim: Limit (in arcmin) out to which the SB data will be fitted; if None then the whole range is considered. Defaults to None.
+    :type bkglim: float
+    :param nmcmc: Number of PyMC3 steps. Defaults to 1000
+    :type nmcmc: int
+    :param fit_bkg: Choose whether the counts and the background will be fitted on-the-fly using a Poisson model (fit_bkg=True) or if the surface brightness will be fitted, in which case it is assumed that the background has already been subtracted and Gaussian likelihood will be used (default = False)
+    :type fit_bkg: bool
+    :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+    :type back: float
+    :param samplefile: Name of ASCII file to output the final PyMC3 samples
+    :type samplefile: str
+    :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+    :type nrc: int
+    :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+    :type nbetas: int
+    :param min_beta: Minimum beta value (default = 0.6)
+    :type min_beta: float
+    :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+    :type nmore: int
+    :param tune: Number of NUTS tuning steps. Defaults to 500
+    :type tune: int
+    :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+    :type find_map: bool
     """
 
     prof = Mhyd.sbprof

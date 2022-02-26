@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="better name">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/Mass_model.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/Mass_model.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/intro.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/intro.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/tutorials.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/tutorials.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added tutorial on non-parametric mass reconstruction">
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/hydromass/polytropic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1-py3-none-any.whl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" beforeDir="false" afterPath="$PROJECT_DIR$/dist/hydromass-0.1.tar.gz" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,13 +75,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00014" summary="removed unnecessary function">
-      <created>1601289120572</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1601289120572</updated>
     </task>
     <task id="LOCAL-00015" summary="changed parameters defining GP">
       <created>1601451326823</created>
@@ -421,7 +412,14 @@
       <option name="project" value="LOCAL" />
       <updated>1645720589943</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="Added tutorial on non-parametric mass reconstruction">
+      <created>1645880943890</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1645880943890</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -441,7 +439,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Added variable CCF option to Forward" />
     <MESSAGE value="Fixed PSF convolution model in GP and Forward as well as reloading options" />
     <MESSAGE value="Tuned NUTS sampling parameters" />
     <MESSAGE value="Improved numerical integration" />
@@ -466,6 +463,7 @@
     <MESSAGE value="Removed .readthedocs.yml" />
     <MESSAGE value="Added first tutorial" />
     <MESSAGE value="better name" />
-    <option name="LAST_COMMIT_MESSAGE" value="better name" />
+    <MESSAGE value="Added tutorial on non-parametric mass reconstruction" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added tutorial on non-parametric mass reconstruction" />
   </component>
 </project>
