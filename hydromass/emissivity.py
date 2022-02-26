@@ -114,8 +114,6 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=
 
     nrmf = srmf[len(srmf) - 1]
 
-    print(nrmf)
-
     if os.path.exists('%s.fak' % (nrmf)):
 
         os.system('rm %s.fak' % (nrmf))

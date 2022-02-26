@@ -10,7 +10,7 @@ Welcome to hydromass's documentation!
     :maxdepth: 2
     :caption: Contents:
     
-    Intro <intro.rst>
+    About hydromass <intro.rst>
     Install <install.rst>
     Tutorials <tutorials.rst>
     API <hydromass.rst>

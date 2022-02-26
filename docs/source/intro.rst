@@ -1,5 +1,5 @@
 About hydromass
-============
+===============
 
 ``hydromass`` is a Python package for the analysis of galaxy cluster mass profiles from X-ray and/or Sunyaev-Zel'dovich observations. The code builds upon several decades of development and tens of scientific papers. The code was originally developed as an IDL script by Stefano Ettori (see `Ettori et al. 2010 <https://ui.adsabs.harvard.edu/abs/2010A%26A...524A..68E/abstract>`_ ) and translated into Python by Vittorio Ghirardini during his PhD. The new Python code was completely revised by Dominique Eckert in the framework of the X-COP gravitational field project and turned into a general framework for the reconstruction of galaxy cluster mass and thermodynamic profiles. The code is released together with a series of two papers describing it in detail and applying it to the X-COP galaxy cluster sample.
 
