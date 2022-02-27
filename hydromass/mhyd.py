@@ -943,6 +943,41 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
             bin_fact=1.0, smin=None, smax=None, ngauss=100):
 
+        '''
+        Run a non-parametric log-normal mixture reconstruction. See :func:`hydromass.nonparametric.Run_NonParametric_PyMC3`
+
+        :param bkglim: Radius (in arcmin) beyond which it is assumed that the background fully dominates the profile. If None, the entire radial range is fitted as source + background. Defaults to None.
+        :type bkglim: float
+        :param nmcmc: Number of NUTS samples. Defaults to 1000
+        :type nmcmc: int
+        :param fit_bkg: Define whether we will fit the counts as source + background (True) or the background subtracted surface brightness as source only (False). Defaults to False.
+        :type fit_bkg: bool
+        :param back: Input value for the background. If None then the mean surface brightness in the region outside "bkglim" is used. Relevant only if fit_bkg = True. Defaults to None.
+        :type back: float
+        :param samplefile: Name of ASCII file to output the final PyMC3 samples
+        :type samplefile: str
+        :param nrc: Number of core radii values to set up the multiscale model. Defaults to the number of data points / 4
+        :type nrc: int
+        :param nbetas: Number of beta values to set up the multiscale model (default = 6)
+        :type nbetas: int
+        :param min_beta: Minimum beta value (default = 0.6)
+        :type min_beta: float
+        :param nmore: Number of points to the define the fine grid onto which the mass model and the integration are performed, i.e. for one spectroscopic/SZ value, how many grid points will be defined. Defaults to 5.
+        :type nmore: int
+        :param tune: Number of NUTS tuning steps. Defaults to 500
+        :type tune: int
+        :param bin_fact: bin_fact: Binning factor for the definition of the log-normal standard deviations, i.e. the standard deviations of the log-normals will be set to bin_fact * (rout - rin). The larger the value of bin_fact the stronger the smoothing, but the less accurate and flexible the model. Defaults to 1.
+        :type bin_fact: float
+        :param smin: Minimum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+        :type smin: float
+        :param smax: Maximum value of the log-normal standard deviation. If None, the width of the bins will be used (see bin_fact). If the value is set, the smoothing scales are set as logarithmically spaced between smin and smax. Defaults to None.
+        :type smax: float
+        :param ngauss: Number of log-normal functions. Defaults to 100
+        :type ngauss: int
+        :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
+        :type find_map: bool
+        '''
+
         Run_NonParametric_PyMC3(self,
                                 bkglim=bkglim,
                                 nmcmc=nmcmc,
