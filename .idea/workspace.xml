@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added tutorial on non-parametric mass reconstruction">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="removed unnecessary directories">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,20 +73,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00016" summary="clean-up OP function">
-      <created>1601451352857</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1601451352857</updated>
-    </task>
-    <task id="LOCAL-00017" summary="add reloading options">
-      <created>1601451398202</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1601451398202</updated>
     </task>
     <task id="LOCAL-00018" summary="added calculation of overdensity radii and masses for GP and Forward">
       <created>1601647531150</created>
@@ -417,7 +403,21 @@
       <option name="project" value="LOCAL" />
       <updated>1645881305564</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="Added last docstring">
+      <created>1645946935989</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1645946935989</updated>
+    </task>
+    <task id="LOCAL-00066" summary="removed unnecessary directories">
+      <created>1645947019260</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1645947019260</updated>
+    </task>
+    <option name="localTasksCounter" value="67" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -437,8 +437,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Fixed PSF convolution model in GP and Forward as well as reloading options" />
-    <MESSAGE value="Tuned NUTS sampling parameters" />
     <MESSAGE value="Improved numerical integration" />
     <MESSAGE value="Added options to choose the range and number of points when computing hires profiles" />
     <MESSAGE value="Added extrapolation to outer radius of the surface brightness using a power law to avoid issues at the outer boundary" />
@@ -462,6 +460,8 @@
     <MESSAGE value="Added first tutorial" />
     <MESSAGE value="better name" />
     <MESSAGE value="Added tutorial on non-parametric mass reconstruction" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added tutorial on non-parametric mass reconstruction" />
+    <MESSAGE value="Added last docstring" />
+    <MESSAGE value="removed unnecessary directories" />
+    <option name="LAST_COMMIT_MESSAGE" value="removed unnecessary directories" />
   </component>
 </project>
