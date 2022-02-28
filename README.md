@@ -5,8 +5,7 @@ Extensive documentation for the project can be accessed here:
 
 https://hydromass.readthedocs.io/en/latest/index.html
 
-Features
-********
+## Features
 
 - Joint modeling of X-ray surface brightness, X-ray spectroscopic temperature, and SZ pressure
 - A global framework for mass modeling, deprojection and PSF deconvolution of thermodynamic gas profiles

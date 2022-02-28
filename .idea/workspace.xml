@@ -74,13 +74,6 @@
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
     </task>
-    <task id="LOCAL-00018" summary="added calculation of overdensity radii and masses for GP and Forward">
-      <created>1601647531150</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1601647531150</updated>
-    </task>
     <task id="LOCAL-00019" summary="added a function to output resulting profiles to FITS file">
       <created>1612512609425</created>
       <option name="number" value="00019" />
@@ -417,7 +410,14 @@
       <option name="project" value="LOCAL" />
       <updated>1645947019260</updated>
     </task>
-    <option name="localTasksCounter" value="67" />
+    <task id="LOCAL-00067" summary="removed unnecessary directories">
+      <created>1646036966056</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1646036966056</updated>
+    </task>
+    <option name="localTasksCounter" value="68" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
