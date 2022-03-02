@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added Parametric tutorial">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/Parametric.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/Parametric.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,13 +73,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00024" summary="Added function to plot the profiles from the polytropic reconstruction">
-      <created>1615555904554</created>
-      <option name="number" value="00024" />
-      <option name="presentableId" value="LOCAL-00024" />
-      <option name="project" value="LOCAL" />
-      <updated>1615555904554</updated>
     </task>
     <task id="LOCAL-00025" summary="added option to set the name of the extension in SaveProfiles">
       <created>1615555939163</created>
@@ -417,7 +410,14 @@
       <option name="project" value="LOCAL" />
       <updated>1646226863602</updated>
     </task>
-    <option name="localTasksCounter" value="73" />
+    <task id="LOCAL-00073" summary="Added Parametric tutorial">
+      <created>1646229184363</created>
+      <option name="number" value="00073" />
+      <option name="presentableId" value="LOCAL-00073" />
+      <option name="project" value="LOCAL" />
+      <updated>1646229184363</updated>
+    </task>
+    <option name="localTasksCounter" value="74" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
