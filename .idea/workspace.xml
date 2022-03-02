@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="removed unnecessary directories" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added Parametric tutorial">
+      <change beforePath="$PROJECT_DIR$/docs/source/Parametric.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/Parametric.ipynb" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -70,13 +72,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00021" summary="Fixed bug in emissivity calculation">
-      <created>1614777289925</created>
-      <option name="number" value="00021" />
-      <option name="presentableId" value="LOCAL-00021" />
-      <option name="project" value="LOCAL" />
-      <updated>1614777289925</updated>
     </task>
     <task id="LOCAL-00022" summary="added option to tune the minimum and maximum radius when computing rdelta">
       <created>1614790875454</created>
@@ -414,7 +409,14 @@
       <option name="project" value="LOCAL" />
       <updated>1646210918332</updated>
     </task>
-    <option name="localTasksCounter" value="70" />
+    <task id="LOCAL-00070" summary="Added Parametric tutorial">
+      <created>1646210957382</created>
+      <option name="number" value="00070" />
+      <option name="presentableId" value="LOCAL-00070" />
+      <option name="project" value="LOCAL" />
+      <updated>1646210957382</updated>
+    </task>
+    <option name="localTasksCounter" value="71" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -434,7 +436,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Improved numerical integration" />
     <MESSAGE value="Added options to choose the range and number of points when computing hires profiles" />
     <MESSAGE value="Added extrapolation to outer radius of the surface brightness using a power law to avoid issues at the outer boundary" />
     <MESSAGE value="P0 is now evaluated at the outer boundary of the surface brightness profile if it is larger than the outer boundary of the spectral/SZ profiles" />
@@ -459,6 +460,7 @@
     <MESSAGE value="Added tutorial on non-parametric mass reconstruction" />
     <MESSAGE value="Added last docstring" />
     <MESSAGE value="removed unnecessary directories" />
-    <option name="LAST_COMMIT_MESSAGE" value="removed unnecessary directories" />
+    <MESSAGE value="Added Parametric tutorial" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added Parametric tutorial" />
   </component>
 </project>
