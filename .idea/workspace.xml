@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added Parametric tutorial">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/source/Parametric.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/Parametric.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -72,20 +73,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00022" summary="added option to tune the minimum and maximum radius when computing rdelta">
-      <created>1614790875454</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1614790875454</updated>
-    </task>
-    <task id="LOCAL-00023" summary="fixed very important bug with PSF correction when fitting the surface brightness instead of the counts">
-      <created>1615555858445</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1615555858445</updated>
     </task>
     <task id="LOCAL-00024" summary="Added function to plot the profiles from the polytropic reconstruction">
       <created>1615555904554</created>
@@ -416,7 +403,21 @@
       <option name="project" value="LOCAL" />
       <updated>1646210957382</updated>
     </task>
-    <option name="localTasksCounter" value="71" />
+    <task id="LOCAL-00071" summary="Added Parametric tutorial">
+      <created>1646214262432</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1646214262432</updated>
+    </task>
+    <task id="LOCAL-00072" summary="Added Parametric tutorial">
+      <created>1646226863602</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1646226863602</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
