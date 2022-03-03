@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added Parametric tutorial">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Updated setup.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/install.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/install.rst" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,13 +73,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00025" summary="added option to set the name of the extension in SaveProfiles">
-      <created>1615555939163</created>
-      <option name="number" value="00025" />
-      <option name="presentableId" value="LOCAL-00025" />
-      <option name="project" value="LOCAL" />
-      <updated>1615555939163</updated>
     </task>
     <task id="LOCAL-00026" summary="Added function to compute overdensity radii from polytropic reconstruction">
       <created>1615555984225</created>
@@ -417,7 +410,14 @@
       <option name="project" value="LOCAL" />
       <updated>1646229184363</updated>
     </task>
-    <option name="localTasksCounter" value="74" />
+    <task id="LOCAL-00074" summary="Updated setup.py">
+      <created>1646231146174</created>
+      <option name="number" value="00074" />
+      <option name="presentableId" value="LOCAL-00074" />
+      <option name="project" value="LOCAL" />
+      <updated>1646231146174</updated>
+    </task>
+    <option name="localTasksCounter" value="75" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -437,7 +437,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Added options to choose the range and number of points when computing hires profiles" />
     <MESSAGE value="Added extrapolation to outer radius of the surface brightness using a power law to avoid issues at the outer boundary" />
     <MESSAGE value="P0 is now evaluated at the outer boundary of the surface brightness profile if it is larger than the outer boundary of the spectral/SZ profiles" />
     <MESSAGE value="Added new function to estimate P0 by fitting a rough gNFW profile to the spectral data" />
@@ -462,6 +461,7 @@
     <MESSAGE value="Added last docstring" />
     <MESSAGE value="removed unnecessary directories" />
     <MESSAGE value="Added Parametric tutorial" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added Parametric tutorial" />
+    <MESSAGE value="Updated setup.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated setup.py" />
   </component>
 </project>
