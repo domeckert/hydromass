@@ -29,7 +29,7 @@ class SpecData:
     :type cosmo: astropy.cosmology
     '''
 
-    def __init__(self, redshift, spec_data=None, rin=None, rout=None, kt=None, err_kt_low=None, err_kt_high=None, cosmo=None):
+    def __init__(self, redshift, spec_data=None, rin=None, rout=None, kt=None, err_kt_low=None, err_kt_high=None, cosmo=None, Z=None, Z_low=None, Z_high=None):
 
         if spec_data is None and kt is None:
 
@@ -89,6 +89,18 @@ class SpecData:
 
                 self.temph = dtx['KT_HI']
 
+                if 'ZFE' in dtx.names:
+
+                    self.zfe = dtx['ZFE']
+
+                    self.zfe_lo = dtx['ZFE_LO']
+
+                    self.zfe_hi = dtx['ZFE_HI']
+
+                else:
+
+                    self.zfe, self.zfe_lo, self.zfe_hi = None, None, None
+
                 ftx.close()
 
         if kt is not None:
@@ -104,6 +116,30 @@ class SpecData:
             self.templ = err_kt_low
 
             self.temph = err_kt_high
+
+            if Z is not None:
+
+                self.zfe = Z
+
+            else:
+
+                self.zfe = None
+
+            if Z_low is not None:
+
+                self.zfe_lo = Z_low
+
+            else:
+
+                self.zfe_lo = None
+
+            if Z_high is not None:
+
+                self.zfe_hi = Z_high
+
+            else:
+
+                self.zfe_hi = None
 
         if cosmo is None:
 

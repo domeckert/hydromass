@@ -1,4 +1,8 @@
 import os
+import  numpy as np
+import pymc3 as pm
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 def is_tool(name):
     """Check whether `name` is on PATH."""
@@ -131,5 +135,178 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=
     return cr
 
 
+def medsmooth(prof):
+    """
+    Smooth a given profile by taking the median value of surrounding points instead of the initial value
+
+    :param prof: Input profile to be smoothed
+    :type prof: numpy.ndarray
+    :return: Smoothd profile
+    :rtype: numpy.ndarray
+    """
+    width=5
+    nbin=len(prof)
+    xx=np.empty((nbin,width))
+    xx[:,0]=np.roll(prof,2)
+    xx[:,1]=np.roll(prof,1)
+    xx[:,2]=prof
+    xx[:,3]=np.roll(prof,-1)
+    xx[:,4]=np.roll(prof,-2)
+    smoothed=np.median(xx,axis=1)
+    smoothed[1]=np.median(xx[1,1:width])
+    smoothed[nbin-2]=np.median(xx[nbin-2,0:width-1])
+    Y0=3.*prof[0]-2.*prof[1]
+    xx=np.array([Y0,prof[0],prof[1]])
+    smoothed[0]=np.median(xx)
+    Y0=3.*prof[nbin-1]-2.*prof[nbin-2]
+    xx=np.array([Y0,prof[nbin-2],prof[nbin-1]])
+    smoothed[nbin-1]=np.median(xx)
+    return  smoothed
 
 
+def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf=None, outz=None):
+    '''
+
+    :param Mhyd: Hydromass object
+    :type Mhyd: :class:`hydromass.mhyd.Mhyd`
+    :param cosmo: Astropy cosmology object containing the definition of the used cosmology.
+    :type cosmo: class:`astropy.cosmology`
+    :param z: Source redshift
+    :type z: float
+    :param nh: Source NH in units of 1e22 cm**(-2)
+    :type nh: float
+    :param rmf: Path to response file (RMF/RSP)
+    :type rmf: str
+    :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
+    :type abund: str
+    :param elow: Low-energy bound of the input image in keV. Defaults to 0.5
+    :type elow: float
+    :param ehigh: High-energy bound of the input image in keV. Defaults to 2.0
+    :type ehigh: float
+    :param arf: Path to on-axis ARF (optional, in case response file is RMF)
+    :type arf: str
+    :return: Conversion factor
+    :rtype: float
+    '''
+
+    if Mhyd.spec_data is None:
+
+        print('No spectral data loaded, aborting')
+
+        return
+
+    spec_data = Mhyd.spec_data
+
+    bins = Mhyd.sbprof.bins
+
+    nbin = Mhyd.sbprof.nbin
+
+    cf_prof = np.empty(nbin)
+
+    nkt = len(spec_data.temp_x)
+
+    fill_value = (spec_data.temp_x[0], spec_data.temp_x[nkt - 1])
+
+    fint = interp1d(spec_data.rref_x_am, medsmooth(spec_data.temp_x), kind='cubic', fill_value=fill_value,
+                    bounds_error=False)
+
+    ktprof = fint(bins)
+
+    if spec_data.zfe is None:
+
+        print('No abundance value loaded, assuming 0.3 everywhere')
+
+        for i in range(nbin):
+
+
+
+            cf_prof[i] = calc_emissivity(cosmo=cosmo,
+                                         z=z,
+                                         nh=nh,
+                                         kt=ktprof[i],
+                                         Z=0.3,
+                                         elow=elow,
+                                         ehigh=ehigh,
+                                         rmf=rmf,
+                                         abund=abund,
+                                         arf=arf)
+
+    else:
+
+        print('Modeling abundance profile...')
+
+        active = np.where(spec_data.zfe_lo > 0.)
+
+        rads_z = spec_data.rref_x[active]
+
+        modz = pm.Model()
+
+        beta_fe = 0.3
+
+        with modz:
+
+            rc = pm.TruncatedNormal('rc', mu=30., sd=30., lower=0.2)
+
+            norm = pm.Normal('norm', mu=0.7, sd=0.5)
+
+            floor = pm.HalfNormal('floor', sd=0.2)
+
+            pred = floor + norm * (1. + (rads_z / rc) ** 2) ** (-beta_fe)
+
+            obs = pm.Normal('obs', mu=pred, sd=spec_data.zfe_hi[active], observed=spec_data.zfe[active])
+
+            trace_z = pm.sample(return_inferencedata=True)
+
+        med_rc = np.median(trace_z.posterior['rc'])
+
+        med_floor = np.median(trace_z.posterior['floor'])
+
+        med_norm = np.median(trace_z.posterior['norm'])
+
+        zfe_prof = med_floor + med_norm * (1. + (bins*Mhyd.amin2kpc/med_rc)**2) ** (-beta_fe)
+
+        for i in range(nbin):
+
+            cf_prof[i] = calc_emissivity(cosmo=cosmo,
+                                         z=z,
+                                         nh=nh,
+                                         kt=ktprof[i],
+                                         Z=zfe_prof[i],
+                                         elow=elow,
+                                         ehigh=ehigh,
+                                         rmf=rmf,
+                                         abund=abund,
+                                         arf=arf)
+
+        if outz is not None:
+
+            plt.clf()
+
+            fig = plt.figure(figsize=(13, 10))
+
+            ax_size = [0.14, 0.12,
+                       0.85, 0.85]
+
+            ax = fig.add_axes(ax_size)
+
+            ax.minorticks_on()
+
+            ax.tick_params(length=20, width=1, which='major', direction='in', right=True, top=True)
+
+            ax.tick_params(length=10, width=1, which='minor', direction='in', right=True, top=True)
+
+            for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(22)
+
+            plt.errorbar(rads_z, spec_data.zfe[active], xerr=(spec_data.rout_x[active] - spec_data.rin_x[active]) / 2.,
+                         yerr=[spec_data.zfe_lo[active], spec_data.zfe_hi[active]], fmt='o', label='Data')
+
+            plt.plot(bins*Mhyd.amin2kpc, zfe_prof, color='magenta', label='Model')
+
+            plt.xlabel('Radius [kpc]', fontsize=28)
+
+            plt.ylabel('$Z/Z_{\odot}$', fontsize=28)
+
+            plt.savefig(outz)
+
+    return cf_prof
