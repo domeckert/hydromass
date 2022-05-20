@@ -40,7 +40,6 @@ def SaveModel(Mhyd, model, outfile=None):
     headsamp['NRC'] = Mhyd.nrc
     headsamp['NBETAS'] = Mhyd.nbetas
     headsamp['MINBETA'] = Mhyd.min_beta
-    headsamp['CCF'] = Mhyd.ccf
     headsamp['TRANSF'] = Mhyd.transf
     headsamp['FITBKG'] = Mhyd.fit_bkg
     headsamp['NMORE'] = Mhyd.nmore
@@ -95,6 +94,33 @@ def SaveModel(Mhyd, model, outfile=None):
 
     hdus.append(modhdu)
 
+    bins = Mhyd.sbprof.bins
+
+    colr = fits.Column(name='RADIUS', format='E', unit='arcmin', array=bins)
+
+    ccfprof = None
+
+    try:
+        nn = len(Mhyd.ccf)
+
+    except TypeError:
+
+        ccfprof = np.ones(len(bins)) * Mhyd.ccf
+
+    else:
+
+        ccfprof = Mhyd.ccf
+
+    colc = fits.Column(name='CCF', format='E', array=ccfprof)
+
+    coldefs = fits.ColDefs([colr, colc])
+
+    ccfhdu = fits.BinTableHDU.from_columns(coldefs)
+
+    ccfhdu.name = 'CCF'
+
+    hdus.append(ccfhdu)
+
     hdus.writeto(outfile, overwrite=True)
 
 
@@ -125,8 +151,6 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.min_beta = headden['MINBETA']
 
-    Mhyd.ccf = headden['CCF']
-
     Mhyd.transf = headden['TRANSF']
 
     Mhyd.fit_bkg = headden['FITBKG']
@@ -138,6 +162,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
     Mhyd.mstar = mstar
 
     Mhyd.pnt = headden['PNT']
+
+    tabccf = fin['CCF'].data
+
+    Mhyd.ccf = tabccf['CCF']
 
     #Mhyd.waic = headden['WAIC']
 
@@ -317,7 +345,6 @@ def SaveGP(Mhyd, outfile=None):
     headsamp['NRC'] = Mhyd.nrc
     headsamp['NBETAS'] = Mhyd.nbetas
     headsamp['MINBETA'] = Mhyd.min_beta
-    headsamp['CCF'] = Mhyd.ccf
     headsamp['TRANSF'] = Mhyd.transf
     headsamp['FITBKG'] = Mhyd.fit_bkg
     headsamp['NMORE'] = Mhyd.nmore
@@ -332,6 +359,33 @@ def SaveGP(Mhyd, outfile=None):
     modhead['NGAUSS'] = Mhyd.ngauss
 
     hdus.append(gphdu)
+
+    bins = Mhyd.sbprof.bins
+
+    colr = fits.Column(name='RADIUS', format='E', unit='arcmin', array=bins)
+
+    ccfprof = None
+
+    try:
+        nn = len(Mhyd.ccf)
+
+    except TypeError:
+
+        ccfprof = np.ones(len(bins)) * Mhyd.ccf
+
+    else:
+
+        ccfprof = Mhyd.ccf
+
+    colc = fits.Column(name='CCF', format='E', array=ccfprof)
+
+    coldefs = fits.ColDefs([colr, colc])
+
+    ccfhdu = fits.BinTableHDU.from_columns(coldefs)
+
+    ccfhdu.name = 'CCF'
+
+    hdus.append(ccfhdu)
 
     hdus.writeto(outfile, overwrite=True)
 
@@ -359,13 +413,15 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.min_beta = headden['MINBETA']
 
-    Mhyd.ccf = headden['CCF']
-
     Mhyd.transf = headden['TRANSF']
 
     Mhyd.fit_bkg = headden['FITBKG']
 
     Mhyd.nmore = headden['NMORE']
+
+    tabccf = fin['CCF'].data
+
+    Mhyd.ccf = tabccf['CCF']
 
     Mhyd.samppar = fin[2].data
 
@@ -542,7 +598,6 @@ def SaveForward(Mhyd, Forward, outfile=None):
     headsamp['NRC'] = Mhyd.nrc
     headsamp['NBETAS'] = Mhyd.nbetas
     headsamp['MINBETA'] = Mhyd.min_beta
-    headsamp['CCF'] = Mhyd.ccf
     headsamp['TRANSF'] = Mhyd.transf
     headsamp['FITBKG'] = Mhyd.fit_bkg
     headsamp['NMORE'] = Mhyd.nmore
@@ -576,6 +631,33 @@ def SaveForward(Mhyd, Forward, outfile=None):
 
     hdus.append(modhdu)
 
+    bins = Mhyd.sbprof.bins
+
+    colr = fits.Column(name='RADIUS', format='E', unit='arcmin', array=bins)
+
+    ccfprof = None
+
+    try:
+        nn = len(Mhyd.ccf)
+
+    except TypeError:
+
+        ccfprof = np.ones(len(bins)) * Mhyd.ccf
+
+    else:
+
+        ccfprof = Mhyd.ccf
+
+    colc = fits.Column(name='CCF', format='E', array=ccfprof)
+
+    coldefs = fits.ColDefs([colr, colc])
+
+    ccfhdu = fits.BinTableHDU.from_columns(coldefs)
+
+    ccfhdu.name = 'CCF'
+
+    hdus.append(ccfhdu)
+
     hdus.writeto(outfile, overwrite=True)
 
 def ReloadForward(Mhyd, infile):
@@ -601,13 +683,15 @@ def ReloadForward(Mhyd, infile):
 
     Mhyd.min_beta = headden['MINBETA']
 
-    Mhyd.ccf = headden['CCF']
-
     Mhyd.transf = headden['TRANSF']
 
     Mhyd.fit_bkg = headden['FITBKG']
 
     Mhyd.nmore = headden['NMORE']
+
+    tabccf = fin['CCF'].data
+
+    Mhyd.ccf = tabccf['CCF']
 
     modhead = fin[2].header
 

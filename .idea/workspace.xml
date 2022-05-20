@@ -4,13 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added contour plots">
-      <change afterPath="$PROJECT_DIR$/hydromass/contour.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/tpdata.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,20 +79,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00028" summary="Added cooling time calculation">
-      <created>1619166377660</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1619166377660</updated>
-    </task>
-    <task id="LOCAL-00029" summary="Import package data">
-      <created>1619166835264</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1619166835264</updated>
     </task>
     <task id="LOCAL-00030" summary="Added build">
       <created>1619167277440</created>
@@ -421,7 +409,21 @@
       <option name="project" value="LOCAL" />
       <updated>1646387294627</updated>
     </task>
-    <option name="localTasksCounter" value="77" />
+    <task id="LOCAL-00077" summary="Added contour plots">
+      <created>1653038631530</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1653038631530</updated>
+    </task>
+    <task id="LOCAL-00078" summary="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor">
+      <created>1653038687934</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1653038687934</updated>
+    </task>
+    <option name="localTasksCounter" value="79" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -441,7 +443,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Added new function to estimate P0 by fitting a rough gNFW profile to the spectral data" />
     <MESSAGE value="Fixed overflow issue in onion peeling" />
     <MESSAGE value="Updated call to rads_more" />
     <MESSAGE value="Fixed call to psfmat when no matrix has been defined" />
@@ -466,6 +467,7 @@
     <MESSAGE value="Updated setup.py" />
     <MESSAGE value="Uploaded project to PyPI and wrote installation instructions" />
     <MESSAGE value="Added contour plots" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added contour plots" />
+    <MESSAGE value="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor" />
   </component>
 </project>

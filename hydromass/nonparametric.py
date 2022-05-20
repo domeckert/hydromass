@@ -293,7 +293,13 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
     if Mhyd.cf_prof is not None:
 
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
 
     else:
 
@@ -386,7 +392,13 @@ def P_GP_from_samples(Mhyd, nmore=5):
 
     if Mhyd.cf_prof is not None:
 
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
 
     else:
 
@@ -484,7 +496,13 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     if Mhyd.cf_prof is not None:
 
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
 
     else:
 
@@ -691,7 +709,13 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 
     if Mhyd.cf_prof is not None:
 
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
 
     else:
 

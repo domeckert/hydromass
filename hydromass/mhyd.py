@@ -677,12 +677,6 @@ class Mhyd:
 
             return
 
-        if spec_data is None and sz_data is None:
-
-            print('Error: no spectral data file or SZ data file provided, please provide at least one with the "spec_data=" or "sz_data=" options')
-
-            return
-
         if spec_data is not None:
 
             self.spec_data = spec_data
@@ -708,7 +702,7 @@ class Mhyd:
         self.mgas_fact = cgsamu * self.mu_e / Msun
 
 
-    def emissivity(self, nh, rmf, kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None):
+    def emissivity(self, nh, rmf, type='single', kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None, outz=None):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 
@@ -718,6 +712,8 @@ class Mhyd:
         :type kt: float
         :param rmf: Path to response file (RMF/RSP)
         :type rmf: str
+        :param type: Set whether we will assume a constant conversion factor across the range (type="single") or if we will attempt to model the radial variations of the emissivity conversion factor (type="variable). Defaults to "single".
+        :type type: str
         :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
         :type abund: str
         :param Z: Metallicity with respect to solar. Defaults to 0.3
@@ -728,6 +724,8 @@ class Mhyd:
         :type ehigh: float
         :param arf: Path to on-axis ARF (optional, in case response file is RMF)
         :type arf: str
+        :param outz: If type='variable', name of output file including the fit to the metal abundance profile. If None, it is ignored. Defaults to None.
+        :type outz: str
         '''
 
         if kt is None:
@@ -742,19 +740,33 @@ class Mhyd:
 
                 return
 
+        if type == 'single':
 
-        print('Mean cluster temperature:',kt,' keV')
+            print('Mean cluster temperature:', kt, ' keV')
 
-        self.ccf = calc_emissivity(cosmo=self.cosmo,
-                                        z=self.redshift,
-                                        nh=nh,
-                                        kt=kt,
-                                        rmf=rmf,
-                                        abund=abund,
-                                        Z=Z,
-                                        elow=elow,
-                                        ehigh=ehigh,
-                                        arf=arf)
+            self.ccf = calc_emissivity(cosmo=self.cosmo,
+                                            z=self.redshift,
+                                            nh=nh,
+                                            kt=kt,
+                                            rmf=rmf,
+                                            abund=abund,
+                                            Z=Z,
+                                            elow=elow,
+                                            ehigh=ehigh,
+                                            arf=arf)
+
+        elif type == 'variable':
+
+            self.ccf = variable_ccf(self,
+                                    cosmo=self.cosmo,
+                                    z=self.redshift,
+                                    nh=nh,
+                                    rmf=rmf,
+                                    abund=abund,
+                                    elow=elow,
+                                    ehigh=ehigh,
+                                    arf=arf,
+                                    outz=outz)
 
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,

@@ -165,7 +165,23 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
+    nvalm = len(nsamp)
+
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
+
+    if Mhyd.cf_prof is not None:
+
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 
@@ -183,7 +199,7 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
 
     npx = len(Mhyd.spec_data.rref_x)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 
@@ -270,7 +286,21 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
     nvalm = len(rin_m)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    if Mhyd.cf_prof is not None:
+
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 
@@ -380,7 +410,25 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3):
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
+    nvalm = len(rin_m)
+
+    nsamp = len(Mhyd.samples)
+
+    if Mhyd.cf_prof is not None:
+
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+
+    else:
+
+        cf_prof = Mhyd.ccf
+
+    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     t3d = p3d / dens_m
 
