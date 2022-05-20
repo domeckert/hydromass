@@ -295,7 +295,13 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     if Mhyd.cf_prof is not None:
 
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+        rref_m = (rin_m + rout_m) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
 
     else:
 
