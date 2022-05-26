@@ -4,15 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added option to automatically compute a CCF profile">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/delta.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/save.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/save.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/tpdata.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,6 +18,14 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -79,20 +84,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00030" summary="Added build">
-      <created>1619167277440</created>
-      <option name="number" value="00030" />
-      <option name="presentableId" value="LOCAL-00030" />
-      <option name="project" value="LOCAL" />
-      <updated>1619167277440</updated>
-    </task>
-    <task id="LOCAL-00031" summary="Fixed bug in get_coolfunc">
-      <created>1619170646974</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1619170646974</updated>
     </task>
     <task id="LOCAL-00032" summary="Set unit of cooling time to year">
       <created>1619172465208</created>
@@ -423,7 +414,21 @@
       <option name="project" value="LOCAL" />
       <updated>1653038687934</updated>
     </task>
-    <option name="localTasksCounter" value="79" />
+    <task id="LOCAL-00079" summary="Fixed issue when using a variable CCF">
+      <created>1653069347283</created>
+      <option name="number" value="00079" />
+      <option name="presentableId" value="LOCAL-00079" />
+      <option name="project" value="LOCAL" />
+      <updated>1653069347283</updated>
+    </task>
+    <task id="LOCAL-00080" summary="Added option to automatically compute a CCF profile">
+      <created>1653069365814</created>
+      <option name="number" value="00080" />
+      <option name="presentableId" value="LOCAL-00080" />
+      <option name="project" value="LOCAL" />
+      <updated>1653069365814</updated>
+    </task>
+    <option name="localTasksCounter" value="81" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -443,8 +448,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Fixed overflow issue in onion peeling" />
-    <MESSAGE value="Updated call to rads_more" />
     <MESSAGE value="Fixed call to psfmat when no matrix has been defined" />
     <MESSAGE value="Switched radius at which the density is evaluated from rref to rout" />
     <MESSAGE value="Replaced linear Gaussian process with log-normal process" />
@@ -468,6 +471,8 @@
     <MESSAGE value="Uploaded project to PyPI and wrote installation instructions" />
     <MESSAGE value="Added contour plots" />
     <MESSAGE value="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor" />
+    <MESSAGE value="Fixed issue when using a variable CCF" />
+    <MESSAGE value="Added option to automatically compute a CCF profile" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added option to automatically compute a CCF profile" />
   </component>
 </project>

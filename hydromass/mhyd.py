@@ -81,6 +81,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
 
+    nmin = 0
+    nmax = len(sb)
+
     if rmin is not None:
         valid = np.where(rad>=rmin)
         sb = sb[valid]
@@ -91,6 +94,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         area = area[valid]
         exposure = exposure[valid]
         bkgcounts = bkgcounts[valid]
+        nmin = valid[0][0]
 
     if rmax is not None:
         valid = np.where(rad <= rmax)
@@ -102,6 +106,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         area = area[valid]
         exposure = exposure[valid]
         bkgcounts = bkgcounts[valid]
+        valori = np.where(prof.bins <= rmax)
+        nmax = np.max(valori[0])+1
 
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
@@ -125,9 +131,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     npt = len(pars)
 
     if prof.psfmat is not None:
-        psfmat = prof.psfmat
+        psfmat = prof.psfmat[nmin:nmax,nmin:nmax]
     else:
-        psfmat = np.eye(prof.nbin)
+        psfmat = np.eye(len(sb))
 
     # Compute linear combination kernel
     if fit_bkg:
@@ -137,7 +143,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     else:
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-        K = np.dot(prof.psfmat, Ksb)
+        K = np.dot(psfmat, Ksb)
         # K = calc_sb_operator_psf(rad, sourcereg, pars, area, exposure, psfmat) # transformation to surface brightness
 
     # Set up initial values
@@ -198,7 +204,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     else:
 
-        if len(Mhyd.ccf) != len(rad):
+        tcf = Mhyd.ccf[nmin:nmax]
+
+        if len(tcf) != len(rad):
 
             print('The provided conversion factor has a different length as the input radial binning. Adopting the mean value.')
 
@@ -208,7 +216,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             print('Interpolating conversion factor profile onto the radial grid')
 
-            cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+            cf = np.interp(rref_m, rad * Mhyd.amin2kpc, tcf)
 
             Mhyd.cf_prof = cf
 
@@ -387,7 +395,18 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sd=Mhyd.spec_data.errt_x)  # temperature likelihood
+            rmin_spec = 0.
+            rmax_spec = np.max(Mhyd.spec_data.rref_x_am)
+
+            if rmin is not None:
+                rmin_spec = rmin
+
+            if rmax is not None:
+                rmax_spec = rmax
+
+            valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am>=rmin_spec, Mhyd.spec_data.rref_x_am<=rmax_spec))
+
+            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sd=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
@@ -504,9 +523,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
-    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch

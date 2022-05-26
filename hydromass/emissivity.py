@@ -301,7 +301,26 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf
             plt.errorbar(rads_z, spec_data.zfe[active], xerr=(spec_data.rout_x[active] - spec_data.rin_x[active]) / 2.,
                          yerr=[spec_data.zfe_lo[active], spec_data.zfe_hi[active]], fmt='o', label='Data')
 
-            plt.plot(bins*Mhyd.amin2kpc, zfe_prof, color='magenta', label='Model')
+            plt.plot(bins*Mhyd.amin2kpc, zfe_prof, color='green', label='Z profile')
+
+            post_rc = np.array(trace_z.posterior['rc']).flatten()
+
+            post_floor = np.array(trace_z.posterior['floor']).flatten()
+
+            post_norm = np.array(trace_z.posterior['norm']).flatten()
+
+            nval = len(post_rc)
+
+            post_profs = np.empty((nval, len(rads_z)))
+
+            for i in range(nval):
+                post_profs[i] = post_floor[i] + post_norm[i] * (1. + (rads_z / post_rc[i]) ** 2) ** (-beta_fe)
+
+            med_prof, prof_lo, prof_hi = np.percentile(post_profs, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+
+            plt.plot(rads_z, med_prof, color='magenta', label='Model')
+
+            plt.fill_between(rads_z, prof_lo, prof_hi, color='magenta', alpha=0.4)
 
             plt.xlabel('Radius [kpc]', fontsize=28)
 

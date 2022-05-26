@@ -165,9 +165,9 @@ def kt_forw_from_samples(Mhyd, Forward, nmore=5):
 
     nsamp = len(Mhyd.samples)
 
-    nvalm = len(nsamp)
-
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
+
+    nvalm = len(rin_m)
 
     if Mhyd.cf_prof is not None:
 
@@ -934,10 +934,10 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
     Mhyd.pardens = pardens
     Mhyd.fit_bkg = fit_bkg
 
-    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) / cf * transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
+    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch

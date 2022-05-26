@@ -1,8 +1,8 @@
 from .constants import *
 import numpy as np
-from scipy.optimize import brentq
+from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-from .deproject import calc_density_operator
+from .deproject import calc_density_operator, calc_grad_operator
 from .plots import rads_more
 
 def delta_func(r, Mhyd, model, pars):
@@ -151,7 +151,7 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     return rout, mbar_ov
 
 
-def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
+def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded mass model reconstruction
 
@@ -185,13 +185,15 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
 
             r_mbar, mbar_ov = mbar_overdens(rmax, Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
 
-            temp_func = lambda x: delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) + np.interp(x, r_mbar, mbar_ov) - delta
+            temp_func = lambda x: (delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) + np.interp(x, r_mbar, mbar_ov) - delta) ** 2
 
         else:
 
-            temp_func = lambda x: delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) - delta
+            temp_func = lambda x: (delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) - delta) ** 2
 
-        rdelta[i] = brentq(temp_func, rmin, rmax)
+        res = minimize(temp_func, r0, method='Nelder-Mead')
+
+        rdelta[i] = res['x'][0]
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(Mhyd.redshift).value / Msun
 
@@ -259,7 +261,7 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, rmin=100., rmax=4000.):
 from scipy.optimize import brentq
 
 
-def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
+def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded non-parametric GP reconstruction
 
@@ -269,10 +271,8 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
     :type Mhyd: class:`hydromass.mhyd.Mhyd`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
-    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
-    :type rmin: float
-    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
-    :type rmax: float
+    :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
+    :type r0: float
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
     :rtype:
         - dict{12xfloat}
@@ -315,9 +315,11 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
     delta_prof = mass.T / vol / rhoc
 
     for i in range(nsamp):
-        temp_func = lambda x: np.interp(x, rout_m, delta_prof[i, :]) - delta
+        temp_func = lambda x: (np.interp(x, rout_m, delta_prof[i, :]) - delta) ** 2
 
-        rdelta[i] = brentq(temp_func, rmin, rmax)
+        res = minimize(temp_func, r0, method='Nelder-Mead')
+
+        rdelta[i] = res['x'][0]
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
             Mhyd.redshift).value / Msun
@@ -381,7 +383,11 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, rmin=100., rmax=4000.):
 
         return dict
 
-def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax=4000.):
+
+from scipy.optimize import minimize
+
+
+def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4000.):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
@@ -393,55 +399,69 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
     :type Forward: class:`hydromass.forward.Forward`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
-    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
-    :type rmin: float
-    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
-    :type rmax: float
+    :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
+    :type r0: float
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
     :rtype:
         - dict{12xfloat}
         - matplotlib.pyplot.figure
     '''
 
+    rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rmax), 100)
+
+    rin = np.roll(rout, 1)
+
+    rin[0] = 0.
+
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
+
+    if Mhyd.cf_prof is not None:
+
+        rref = (rin + rout) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        cfp = np.interp(rref, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+    else:
+
+        cfp = Mhyd.ccf
+
     nsamp = len(Mhyd.samppar)
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
-    nvalm = len(rin_m)
-
-    if Mhyd.cf_prof is not None:
-
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
-
-    else:
-
-        cf_prof = Mhyd.ccf
-
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
-
-    p3d = Forward.func_np(rout_m, Mhyd.samppar)
-
-    der_lnP = Forward.func_der(rout_m, Mhyd.samppar)
-
-    rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
-
-    mass = - der_lnP * rout_mul / (dens_m * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
-
-    vol = 4. / 3. * np.pi * rout_m ** 3 * cgskpc ** 3
-
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
 
-    delta_prof = mass.T / vol / rhoc
-
     for i in range(nsamp):
-        temp_func = lambda x: np.interp(x, rout_m, delta_prof[i, :]) - delta
+        def temp_func(x):
+            coefs = Mhyd.samples[i]
 
-        rdelta[i] = brentq(temp_func, rmin, rmax)
+            dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / cfp * Mhyd.transf)
 
-        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
-            Mhyd.redshift).value / Msun
+            tpar = np.array([Mhyd.samppar[i]])
+
+            p3d = Forward.func_np(x, tpar)
+
+            der_lnP = Forward.func_der(x, tpar)
+
+            tne = np.interp(x, rout, dens)
+
+            mass = - der_lnP * x * cgskpc / (tne * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
+
+            vol = 4. / 3. * np.pi * x ** 3 * cgskpc ** 3
+
+            delta_val = mass / vol / rhoc
+
+            return (delta_val - delta) ** 2
+
+        res = minimize(temp_func, r0, method='Nelder-Mead')
+
+        rdelta[i] = res['x'][0]
+
+        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * rhoc / Msun
 
         mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
@@ -502,7 +522,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, rmin=100., rmax
 
         return dict
 
-def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, rmin=100., rmax=4000.):
+def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500.):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
@@ -514,57 +534,75 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, rmin=100.
     :type Polytropic: class:`hydromass.polytropic.Polytropic`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
-    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
-    :type rmin: float
-    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
-    :type rmax: float
-    :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
+    :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
+    :type r0: float
+   :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
     :rtype:
         - dict{12xfloat}
         - matplotlib.pyplot.figure
     '''
 
+    rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rmax), 100)
+
+    rin = np.roll(rout, 1)
+
+    rin[0] = 0.
+
+    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
+
+    Kdens_grad = calc_grad_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
+
+    if Mhyd.cf_prof is not None:
+
+        rref = (rin + rout) / 2.
+
+        rad = Mhyd.sbprof.bins
+
+        cfp = np.interp(rref, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+    else:
+
+        cfp = Mhyd.ccf
+
     nsamp = len(Mhyd.samppar)
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
-    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
-    nvalm = len(rin_m)
-
-    if Mhyd.cf_prof is not None:
-
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
-
-    else:
-
-        cf_prof = Mhyd.ccf
-
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
-
-    grad_dens = np.dot(Mhyd.Kdens_grad, np.exp(Mhyd.samples.T)) / 2. / dens_m ** 2 / Mhyd.ccf * Mhyd.transf
-
-    p3d = Polytropic.func_np(rout_m, Mhyd.samppar, dens_m, grad_dens)
-
-    der_lnP = Polytropic.func_der(rout_m, Mhyd.samppar, dens_m, grad_dens)
-
-    rout_mul = np.repeat(rout_m, nsamp).reshape(nvalm, nsamp) * cgskpc
-
-    mass = - der_lnP * rout_mul / (dens_m * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
-
-    vol = 4. / 3. * np.pi * rout_m ** 3 * cgskpc ** 3
-
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
 
-    delta_prof = mass.T / vol / rhoc
-
     for i in range(nsamp):
-        temp_func = lambda x: np.interp(x, rout_m, delta_prof[i, :]) - delta
+        def temp_func(x):
+            coefs = Mhyd.samples[i]
 
-        rdelta[i] = brentq(temp_func, rmin, rmax)
+            dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / cfp * Mhyd.transf)
 
-        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
-            Mhyd.redshift).value / Msun
+            tpar = np.array([Mhyd.samppar[i]])
+
+            grad_dens = np.dot(Kdens_grad, np.exp(coefs)) / 2. / dens ** 2 / cfp * Mhyd.transf
+
+            tne = np.interp(x, rout, dens)
+
+            tgrad = np.interp(x, rout, grad_dens)
+
+            p3d = Polytropic.func_np(x, tpar, tne, tgrad)
+
+            der_lnP = Polytropic.func_der(x, tpar, dens, tgrad)
+
+            mass = - der_lnP * x * cgskpc / (tne * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
+
+            vol = 4. / 3. * np.pi * x ** 3 * cgskpc ** 3
+
+            delta_val = mass / vol / rhoc
+
+            return (delta_val - delta) ** 2
+
+        res = minimize(temp_func, r0, method='Nelder-Mead')
+
+        rdelta[i] = res['x'][0]
+
+        mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * rhoc / Msun
 
         mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
@@ -627,7 +665,7 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, rmin=100.
 
 
 
-def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=4000.):
+def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
@@ -637,10 +675,6 @@ def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=4000.):
     :type model: class Model
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
-    :param rmin: Minimum radius where to search for the overdensity radii (in kpc). Defaults to 100
-    :type rmin: float
-    :param rmax: Maximum radius where to search for the overdensity radii (in kpc). Defaults to 4000
-    :type rmax: float
     """
 
     if outfile is None:
@@ -669,7 +703,7 @@ def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=4000.):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta(delta, Mhyd, model, rmin=rmin, rmax=rmax)
+        res = calc_rdelta_mdelta(delta, Mhyd, model, r0=r0, rmax=rmax)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -677,7 +711,7 @@ def write_all_mdelta(Mhyd, model, outfile=None, rmin=100., rmax=4000.):
 
     fout.close()
 
-def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=4000.):
+def write_all_mdelta_GP(Mhyd, outfile=None, r0=500.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file. In case the fitted model is noisy and shows local (or non-local) reversals, the procedure can fail if the function Delta(r)-Delta does not change sign over the range of interest. In this case, consider changing the values of rmin and rmax
 
@@ -685,10 +719,8 @@ def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=4000.):
     :type Mhyd: class Mhyd
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
-    :param rmin: Minimum radius where to search for the overdensity radii (in kpc). Defaults to 100
-    :type rmin: float
-    :param rmax: Maximum radius where to search for the overdensity radii (in kpc). Defaults to 4000
-    :type rmax: float
+    :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
+    :type r0: float
     """
 
     if outfile is None:
@@ -709,7 +741,7 @@ def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=4000.):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_GP(delta, Mhyd, rmin=rmin, rmax=rmax)
+        res = calc_rdelta_mdelta_GP(delta, Mhyd, r0=r0)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -718,7 +750,7 @@ def write_all_mdelta_GP(Mhyd, outfile=None, rmin=100., rmax=4000.):
     fout.close()
 
 
-def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=4000.):
+def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500.):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file. In case the fitted model is noisy and shows local (or non-local) reversals, the procedure can fail if the function Delta(r)-Delta does not change sign over the range of interest. In this case, consider changing the values of rmin and rmax
 
@@ -726,10 +758,8 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=4000.)
     :type Mhyd: class Mhyd
     :param outfile: Name of output file. In case outfile=None (default), the function writes to Mhyd.dir/'name'.jou , with 'name' the name of the mass model.
     :type outfile: str
-    :param rmin: Minimum radius where to search for the overdensity radii (in kpc). Defaults to 100
-    :type rmin: float
-    :param rmax: Maximum radius where to search for the overdensity radii (in kpc). Defaults to 4000
-    :type rmax: float
+    :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
+    :type r0: float
     """
 
     if outfile is None:
@@ -744,7 +774,7 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, rmin=100., rmax=4000.)
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, rmin=rmin, rmax=rmax)
+        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, r0=r0)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
