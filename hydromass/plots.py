@@ -227,31 +227,57 @@ def gnfw_p0(x,pars):
     t2=np.power(1.+np.power(x/rs,alpha),(beta-gamma)/alpha)
     return P0/t1/t2
 
-def estimate_P0(Mhyd):
+def estimate_P0(Mhyd, dens='sb'):
     '''
     Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. A rough electron density profile is estimated by deprojecting the surface brightness profile using the onion peeling techique, and temperature deprojection is neglected. The resulting pressure profile is fitted with a gNFW profile using the scipy.minimize function and the best-fit function is used to extrapolate the pressure to the outer boundary to provide a rough estimate of :math:`P_0`.
 
     :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the loaded data
     :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param dens: Set whether we will deproject the surface brightness profile (dens='sb') or the normalization of the spectrum (dens='norm'). Defaults to 'sb'
+    :type dens: str
     :return: Estimated value of :math:`P_0`
     :rtype: float
     '''
     spec_data = Mhyd.spec_data
 
-    sbprof = copy.copy(Mhyd.sbprof)
+    if dens == 'sb' or spec_data.norm is None:
+        sbprof = copy.copy(Mhyd.sbprof)
 
-    sbprof.profile = np.abs(sbprof.profile)
+        sbprof.profile = np.abs(sbprof.profile)
 
-    deprop = pyproffit.Deproject(z=Mhyd.redshift, cf=Mhyd.ccf, profile=sbprof)
+        deprop = pyproffit.Deproject(z=Mhyd.redshift, cf=Mhyd.ccf, profile=sbprof)
 
-    deprop.OnionPeeling()
+        deprop.OnionPeeling()
+
+        ne_interp = np.interp(spec_data.rref_x_am, sbprof.bins, deprop.dens) * Mhyd.nhc
+
+        p_interp = ne_interp * spec_data.temp_x
+        ep_interp = ne_interp * spec_data.errt_x
+
+    else:
+        sbprof = copy.copy(Mhyd.sbprof)
+
+        dat = sbprof.data
+        cra = sbprof.cra
+        cdec = sbprof.cdec
+
+        prof_n = pyproffit.Profile(dat, center_choice='custom_fk5', center_ra=cra, center_dec=cdec,
+                                   binsize=3., maxrad=11.)
+
+        prof_n.bins = spec_data.rref_x_am
+        prof_n.ebins = (spec_data.rout_x_am - spec_data.rin_x_am) / 2.
+        prof_n.profile = spec_data.norm
+        prof_n.eprof = spec_data.norm_lo
+        prof_n.nbin = len(spec_data.rref_x_am)
+
+        depr = pyproffit.Deproject(z=Mhyd.redshift, cf=1., profile=prof_n)
+
+        depr.OnionPeeling()
+
+        p_interp = depr.dens * spec_data.temp_x
+        ep_interp = depr.dens * spec_data.errt_x
 
     pars_press = np.array([3.28, 1200., 1.33, 4.72, 0.59])
-
-    ne_interp = np.interp(spec_data.rref_x_am, sbprof.bins, deprop.dens) * Mhyd.nhc
-
-    p_interp = ne_interp * spec_data.temp_x
-    ep_interp = ne_interp * spec_data.errt_x
 
     def chi2_gnfw(pars):
         pars_press[0] = pars[0]

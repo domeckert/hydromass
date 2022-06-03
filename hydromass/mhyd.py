@@ -16,7 +16,7 @@ import arviz as az
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, rmin=None, rmax=None):
+                   pnt=False, rmin=None, rmax=None, p0_type='sb'):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -69,6 +69,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     :type rmin: float
     :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied. Defaults to None.
     :type rmax: float
+    :param p0_type: For the estimation of P0, choose whether we will use the surface brightness profile (p0_type='sb') or the spectral normalization (p0_type='norm'). Defaults to 'sb'.
+    :type p0_type: str
 
     """
     prof = Mhyd.sbprof
@@ -311,7 +313,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            P0_est = estimate_P0(Mhyd=Mhyd)
+            P0_est = estimate_P0(Mhyd=Mhyd, dens=p0_type)
 
             print('Estimated value of P0: %g' % (P0_est))
 
@@ -790,7 +792,7 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None, p0_type='sb'):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -830,6 +832,9 @@ class Mhyd:
         :type rmin: float
         :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied. Defaults to None.
         :type rmax: float
+        :param p0_type: For the estimation of P0, choose whether we will use the surface brightness profile (p0_type='sb') or the spectral normalization (p0_type='norm'). Defaults to 'sb'.
+        :type p0_type: str
+
         '''
         if model is None:
 
@@ -855,7 +860,8 @@ class Mhyd:
                        find_map=find_map,
                        pnt=pnt,
                        rmin=rmin,
-                       rmax=rmax)
+                       rmax=rmax,
+                       p0_type=p0_type)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,

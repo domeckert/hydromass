@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Added option to automatically compute a CCF profile">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Fixed delta calculation in Forward">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/delta.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/delta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/tpdata.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/tpdata.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -84,13 +83,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00032" summary="Set unit of cooling time to year">
-      <created>1619172465208</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1619172465208</updated>
     </task>
     <task id="LOCAL-00033" summary="Fixed missing abundance argument">
       <created>1619202931677</created>
@@ -428,7 +420,14 @@
       <option name="project" value="LOCAL" />
       <updated>1653069365814</updated>
     </task>
-    <option name="localTasksCounter" value="81" />
+    <task id="LOCAL-00081" summary="Fixed delta calculation in Forward">
+      <created>1653547498197</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1653547498197</updated>
+    </task>
+    <option name="localTasksCounter" value="82" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -448,7 +447,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Fixed call to psfmat when no matrix has been defined" />
     <MESSAGE value="Switched radius at which the density is evaluated from rref to rout" />
     <MESSAGE value="Replaced linear Gaussian process with log-normal process" />
     <MESSAGE value="Fixed issue in GP mass reconstruction" />
@@ -473,6 +471,7 @@
     <MESSAGE value="Fix issue with extraction of posterior profiles when using a variable emissivity conversion factor" />
     <MESSAGE value="Fixed issue when using a variable CCF" />
     <MESSAGE value="Added option to automatically compute a CCF profile" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added option to automatically compute a CCF profile" />
+    <MESSAGE value="Fixed delta calculation in Forward" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed delta calculation in Forward" />
   </component>
 </project>
