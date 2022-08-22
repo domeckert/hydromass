@@ -3,6 +3,7 @@ import  numpy as np
 import pymc3 as pm
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
 
 def is_tool(name):
     """Check whether `name` is on PATH."""
@@ -163,8 +164,19 @@ def medsmooth(prof):
     smoothed[nbin-1]=np.median(xx)
     return  smoothed
 
+def vikh_temp(x,pars):
+    T0=pars[0]
+    Tmin=pars[1]
+    rcool=pars[2]
+    acool=pars[3]
+    rt=pars[4]
+    c=pars[5]
+    numer=Tmin/T0+np.power(x/rcool,acool)
+    denom=1.+np.power(x/rcool,acool)
+    t2=np.power(1.+(x/rt)**2,-c/2)
+    return T0*numer/denom*t2
 
-def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf=None, outz=None):
+def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.5, ehigh=2.0, arf=None, outz=None, outkt=None):
     '''
 
     :param Mhyd: Hydromass object
@@ -177,6 +189,8 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf
     :type nh: float
     :param rmf: Path to response file (RMF/RSP)
     :type rmf: str
+    :param method: Choose whether the temperature profile will be interpolated (method='interp') or fitted with a parametric function (method='fit'). Defaults to 'interp'.
+    :type method: str
     :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
     :type abund: str
     :param elow: Low-energy bound of the input image in keV. Defaults to 0.5
@@ -185,6 +199,10 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf
     :type ehigh: float
     :param arf: Path to on-axis ARF (optional, in case response file is RMF)
     :type arf: str
+    :param outz: Name of output file including the fit to the metal abundance profile. If None, it is ignored. Defaults to None.
+    :type outz: str
+    :param outkt: Name of output file including the fit to the temperature profile. If None, it is ignored. Defaults to None.
+    :type outkt: str
     :return: Conversion factor
     :rtype: float
     '''
@@ -205,12 +223,74 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf
 
     nkt = len(spec_data.temp_x)
 
-    fill_value = (spec_data.temp_x[0], spec_data.temp_x[nkt - 1])
+    if method=='fit':
 
-    fint = interp1d(spec_data.rref_x_am, medsmooth(spec_data.temp_x), kind='cubic', fill_value=fill_value,
-                    bounds_error=False)
+        pars_temp = np.array([1.2, 0.52 * 1.20, np.exp(-2.90), 1.06, 0.36, 0.28 * 2.0])
 
-    ktprof = fint(bins)
+        def optim_kt(pars):
+
+            x = spec_data.rref_x / 500.  # assuming R500=500 kpc
+
+            mod_kt = vikh_temp(x, pars)
+
+            chi2 = np.sum((mod_kt - spec_data.temp_x) ** 2 / spec_data.errt_x ** 2)
+
+            if np.any(pars < 0.):
+
+                chi2 = chi2 + 1e10
+
+            return chi2
+
+        res = minimize(optim_kt, pars_temp, method='Nelder-Mead')
+
+        ktfit = res['x']
+
+        ktprof = vikh_temp(bins * Mhyd.amin2kpc / 500., ktfit)
+
+        if outkt is not None:
+
+            plt.clf()
+
+            fig = plt.figure(figsize=(13, 10))
+
+            ax_size = [0.14, 0.12,
+                       0.85, 0.85]
+
+            ax = fig.add_axes(ax_size)
+
+            ax.minorticks_on()
+
+            ax.tick_params(length=20, width=1, which='major', direction='in', right=True, top=True)
+
+            ax.tick_params(length=10, width=1, which='minor', direction='in', right=True, top=True)
+
+            for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(22)
+
+            plt.errorbar(spec_data.rref_x, spec_data.temp_x, xerr=(spec_data.rout_x - spec_data.rin_x) / 2.,
+                         yerr=[spec_data.templ, spec_data.temph], fmt='o', label='Data')
+
+            plt.plot(bins*Mhyd.amin2kpc, ktprof, color='green', label='Z profile')
+
+            plt.xlabel('Radius [kpc]', fontsize=28)
+
+            plt.ylabel('kT [keV]', fontsize=28)
+
+            plt.savefig(outkt)
+
+
+    else:
+
+        if method != 'interp':
+            print('Unknown method %s, reverting to interpolation' % (method))
+
+        fill_value = (spec_data.temp_x[0], spec_data.temp_x[nkt - 1])
+
+        fint = interp1d(spec_data.rref_x_am, medsmooth(spec_data.temp_x), kind='cubic', fill_value=fill_value,
+                        bounds_error=False)
+
+
+        ktprof = fint(bins)
 
     if spec_data.zfe is None:
 
@@ -327,5 +407,6 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, abund='angr', elow=0.5, ehigh=2.0, arf
             plt.ylabel('$Z/Z_{\odot}$', fontsize=28)
 
             plt.savefig(outz)
+
 
     return cf_prof

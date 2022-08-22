@@ -723,7 +723,7 @@ class Mhyd:
         self.mgas_fact = cgsamu * self.mu_e / Msun
 
 
-    def emissivity(self, nh, rmf, type='single', kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None, outz=None):
+    def emissivity(self, nh, rmf, type='single', kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None, outz=None, method='interp', outkt=None):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 
@@ -747,6 +747,10 @@ class Mhyd:
         :type arf: str
         :param outz: If type='variable', name of output file including the fit to the metal abundance profile. If None, it is ignored. Defaults to None.
         :type outz: str
+        :param method: If type='variable', choose whether the temperature profile will be interpolated (method='interp') or fitted with a parametric function (method='fit'). Defaults to 'interp'.
+        :type method: str
+        :param outkt: If type='variable', name of output file including the fit to the temperature profile. If None, it is ignored. Defaults to None.
+        :type outkt: str
         '''
 
         if kt is None:
@@ -783,11 +787,13 @@ class Mhyd:
                                     z=self.redshift,
                                     nh=nh,
                                     rmf=rmf,
+                                    method=method,
                                     abund=abund,
                                     elow=elow,
                                     ehigh=ehigh,
                                     arf=arf,
-                                    outz=outz)
+                                    outz=outz,
+                                    outkt=outkt)
 
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
