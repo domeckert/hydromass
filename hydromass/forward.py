@@ -791,7 +791,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
                     tpar = pm.TruncatedNormal(name, mu=np.log(Forward.start[i]), sd=Forward.sd[i] / Forward.start[i],
                                                 lower=np.log(lim[0]), upper=np.log(lim[1])) #log-normal prior on normalization
 
-                    modpar = np.exp(tpar)
+                    modpar = pm.math.exp(tpar)
 
                 else:
 
