@@ -11,6 +11,7 @@ from astropy.io import fits
 import os
 import pymc3 as pm
 from .save import *
+from .wl import WLmodel
 import arviz as az
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
@@ -417,6 +418,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
+        if Mhyd.wl_data is not None:
+
+            WLdata = Mhyd.wl_data
+
+            gmodel, rm, ev = WLmodel(WLdata, model, pmod)
+
+            g_obs = pm.Normal('WL', mu=gmodel[ev], observed=WLdata.gplus, sd=WLdata.err_gplus)
 
     tinit = time.time()
 
@@ -525,9 +533,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
-    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+
+    if Mhyd.cf_prof is not None:
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+
+    else:
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
@@ -623,7 +639,7 @@ class Mhyd:
     :type f_abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
 
         if f_abund == 'angr':
             nhc = 1 / 0.8337
@@ -698,23 +714,13 @@ class Mhyd:
 
             return
 
-        if spec_data is not None:
+        self.spec_data = spec_data
 
-            self.spec_data = spec_data
+        self.sz_data = sz_data
 
-        else:
+        self.wl_data = wl_data
 
-            self.spec_data = None
-
-        if sz_data is not None:
-
-            self.sz_data = sz_data
-
-        else:
-
-            self.sz_data = None
-
-        rho_cz = cosmo.critical_density(self.redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
+        rho_cz = cosmo.critical_density(redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
 
         self.mfact = 4. * np.pi * rho_cz * 1e-22
 

@@ -73,15 +73,17 @@ class EinastoFx(tt.Op):
     otypes = [tt.dvector]
 
     def perform(self, node, inputs, outputs):
-        x,  = inputs
+        x, = inputs
         y = f_ein_mu(x, 5.)
         outputs[0][0] = np.array(y)
 
     def grad(self, inputs, g):
         x, = inputs
-        return [g[0] * f_ein_mu_der(x, 5.) ]
+        return [g[0] * f_ein_mu_der(x, 5.)]
+
 
 tt_einasto = EinastoFx()
+
 
 # 2-parameter Einasto function
 def f_ein2_pm(xout, c200, r200, delta=200.):
@@ -323,6 +325,9 @@ def f_iso_np(xout, pars, delta=200.):
 
 
 # NFW function
+
+
+
 def f_nfw_pm(xout, c200, r200, delta=200.):
     '''
     Theano function for the Navarro-Frenk-White mass profile (Navarro et al. 1996)
@@ -352,6 +357,12 @@ def f_nfw_pm(xout, c200, r200, delta=200.):
 
     return r200 ** 3 * fcc / c200 ** 3 * fx
 
+def rho_nfw_cr(radii, c200, r200, delta=200.):
+    # Theano function for the Navarro-Frank-White density profile (Navarro et al. 1996)
+    # Should be multiplied by rho_crit(z)
+    r = (radii[1:] + radii[:-1]) / 2 * 1000.
+    delta_crit = (delta / 3) * (c200 ** 3) * (pm.math.log(1. + c200) - c200 / (1 + c200)) ** (-1)
+    return delta_crit / ((c200 * r / r200) * ((1. + (c200 * r / r200)) ** 2))
 
 def f_nfw_np(xout, pars, delta=200.):
     '''
@@ -520,6 +531,7 @@ def f_bur_np(xout, pars, delta=200.):
 
     return r200mul ** 3 * fcc * fx
 
+
 class Model:
     '''
     Class defining mass models to be passed to the hydromass :class:`hydromass.mhyd.Mhyd` class for optimization.
@@ -544,6 +556,7 @@ class Model:
     :param fix: 1D array setting whether each parameter of the mass model is fitted (False) or fixed (True). If None, all the parameters are free to vary.
     :type fix: numpy.ndarray
     '''
+
     def __init__(self, massmod, delta=200., start=None, sd=None, limits=None, fix=None):
 
         if massmod == 'NFW':
@@ -551,6 +564,8 @@ class Model:
             func_pm = f_nfw_pm
 
             func_np = f_nfw_np
+
+            self.rho_pm = rho_nfw_cr
 
             self.npar = 2
             self.parnames = ['cdelta', 'rdelta']
@@ -580,7 +595,6 @@ class Model:
 
                 self.sd = sd
 
-
             if limits is None:
 
                 limits = np.empty((self.npar, 2))
@@ -592,7 +606,7 @@ class Model:
             else:
 
                 try:
-                    assert (limits.shape == (self.npar,2))
+                    assert (limits.shape == (self.npar, 2))
                 except AssertionError:
                     print('Shape of limits does not match function.')
                     return
