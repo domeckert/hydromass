@@ -4,7 +4,7 @@ from astropy.io import fits
 from .deproject import MyDeprojVol
 from scipy.optimize import brentq
 from scipy.signal import convolve
-
+import astropy.units as u
 
 class SpecData:
 
@@ -616,3 +616,70 @@ class SZData:
                     psfout[n, p] = np.sum(blurred[sn])
 
             self.psfmat = psfout
+
+
+class WLData:
+    '''
+    Container class to load a weak lensing shear profile and its covariance matrix. The data can either be passed all at once by reading a FITS table file or directly as numpy arrays.
+
+    :param redshift: Source redshift
+    :type redshift: float
+    :param sz_data: Link to a FITS file containing the SZ pressure profile to be read. If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None
+    :type sz_data: str
+    :param rin: 1-D array including the inner boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type rin: numpy.ndarray
+    :param rout: 1-D array including the outer boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type rin: numpy.ndarray
+    :param psz: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type psz: numpy.ndarray
+    :param covmat_sz: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type covmat_sz: numpy.ndarray
+    :param cosmo: Astropy cosmology object including the cosmology definition
+    :type cosmo: astropy.cosmology
+    '''
+    def __init__(self, redshift, rin=None, rout=None, gplus=None, err_gplus=None,
+                 sigmacrit_inv=None, fl=None, cosmo=None):
+
+        if rin is None or rout is None or gplus is None or err_gplus is None:
+
+            print('Missing input, please provide rin, rout, gplus, and err_gplus')
+
+            return
+
+        if sigmacrit_inv is None:
+
+            print('The mean value of sigma_crit is required')
+
+            return
+
+        if fl is None:
+
+            print('The second order correction factor is not given, we will do the calculation at first order')
+
+        self.gplus = gplus
+
+        self.err_gplus = err_gplus
+
+        if cosmo is None:
+
+            from astropy.cosmology import Planck15 as cosmo
+
+        amin2kpc = cosmo.kpc_proper_per_arcmin(redshift).value
+
+        self.rin_wl = rin * amin2kpc / 1e3 # Mpc
+
+        self.rout_wl = rout * amin2kpc / 1e3
+
+        self.radii_wl = np.append(self.rin_wl[0], self.rout_wl)
+
+        self.rin_wl_am = rin
+
+        self.rout_wl_am = rout
+
+        self.rref_wl = (self.rin_wl + self.rout_wl) / 2.
+
+        self.rho_crit = (cosmo.critical_density(redshift).to(u.M_sun * u.Mpc**-3)).value
+
+        self.msigmacrit = sigmacrit_inv
+
+        self.fl = fl
