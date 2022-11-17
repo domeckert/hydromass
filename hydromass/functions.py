@@ -1,8 +1,8 @@
 import numpy as np
 import scipy.special as special
-import pymc3 as pm
-import theano
-import theano.tensor as tt
+import pymc as pm
+import aesara as theano
+import aesara.tensor as tt
 
 
 class ArcTan(tt.Op):

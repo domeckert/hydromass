@@ -9,14 +9,14 @@ from .pnt import *
 from .nonparametric import *
 from astropy.io import fits
 import os
-import pymc3 as pm
+import pymc as pm
 from .save import *
 import arviz as az
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, rmin=None, rmax=None, p0_type='sb'):
+                   pnt=False, rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -265,11 +265,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     with hydro_model:
         # Priors for unknown model parameters
-        coefs = pm.Normal('coefs', mu=testval, sd=20, shape=npt)
+        coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
 
         if fit_bkg:
 
-            bkgd = pm.Normal('bkg', mu=testbkg, sd=0.05, shape=1) # in case fit_bkg = False this is not fitted
+            bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
 
             ctot = pm.math.concatenate((coefs, bkgd), axis=0)
 
@@ -294,7 +294,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 lim = model.limits[i]
 
-                modpar = pm.TruncatedNormal(name, mu=model.start[i], sd=model.sd[i], lower=lim[0], upper=lim[1]) #
+                modpar = pm.TruncatedNormal(name, mu=model.start[i], sigma=model.sd[i], lower=lim[0], upper=lim[1]) #
 
             else:
 
@@ -319,7 +319,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             err_P0_est = P0_est # 1 in ln
 
-        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
+        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sigma=err_P0_est / P0_est,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
                                    upper=np.log(P0_est) + err_P0_est / P0_est)
 
@@ -327,8 +327,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
 
-        for RV in hydro_model.basic_RVs:
-            print(RV.name, RV.logp(hydro_model.test_point))
+        #for RV in hydro_model.basic_RVs:
+        #    print(RV.name, RV.logp(hydro_model.test_point))
 
         press00 = np.exp(logp0)
 
@@ -381,7 +381,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb) #Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb) #Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -408,7 +408,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am>=rmin_spec, Mhyd.spec_data.rref_x_am<=rmax_spec))
 
-            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sd=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
+            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sigma=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
@@ -428,12 +428,12 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, init='ADVI', start=start, tune=tune, return_inferencedata=True,
-                              target_accept=0.9)
+            trace = pm.sample(nmcmc, init=init, start=start, tune=tune, return_inferencedata=True,
+                              target_accept=target_accept)
 
         else:
 
-            trace = pm.sample(nmcmc, init='ADVI', tune=tune, return_inferencedata=True, target_accept=0.9)
+            trace = pm.sample(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
 
 
         Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
@@ -525,9 +525,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
-    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+
+    if Mhyd.cf_prof is not None:
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+
+    else:
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
@@ -798,7 +806,7 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None, p0_type='sb'):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -867,7 +875,9 @@ class Mhyd:
                        pnt=pnt,
                        rmin=rmin,
                        rmax=rmax,
-                       p0_type=p0_type)
+                       p0_type=p0_type,
+                       init=init,
+                       target_accept=target_accept)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,

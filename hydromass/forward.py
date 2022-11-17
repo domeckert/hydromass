@@ -1,5 +1,5 @@
 import numpy as np
-import pymc3 as pm
+import pymc as pm
 from .deproject import *
 from .plots import rads_more, get_coolfunc, plt
 from .constants import *

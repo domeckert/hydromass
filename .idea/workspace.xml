@@ -4,7 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Changed exponential from numpy to theano">
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Increase version number and uploaded to PyPI">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/deproject.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydromass/pnt.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/pnt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -80,13 +89,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00036" summary="Added variable CCF option to Forward">
-      <created>1620033730422</created>
-      <option name="number" value="00036" />
-      <option name="presentableId" value="LOCAL-00036" />
-      <option name="project" value="LOCAL" />
-      <updated>1620033730422</updated>
     </task>
     <task id="LOCAL-00037" summary="Fixed PSF convolution model in GP and Forward as well as reloading options">
       <created>1620036033014</created>
@@ -424,7 +426,14 @@
       <option name="project" value="LOCAL" />
       <updated>1661176296238</updated>
     </task>
-    <option name="localTasksCounter" value="85" />
+    <task id="LOCAL-00085" summary="Increase version number and uploaded to PyPI">
+      <created>1661176467399</created>
+      <option name="number" value="00085" />
+      <option name="presentableId" value="LOCAL-00085" />
+      <option name="project" value="LOCAL" />
+      <updated>1661176467399</updated>
+    </task>
+    <option name="localTasksCounter" value="86" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -444,7 +453,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Tuned lognormal GP parameters" />
     <MESSAGE value="Added computation of WAIC and LOO as well as log-likelihood values" />
     <MESSAGE value="Updated plot boundaries" />
     <MESSAGE value="New Mac" />
@@ -469,6 +477,7 @@
     <MESSAGE value="Added option to estimate the prior on P0 from the fitted spectral normalization rather than from the surface brightness profile" />
     <MESSAGE value="In the case of a variable conversion factor, added option to fit the input temperature profile with a Vikhlinin-like function and use the fitted function instead of interpolating" />
     <MESSAGE value="Changed exponential from numpy to theano" />
-    <option name="LAST_COMMIT_MESSAGE" value="Changed exponential from numpy to theano" />
+    <MESSAGE value="Increase version number and uploaded to PyPI" />
+    <option name="LAST_COMMIT_MESSAGE" value="Increase version number and uploaded to PyPI" />
   </component>
 </project>

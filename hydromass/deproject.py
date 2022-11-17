@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.special import gamma
 from .constants import *
-import pymc3 as pm
 from astropy.io import fits
 import time
 

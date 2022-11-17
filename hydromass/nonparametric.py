@@ -2,6 +2,7 @@ import numpy as np
 from .deproject import *
 from .plots import rads_more, get_coolfunc, estimate_P0, plt
 from scipy.interpolate import interp1d
+import pymc as pm
 
 # Function to compute linear operator transforming norms of GP model into radial profile
 
@@ -1046,11 +1047,11 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     with hydro_model:
         # Priors for unknown model parameters
-        coefs = pm.Normal('coefs', mu=testval, sd=20, shape=npt)
+        coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
 
         if fit_bkg:
 
-            bkgd = pm.Normal('bkg', mu=testbkg, sd=0.05, shape=1) # in case fit_bkg = False this is not fitted
+            bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
 
             ctot = pm.math.concatenate((coefs, bkgd), axis=0)
 
