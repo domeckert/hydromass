@@ -4,24 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Increase version number and uploaded to PyPI">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/deproject.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/deproject.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/emissivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/emissivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/forward.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/forward.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/mhyd.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/mhyd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/nonparametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/nonparametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydromass/pnt.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydromass/pnt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-    </list>
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Created pymc4 (a.k.a pymc)-compatible version" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="Git.Rebase.Settings">
+    <option name="NEW_BASE" value="pymc4" />
+  </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitSEFilterConfiguration">
@@ -89,13 +86,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
-    </task>
-    <task id="LOCAL-00037" summary="Fixed PSF convolution model in GP and Forward as well as reloading options">
-      <created>1620036033014</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1620036033014</updated>
     </task>
     <task id="LOCAL-00038" summary="Tuned NUTS sampling parameters">
       <created>1622530863632</created>
@@ -433,7 +423,14 @@
       <option name="project" value="LOCAL" />
       <updated>1661176467399</updated>
     </task>
-    <option name="localTasksCounter" value="86" />
+    <task id="LOCAL-00086" summary="Created pymc4 (a.k.a pymc)-compatible version">
+      <created>1668674530213</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1668674530213</updated>
+    </task>
+    <option name="localTasksCounter" value="87" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -453,7 +450,6 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
-    <MESSAGE value="Added computation of WAIC and LOO as well as log-likelihood values" />
     <MESSAGE value="Updated plot boundaries" />
     <MESSAGE value="New Mac" />
     <MESSAGE value="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;" />
@@ -478,6 +474,7 @@
     <MESSAGE value="In the case of a variable conversion factor, added option to fit the input temperature profile with a Vikhlinin-like function and use the fitted function instead of interpolating" />
     <MESSAGE value="Changed exponential from numpy to theano" />
     <MESSAGE value="Increase version number and uploaded to PyPI" />
-    <option name="LAST_COMMIT_MESSAGE" value="Increase version number and uploaded to PyPI" />
+    <MESSAGE value="Created pymc4 (a.k.a pymc)-compatible version" />
+    <option name="LAST_COMMIT_MESSAGE" value="Created pymc4 (a.k.a pymc)-compatible version" />
   </component>
 </project>
