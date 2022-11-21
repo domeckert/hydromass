@@ -289,10 +289,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) * Mhyd.transf)
+    pmc = np.median(alldens, axis=1) / Mhyd.ccf
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / Mhyd.ccf
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / Mhyd.ccf
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
