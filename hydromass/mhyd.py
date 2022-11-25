@@ -17,7 +17,8 @@ import arviz as az
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9):
+                   pnt=False, rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
+                   fit_elong=True):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -83,6 +84,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     area = prof.area
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
+    nbin = prof.nbin
 
     nmin = 0
     nmax = len(sb)
@@ -375,6 +377,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             pth = press_out
 
+        if fit_elong:
+            # Prior on the line-of-sight elongation parameter
+            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
+
+        else:
+            elongation = 1
+
+
         # Density Likelihood
         if fit_bkg:
 
@@ -382,7 +392,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb) #Sx likelihood
+            sbmod = pred * elongation ** 0.5
+
+            sb_obs = pm.Normal('sb', mu=sbmod, observed=sb, sigma=esb) #Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -414,7 +426,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
 
-            pfit = pth[index_sz]
+            pfit = pth[index_sz] * elongation
 
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
@@ -424,7 +436,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
-            g_obs = pm.Normal('WL', mu=gmodel[ev], observed=WLdata.gplus, sd=WLdata.err_gplus)
+            gmodel_elong = elongation * gmodel
+
+            g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
 
     tinit = time.time()
 
@@ -454,6 +468,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
 
+        if Mhyd.wl_data is not None:
+
+            Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
+
     print('Done.')
 
     tend = time.time()
@@ -481,12 +499,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         samples = sampc
 
     Mhyd.samples = samples
+    nsamp = len(samples)
 
     if samplefile is not None:
         np.savetxt(samplefile, samples)
         np.savetxt(samplefile+'.par',np.array([pars.shape[0]/nbetas,nbetas,min_beta,nmcmc]),header='pymc3')
 
     # Compute output deconvolved brightness profile
+    if fit_elong:
+        elong = (np.array(trace.posterior['elong'])).flatten()
+    else:
+        elong = 1
 
     if fit_bkg:
         Ksb = calc_sb_operator(rad, sourcereg, pars)
@@ -502,9 +525,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     else:
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-        allsb = np.dot(Ksb, np.exp(samples.T))
+        if fit_elong:
 
-        allsb_conv = np.dot(K, np.exp(samples.T))
+            elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
+
+            allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
+
+            allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
+
+        else:
+
+            allsb = np.dot(Ksb, np.exp(samples.T))
+
+            allsb_conv = np.dot(K, np.exp(samples.T))
 
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
@@ -532,6 +565,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     if pnt:
         Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
+
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
 
     if Mhyd.cf_prof is not None:
@@ -558,6 +592,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     Mhyd.samppar = samppar
     Mhyd.samplogp0 = samplogp0
+    Mhyd.elong = elong
     Mhyd.K = K
     Mhyd.Kdens = Kdens
     Mhyd.Ksb = Ksb

@@ -364,6 +364,13 @@ def rho_nfw_cr(radii, c200, r200, delta=200.):
     delta_crit = (delta / 3) * (c200 ** 3) * (pm.math.log(1. + c200) - c200 / (1 + c200)) ** (-1)
     return delta_crit / ((c200 * r / r200) * ((1. + (c200 * r / r200)) ** 2))
 
+def rho_nfw_cr_np(radii, c200, r200, delta=200.):
+    # Theano function for the Navarro-Frank-White density profile (Navarro et al. 1996)
+    # Should be multiplied by rho_crit(z)
+    r = (radii[1:] + radii[:-1]) / 2 * 1000.
+    delta_crit = (delta / 3) * (c200 ** 3) * (np.log(1. + c200) - c200 / (1 + c200)) ** (-1)
+    return delta_crit / ((c200 * r / r200) * ((1. + (c200 * r / r200)) ** 2))
+
 def f_nfw_np(xout, pars, delta=200.):
     '''
     Numpy function for the NFW profile (see :func:`hydromass.functions.f_nfw_pm`)
@@ -566,6 +573,7 @@ class Model:
             func_np = f_nfw_np
 
             self.rho_pm = rho_nfw_cr
+            self.rho_np = rho_nfw_cr_np
 
             self.npar = 2
             self.parnames = ['cdelta', 'rdelta']
