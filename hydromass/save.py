@@ -46,7 +46,7 @@ def SaveModel(Mhyd, model, outfile=None):
     headsamp['DMONLY'] = Mhyd.dmonly
     headsamp['PNT'] = Mhyd.pnt
     if Mhyd.pnt:
-        headsamp['PNTMODEL'] = Mhyd.pntmodel
+        headsamp['PNTMODEL'] = Mhyd.pnt_model
 
     is_elong = False
 
@@ -213,6 +213,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Mhyd.elong = 1
 
+    if 'PNTMODEL' in headden:
+
+        Mhyd.pnt_model = headden['PNTMODEL']
+
     #Mhyd.waic = headden['WAIC']
 
     #Mhyd.loo = headden['LOO']
@@ -326,7 +330,7 @@ def ReloadModel(Mhyd, infile, mstar=None):
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
         if is_elong:
-            print('hello world')
+
             elong_mat = np.tile(Mhyd.elong, Mhyd.sbprof.nbin).reshape(Mhyd.sbprof.nbin,nsamp)
 
             allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
