@@ -84,7 +84,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     area = prof.area
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
-    nbin = prof.nbin
 
     nmin = 0
     nmax = len(sb)
@@ -113,6 +112,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         bkgcounts = bkgcounts[valid]
         valori = np.where(prof.bins <= rmax)
         nmax = np.max(valori[0])+1
+
+    nbin = len(sb)
 
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
@@ -875,7 +876,7 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            fit_elong=True):
+            fit_elong=False):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
