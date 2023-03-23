@@ -1,4 +1,4 @@
-import pymc as pm
+import pymc3 as pm
 import numpy as np
 
 from .deproject import MyDeprojVol
