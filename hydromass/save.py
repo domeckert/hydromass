@@ -45,6 +45,22 @@ def SaveModel(Mhyd, model, outfile=None):
     headsamp['NMORE'] = Mhyd.nmore
     headsamp['DMONLY'] = Mhyd.dmonly
     headsamp['PNT'] = Mhyd.pnt
+    if Mhyd.pnt:
+        headsamp['PNTMODEL'] = Mhyd.pntmodel
+
+    is_elong = False
+
+    try:
+        nn = len(Mhyd.elong)
+
+    except TypeError:
+
+        headsamp['ELONG'] = is_elong
+
+    else:
+
+        is_elong = True
+        headsamp['ELONG'] = is_elong
 
     hdus.append(denshdu)
 
@@ -58,13 +74,13 @@ def SaveModel(Mhyd, model, outfile=None):
 
     cols.append(col)
 
-    col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
-
-    cols.append(col)
-
-    col = fits.Column(name='LogLikeTH', format='E', array=Mhyd.thermolike)
-
-    cols.append(col)
+    # col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
+    #
+    # cols.append(col)
+    #
+    # col = fits.Column(name='LogLikeTH', format='E', array=Mhyd.thermolike)
+    #
+    # cols.append(col)
 
     coldefs = fits.ColDefs(cols)
 
@@ -121,6 +137,18 @@ def SaveModel(Mhyd, model, outfile=None):
 
     hdus.append(ccfhdu)
 
+    if Mhyd.pnt:
+
+        nthdu = fits.ImageHDU(Mhyd.pnt_pars, name='NT')
+
+        hdus.append(nthdu)
+
+    if is_elong:
+
+        elonghdu = fits.ImageHDU(Mhyd.elong, name='ELONG')
+
+        hdus.append(elonghdu)
+
     hdus.writeto(outfile, overwrite=True)
 
 
@@ -159,6 +187,14 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.dmonly = headden['DMONLY']
 
+    if 'ELONG' in headden:
+
+        is_elong = headden['ELONG']
+
+    else:
+
+        is_elong = False
+
     Mhyd.mstar = mstar
 
     Mhyd.pnt = headden['PNT']
@@ -166,6 +202,16 @@ def ReloadModel(Mhyd, infile, mstar=None):
     tabccf = fin['CCF'].data
 
     Mhyd.ccf = tabccf['CCF']
+
+    if is_elong:
+
+        tabelong = fin['ELONG']
+
+        Mhyd.elong = tabelong.data
+
+    else:
+
+        Mhyd.elong = 1
 
     #Mhyd.waic = headden['WAIC']
 
@@ -203,7 +249,9 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.samplogp0 = dpar['logP0']
 
-    Mhyd.cf_prof = None
+    if Mhyd.pnt:
+
+        Mhyd.pnt_pars = fin['NT'].data
 
     # Now recreate operators
 
@@ -246,6 +294,12 @@ def ReloadModel(Mhyd, infile, mstar=None):
     # Define the fine grid onto which the mass model will be computed
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
+    rref_m = (rin_m + rout_m)/2.
+
+    cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+    Mhyd.cf_prof = cf
+
     if Mhyd.fit_bkg:
 
         Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
@@ -271,9 +325,19 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-        allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+        if is_elong:
+            print('hello world')
+            elong_mat = np.tile(Mhyd.elong, Mhyd.sbprof.nbin).reshape(Mhyd.sbprof.nbin,nsamp)
 
-        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
+
+            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
+
+        else:
+
+            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+
+            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
 
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
@@ -289,10 +353,11 @@ def ReloadModel(Mhyd, infile, mstar=None):
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) * Mhyd.transf)
+    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
@@ -867,3 +932,13 @@ def SaveProfiles(profiles, outfile=None, extname='THERMODYNAMIC PROFILES'):
     hdus.append(modhdu)
 
     hdus.writeto(outfile, overwrite=True)
+
+def LoadProfiles(infile):
+
+    fitsfile = fits.open(infile)
+
+    tabdata = fitsfile[1].data
+
+    fitsfile.close()
+
+    return tabdata

@@ -11,12 +11,14 @@ from astropy.io import fits
 import os
 import pymc3 as pm
 from .save import *
+from .wl import WLmodel
 import arviz as az
 
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, rmin=None, rmax=None, p0_type='sb'):
+                   pnt=False, pnt_model='Ettori', rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
+                   fit_elong=True):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -82,6 +84,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     area = prof.area
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
+    nbin = prof.nbin
 
     nmin = 0
     nmax = len(sb)
@@ -265,11 +268,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     with hydro_model:
         # Priors for unknown model parameters
-        coefs = pm.Normal('coefs', mu=testval, sd=20, shape=npt)
+        coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
 
         if fit_bkg:
 
-            bkgd = pm.Normal('bkg', mu=testbkg, sd=0.05, shape=1) # in case fit_bkg = False this is not fitted
+            bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
 
             ctot = pm.math.concatenate((coefs, bkgd), axis=0)
 
@@ -294,7 +297,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 lim = model.limits[i]
 
-                modpar = pm.TruncatedNormal(name, mu=model.start[i], sd=model.sd[i], lower=lim[0], upper=lim[1]) #
+                modpar = pm.TruncatedNormal(name, mu=model.start[i], sigma=model.sd[i], lower=lim[0], upper=lim[1]) #
 
             else:
 
@@ -319,16 +322,26 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             err_P0_est = P0_est # 1 in ln
 
-        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
+        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sigma=err_P0_est / P0_est,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
                                    upper=np.log(P0_est) + err_P0_est / P0_est)
 
         if pnt:
 
-            pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+            if pnt_model=='Angelinelli':
 
-        for RV in hydro_model.basic_RVs:
-            print(RV.name, RV.logp(hydro_model.test_point))
+                pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+
+            if pnt_model=='Ettori':
+
+                beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
+
+                logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
+
+                pnt_pars = [beta_nt, logp0_nt]
+
+        #for RV in hydro_model.basic_RVs:
+        #    print(RV.name, RV.logp(hydro_model.test_point))
 
         press00 = np.exp(logp0)
 
@@ -361,18 +374,35 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         # Non-thermal pressure correction, if any
         if pnt:
+            if pnt_model == 'Angelinelli':
 
-            c200 = pmod[0]
+                c200 = pmod[0]
 
-            r200c = pmod[1]
+                r200c = pmod[1]
 
-            alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
+                alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
 
-            pth = press_out * (1. - alpha_turb)
+                pth_test = press_out * (1. - alpha_turb)
+
+            if pnt_model == 'Ettori' :
+
+                log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+
+                pth_test = press_out - pm.math.exp(log_pnt)
+
+            pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
 
         else:
 
             pth = press_out
+
+        if fit_elong:
+            # Prior on the line-of-sight elongation parameter
+            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
+
+        else:
+            elongation = 1
+
 
         # Density Likelihood
         if fit_bkg:
@@ -381,7 +411,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb) #Sx likelihood
+            sbmod = pred * elongation ** 0.5
+
+            sb_obs = pm.Normal('sb', mu=sbmod, observed=sb, sigma=esb) #Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -408,15 +440,24 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am>=rmin_spec, Mhyd.spec_data.rref_x_am<=rmax_spec))
 
-            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sd=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
+            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sigma=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
 
-            pfit = pth[index_sz]
+            pfit = pth[index_sz] * elongation
 
             P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
+        if Mhyd.wl_data is not None:
+
+            WLdata = Mhyd.wl_data
+
+            gmodel, rm, ev = WLmodel(WLdata, model, pmod)
+
+            gmodel_elong = elongation * gmodel
+
+            g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
 
     tinit = time.time()
 
@@ -428,12 +469,12 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, init='ADVI', start=start, tune=tune, return_inferencedata=True,
-                              target_accept=0.9)
+            trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, return_inferencedata=True,
+                              target_accept=target_accept)
 
         else:
 
-            trace = pm.sample(nmcmc, init='ADVI', tune=tune, return_inferencedata=True, target_accept=0.9)
+            trace = pm.sample(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
 
 
         Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
@@ -445,6 +486,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         if Mhyd.sz_data is not None:
 
             Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
+
+        if Mhyd.wl_data is not None:
+
+            Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
 
     print('Done.')
 
@@ -473,12 +518,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         samples = sampc
 
     Mhyd.samples = samples
+    nsamp = len(samples)
 
     if samplefile is not None:
         np.savetxt(samplefile, samples)
         np.savetxt(samplefile+'.par',np.array([pars.shape[0]/nbetas,nbetas,min_beta,nmcmc]),header='pymc3')
 
     # Compute output deconvolved brightness profile
+    if fit_elong:
+        elong = (np.array(trace.posterior['elong'])).flatten()
+    else:
+        elong = 1
 
     if fit_bkg:
         Ksb = calc_sb_operator(rad, sourcereg, pars)
@@ -494,9 +544,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     else:
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-        allsb = np.dot(Ksb, np.exp(samples.T))
+        if fit_elong:
 
-        allsb_conv = np.dot(K, np.exp(samples.T))
+            elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
+
+            allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
+
+            allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
+
+        else:
+
+            allsb = np.dot(Ksb, np.exp(samples.T))
+
+            allsb_conv = np.dot(K, np.exp(samples.T))
 
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
@@ -522,12 +582,36 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.mstar = mstar
     Mhyd.pnt = pnt
     if pnt:
-        Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
+        if pnt_model == 'Angelinelli':
+            Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
+
+            Mhyd.pntmodel = 'Angelinelli'
+
+        if pnt_model == 'Ettori':
+            post_betant = np.array(trace.posterior['beta_nt']).flatten()
+
+            post_p0nt = np.array(trace.posterior['p0_nt']).flatten()
+
+            pnt_pars = np.empty((nsamp, 2))
+            pnt_pars[:,0] = post_p0nt
+            pnt_pars[:,1] = post_betant
+
+            Mhyd.pnt_pars = pnt_pars
+
+            Mhyd.pntmodel = 'Ettori'
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
-    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+
+    if Mhyd.cf_prof is not None:
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+
+    else:
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
@@ -542,6 +626,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     Mhyd.samppar = samppar
     Mhyd.samplogp0 = samplogp0
+    Mhyd.elong = elong
     Mhyd.K = K
     Mhyd.Kdens = Kdens
     Mhyd.Ksb = Ksb
@@ -567,40 +652,40 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     nptot = model.npar + 1
     thermolike = 0.
     npthermo = model.npar + 1
-    Mhyd.trace.log_likelihood['tot'] = 0.
 
-    if fit_bkg:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
-        nptot = nptot + npt + 1
-        #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
-
-    else:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
-        nptot = nptot + npt
-        #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
-
-    if Mhyd.spec_data is not None:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
-        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
-        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
-
-
-    if Mhyd.sz_data is not None:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
-        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
-        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
-
-    if pnt:
-        nptot = nptot + 3
-        npthermo = npthermo + 3
-
-    Mhyd.totlike = totlike
-    Mhyd.nptot = nptot
-    Mhyd.thermolike = thermolike
-    Mhyd.npthermo = npthermo
-    Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
-    Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
-
+    # Mhyd.trace.log_likelihood['tot'] = 0.
+    #
+    # if fit_bkg:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
+    #     nptot = nptot + npt + 1
+    #     #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
+    #
+    # else:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
+    #     nptot = nptot + npt
+    #     #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
+    #
+    # if Mhyd.spec_data is not None:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+    #     thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+    #     Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
+    #
+    #
+    # if Mhyd.sz_data is not None:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+    #     thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+    #     Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
+    #
+    # if pnt:
+    #     nptot = nptot + 3
+    #     npthermo = npthermo + 3
+    #
+    # Mhyd.totlike = totlike
+    # Mhyd.nptot = nptot
+    # Mhyd.thermolike = thermolike
+    # Mhyd.npthermo = npthermo
+    # Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
+    # Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
 
 class Mhyd:
     """
@@ -623,7 +708,7 @@ class Mhyd:
     :type f_abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
 
         if f_abund == 'angr':
             nhc = 1 / 0.8337
@@ -698,23 +783,13 @@ class Mhyd:
 
             return
 
-        if spec_data is not None:
+        self.spec_data = spec_data
 
-            self.spec_data = spec_data
+        self.sz_data = sz_data
 
-        else:
+        self.wl_data = wl_data
 
-            self.spec_data = None
-
-        if sz_data is not None:
-
-            self.sz_data = sz_data
-
-        else:
-
-            self.sz_data = None
-
-        rho_cz = cosmo.critical_density(self.redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
+        rho_cz = cosmo.critical_density(redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
 
         self.mfact = 4. * np.pi * rho_cz * 1e-22
 
@@ -798,7 +873,9 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None, p0_type='sb'):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
+            rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
+            fit_elong=True):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -867,7 +944,10 @@ class Mhyd:
                        pnt=pnt,
                        rmin=rmin,
                        rmax=rmax,
-                       p0_type=p0_type)
+                       p0_type=p0_type,
+                       init=init,
+                       target_accept=target_accept,
+                       fit_elong=fit_elong)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,

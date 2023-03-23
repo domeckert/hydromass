@@ -333,7 +333,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
 
             pred = floor + norm * (1. + (rads_z / rc) ** 2) ** (-beta_fe)
 
-            obs = pm.Normal('obs', mu=pred, sd=spec_data.zfe_hi[active], observed=spec_data.zfe[active])
+            obs = pm.Normal('obs', mu=pred, sigma=spec_data.zfe_hi[active], observed=spec_data.zfe[active])
 
             trace_z = pm.sample(return_inferencedata=True)
 
