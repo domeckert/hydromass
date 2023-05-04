@@ -756,11 +756,11 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
     with hydro_model:
         # Priors for unknown model parameters
-        coefs = pm.Normal('coefs', mu=testval, sd=20, shape=npt)
+        coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
 
         if fit_bkg:
 
-            bkgd = pm.Normal('bkg', mu=testbkg, sd=0.05, shape=1) # in case fit_bkg = False this is not fitted
+            bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
 
             ctot = pm.math.concatenate((coefs, bkgd), axis=0)
 
@@ -788,27 +788,24 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
                 if name == 'p0':
 
-                    tpar = pm.TruncatedNormal(name, mu=np.log(Forward.start[i]), sd=Forward.sd[i] / Forward.start[i],
+                    tpar = pm.TruncatedNormal(name, mu=np.log(Forward.start[i]), sigma=Forward.sd[i] / Forward.start[i],
                                                 lower=np.log(lim[0]), upper=np.log(lim[1])) #log-normal prior on normalization
 
                     modpar = pm.math.exp(tpar)
 
                 else:
 
-                    modpar = pm.TruncatedNormal(name, mu=Forward.start[i], sd=Forward.sd[i],
+                    modpar = pm.TruncatedNormal(name, mu=Forward.start[i], sigma=Forward.sd[i],
                                                 lower=lim[0], upper=lim[1]) #Gaussian prior on other parameters
             else:
 
-                dummy = pm.Normal('dummy'+name, mu=0., sd=1.)
+                dummy = pm.Normal('dummy'+name, mu=0., sigma=1.)
 
                 dummy_param = 0 * dummy + Forward.start[i]
 
                 modpar = pm.Deterministic(name, dummy_param)
 
             allpmod.append(modpar)
-
-        for RV in hydro_model.basic_RVs:
-            print(RV.name, RV.logp(hydro_model.test_point))
 
         pmod = pm.math.stack(allpmod, axis=0)
 
@@ -823,7 +820,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb)  # Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb)  # Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -839,7 +836,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sd=Mhyd.spec_data.errt_x)  # temperature likelihood
+            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sigma=Mhyd.spec_data.errt_x)  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
@@ -857,7 +854,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, init='ADVI', start=start, tune=tune, return_inferencedata=True, target_accept=0.9)
+            trace = pm.sample(nmcmc, init='ADVI', initvals=start, tune=tune, return_inferencedata=True, target_accept=0.9)
 
         else:
 

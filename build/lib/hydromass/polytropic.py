@@ -2,6 +2,7 @@ import numpy as np
 from .deproject import *
 from .plots import rads_more, get_coolfunc, plt
 from .functions import ArcTan
+import pymc as pm
 
 tt_arctan = ArcTan()
 
@@ -902,11 +903,11 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
     with hydro_model:
         # Priors for unknown model parameters
-        coefs = pm.Normal('coefs', mu=testval, sd=20, shape=npt)
+        coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
 
         if fit_bkg:
 
-            bkgd = pm.Normal('bkg', mu=testbkg, sd=0.05, shape=1) # in case fit_bkg = False this is not fitted
+            bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
 
             ctot = pm.math.concatenate((coefs, bkgd), axis=0)
 
@@ -934,18 +935,18 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
                 if name == 'p0':
 
-                    tpar = pm.TruncatedNormal(name, mu=np.log(Polytropic.start[i]), sd=Polytropic.sd[i] / Polytropic.start[i],
+                    tpar = pm.TruncatedNormal(name, mu=np.log(Polytropic.start[i]), sigma=Polytropic.sd[i] / Polytropic.start[i],
                                                 lower=np.log(lim[0]), upper=np.log(lim[1])) #log-normal prior on normalization
 
                     modpar = np.exp(tpar)
 
                 else:
 
-                    modpar = pm.TruncatedNormal(name, mu=Polytropic.start[i], sd=Polytropic.sd[i],
+                    modpar = pm.TruncatedNormal(name, mu=Polytropic.start[i], sigma=Polytropic.sd[i],
                                                 lower=lim[0], upper=lim[1]) #Gaussian prior on other parameters
             else:
 
-                dummy = pm.Normal('dummy'+name, mu=0., sd=1.)
+                dummy = pm.Normal('dummy'+name, mu=0., sigma=1.)
 
                 dummy_param = 0 * dummy + Polytropic.start[i]
 
@@ -971,7 +972,7 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb)  # Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb)  # Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -987,7 +988,7 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sd=Mhyd.spec_data.errt_x)  # temperature likelihood
+            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sigma=Mhyd.spec_data.errt_x)  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:

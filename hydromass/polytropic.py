@@ -2,7 +2,7 @@ import numpy as np
 from .deproject import *
 from .plots import rads_more, get_coolfunc, plt
 from .functions import ArcTan
-import pymc3 as pm
+import pymc as pm
 
 tt_arctan = ArcTan()
 

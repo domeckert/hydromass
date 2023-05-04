@@ -114,6 +114,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         valori = np.where(prof.bins <= rmax)
         nmax = np.max(valori[0])+1
 
+    nbin = len(sb)
+
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -326,8 +328,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
                                    upper=np.log(P0_est) + err_P0_est / P0_est)
 
-        if pnt:
-
+        if pnt :
             if pnt_model=='Angelinelli':
 
                 pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
@@ -445,9 +446,32 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
 
-            pfit = pth[index_sz] * elongation
+            if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
-            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+                pfit = pth[index_sz] * elongation
+
+                P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+                rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+
+                deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+
+                proj_vol = deproj.deproj_vol().T
+
+                area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+
+                integ = pm.math.dot(proj_vol, pth) / area_proj
+
+                y_num = y_prefactor * integ  # prefactor in cm2/keV
+
+                yfit = y_num[index_sz] * elongation
+
+                if Mhyd.sz_data.psfmat is not None:
+
+                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit)
+
+                Y_obs = pm.MvNormal('Y', mu=yfit, observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 
         if Mhyd.wl_data is not None:
 
@@ -469,7 +493,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, init=init, start=start, tune=tune, return_inferencedata=True,
+            trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, return_inferencedata=True,
                               target_accept=target_accept)
 
         else:
@@ -485,7 +509,12 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         if Mhyd.sz_data is not None:
 
-            Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
+            # Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
+            Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['Y'])
+
+        if Mhyd.wl_data is not None:
+
+            Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
 
         if Mhyd.wl_data is not None:
 
@@ -585,7 +614,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         if pnt_model == 'Angelinelli':
             Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
-            Mhyd.pntmodel = 'Angelinelli'
+            Mhyd.pnt_model = 'Angelinelli'
 
         if pnt_model == 'Ettori':
             post_betant = np.array(trace.posterior['beta_nt']).flatten()
@@ -598,7 +627,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             Mhyd.pnt_pars = pnt_pars
 
-            Mhyd.pntmodel = 'Ettori'
+            Mhyd.pnt_model = 'Ettori'
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
 
@@ -875,7 +904,7 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            fit_elong=True):
+            pnt_model='Ettori', fit_elong=False):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -942,6 +971,7 @@ class Mhyd:
                        mstar=mstar,
                        find_map=find_map,
                        pnt=pnt,
+                       pnt_model=pnt_model,
                        rmin=rmin,
                        rmax=rmax,
                        p0_type=p0_type,
@@ -1060,7 +1090,7 @@ class Mhyd:
 
     def run_GP(self, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
-            bin_fact=1.0, smin=None, smax=None, ngauss=100):
+            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False):
 
         '''
         Run a non-parametric log-normal mixture reconstruction. See :func:`hydromass.nonparametric.Run_NonParametric_PyMC3`
@@ -1112,7 +1142,8 @@ class Mhyd:
                                 bin_fact=bin_fact,
                                 smin=smin,
                                 smax=smax,
-                                ngauss=ngauss)
+                                ngauss=ngauss,
+                                extend=extend)
 
     def SaveModel(self, model, outfile=None):
         '''

@@ -1090,7 +1090,7 @@ class Mhyd:
 
     def run_GP(self, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
-            bin_fact=1.0, smin=None, smax=None, ngauss=100):
+            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False):
 
         '''
         Run a non-parametric log-normal mixture reconstruction. See :func:`hydromass.nonparametric.Run_NonParametric_PyMC3`
@@ -1142,7 +1142,8 @@ class Mhyd:
                                 bin_fact=bin_fact,
                                 smin=smin,
                                 smax=smax,
-                                ngauss=ngauss)
+                                ngauss=ngauss,
+                                extend=extend)
 
     def SaveModel(self, model, outfile=None):
         '''

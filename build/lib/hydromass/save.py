@@ -45,6 +45,8 @@ def SaveModel(Mhyd, model, outfile=None):
     headsamp['NMORE'] = Mhyd.nmore
     headsamp['DMONLY'] = Mhyd.dmonly
     headsamp['PNT'] = Mhyd.pnt
+    if Mhyd.pnt:
+        headsamp['PNTMODEL'] = Mhyd.pnt_model
 
     is_elong = False
 
@@ -72,13 +74,13 @@ def SaveModel(Mhyd, model, outfile=None):
 
     cols.append(col)
 
-    col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
-
-    cols.append(col)
-
-    col = fits.Column(name='LogLikeTH', format='E', array=Mhyd.thermolike)
-
-    cols.append(col)
+    # col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
+    #
+    # cols.append(col)
+    #
+    # col = fits.Column(name='LogLikeTH', format='E', array=Mhyd.thermolike)
+    #
+    # cols.append(col)
 
     coldefs = fits.ColDefs(cols)
 
@@ -91,9 +93,9 @@ def SaveModel(Mhyd, model, outfile=None):
 
     modhead['DELTA'] = model.delta
 
-    modhead['WAIC'] = Mhyd.waic['waic']
-
-    modhead['LOO'] = Mhyd.loo['loo']
+    # modhead['WAIC'] = Mhyd.waic['waic']
+    #
+    # modhead['LOO'] = Mhyd.loo['loo']
 
     for i in range(model.npar):
         parname = model.parnames[i]
@@ -211,6 +213,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Mhyd.elong = 1
 
+    if 'PNTMODEL' in headden:
+
+        Mhyd.pnt_model = headden['PNTMODEL']
+
     #Mhyd.waic = headden['WAIC']
 
     #Mhyd.loo = headden['LOO']
@@ -323,9 +329,19 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-        allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+        if is_elong:
 
-        allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+            elong_mat = np.tile(Mhyd.elong, Mhyd.sbprof.nbin).reshape(Mhyd.sbprof.nbin,nsamp)
+
+            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
+
+            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
+
+        else:
+
+            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+
+            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
 
     pmc = np.median(allsb, axis=1)
     pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
@@ -920,3 +936,13 @@ def SaveProfiles(profiles, outfile=None, extname='THERMODYNAMIC PROFILES'):
     hdus.append(modhdu)
 
     hdus.writeto(outfile, overwrite=True)
+
+def LoadProfiles(infile):
+
+    fitsfile = fits.open(infile)
+
+    tabdata = fitsfile[1].data
+
+    fitsfile.close()
+
+    return tabdata

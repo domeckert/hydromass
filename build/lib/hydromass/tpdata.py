@@ -380,19 +380,23 @@ class SZData:
     :param cosmo: Astropy cosmology object including the cosmology definition
     :type cosmo: astropy.cosmology
     '''
-    def __init__(self, redshift, sz_data=None, rin=None, rout=None, psz=None, covmat_sz=None, cosmo=None):
+    def __init__(self, redshift, sz_data=None, rin=None, rout=None, psz=None, y_sz=None, covmat_sz=None, cosmo=None):
 
-        if sz_data is None and psz is None:
+        if sz_data is None:
 
-            print('No data provided. Please provide either an input FITS data file or a set of numpy arrays.')
+            if y_sz is None and psz is None:
 
-            return
+                print('No data provided. Please provide either an input FITS data file or a set of numpy arrays.')
 
-        if sz_data is not None and psz is not None:
+                return
 
-            print('Ambiguous input. Please provide either an input FITS data file or a set of numpy arrays.')
+        if sz_data is not None:
 
-            return
+            if y_sz is not None and psz is not None:
+
+                print('Ambiguous input. Please provide either an input FITS data file or a set of numpy arrays.')
+
+                return
 
         if sz_data is not None:
 
@@ -432,6 +436,24 @@ class SZData:
             self.covmat_sz = covmat_sz.astype(np.float32)
 
             self.errp_sz = np.sqrt(np.diag(covmat_sz))
+
+            self.y_sz = None
+
+        if y_sz is not None:
+
+            if rin is None or rout is None or covmat_sz is None:
+
+                print('Missing input, please provide rin, rout, y_sz, and covmat_sz')
+
+                return
+
+            self.y_sz = y_sz
+
+            self.covmat_sz = covmat_sz.astype(np.float32)
+
+            self.errp_sz = np.sqrt(np.diag(covmat_sz))
+
+            self.pres_sz = None
 
         if cosmo is None:
 

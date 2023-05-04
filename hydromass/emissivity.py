@@ -325,11 +325,11 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
 
         with modz:
 
-            rc = pm.TruncatedNormal('rc', mu=30., sd=30., lower=0.2)
+            rc = pm.TruncatedNormal('rc', mu=30., sigma=30., lower=0.2)
 
-            norm = pm.Normal('norm', mu=0.7, sd=0.5)
+            norm = pm.Normal('norm', mu=0.7, sigma=0.5)
 
-            floor = pm.HalfNormal('floor', sd=0.2)
+            floor = pm.HalfNormal('floor', sigma=0.2)
 
             pred = floor + norm * (1. + (rads_z / rc) ** 2) ** (-beta_fe)
 

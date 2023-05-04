@@ -93,9 +93,9 @@ def SaveModel(Mhyd, model, outfile=None):
 
     modhead['DELTA'] = model.delta
 
-    modhead['WAIC'] = Mhyd.waic['waic']
-
-    modhead['LOO'] = Mhyd.loo['loo']
+    # modhead['WAIC'] = Mhyd.waic['waic']
+    #
+    # modhead['LOO'] = Mhyd.loo['loo']
 
     for i in range(model.npar):
         parname = model.parnames[i]

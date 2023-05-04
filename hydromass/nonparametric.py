@@ -2,11 +2,7 @@ import numpy as np
 from .deproject import *
 from .plots import rads_more, get_coolfunc, estimate_P0, plt
 from scipy.interpolate import interp1d
-<<<<<<< HEAD
 import pymc as pm
-=======
-import pymc3 as pm
->>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
 
 # Function to compute linear operator transforming norms of GP model into radial profile
 
@@ -853,7 +849,8 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 
 def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
                    samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-                   tune=500, bin_fact=1.0, smin=None, smax=None, ngauss=100, find_map=True):
+                   tune=500, bin_fact=1.0, smin=None, smax=None, ngauss=100, find_map=True,
+                   extend=False):
     """
     Run non-parametric log-normal mixture reconstruction. Following Eckert et al. (2022), the temperature profile is described as a linear combination of a large number of log-normal functions, whereas the gas density profile is decomposed on a basis of King functions. The number of log-normal functions as well as the smoothing scales can be adjusted by the user.
 
@@ -1076,14 +1073,9 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
         # Expected value of outcome
         gpp = pm.math.exp(coefs_GP)
 
-        for RV in hydro_model.basic_RVs:
-            print(RV.name, RV.logp(hydro_model.test_point))
-
         t3d = pm.math.dot(GPop, gpp)
 
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
-
-        extend = False
 
         if extend:
             logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sigma=err_P0_est / P0_est,
@@ -1155,7 +1147,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, start=start, tune=tune)
+            trace = pm.sample(nmcmc, initvals=start, tune=tune)
 
         else:
 
@@ -1170,11 +1162,15 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     Mhyd.trace = trace
 
     # Get chains and save them to file
-    sampc = trace.get_values('coefs')
+    chain_coefs = np.array(trace.posterior['coefs'])
+
+    sc_coefs = chain_coefs.shape
+
+    sampc = chain_coefs.reshape(sc_coefs[0]*sc_coefs[1], sc_coefs[2])
 
     if fit_bkg:
 
-        sampb = trace.get_values('bkg')
+        sampb = np.array(trace.posterior['bkg']).flatten()
 
         samples = np.append(sampc, sampb, axis=1)
 
@@ -1236,7 +1232,12 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
 
-    samppar = np.exp(trace.get_values('GP'))
+    # Get chains and save them to file
+    chain_gp = np.exp(np.array(trace.posterior['GP']))
+
+    sc_gp = chain_gp.shape
+
+    samppar = chain_gp.reshape(sc_gp[0]*sc_gp[1], sc_gp[2])
 
     Mhyd.samppar = samppar
 
@@ -1255,7 +1256,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     Mhyd.Kdens_grad = Kdens_grad
 
     if extend:
-        sampp0 = np.exp(trace.get_values('logp0'))
+        sampp0 = np.exp(trace.posterior['logp0'].to_numpy().flatten())
         Mhyd.sampp0 = sampp0
 
     if Mhyd.spec_data is not None:
