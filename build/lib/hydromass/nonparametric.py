@@ -1141,17 +1141,41 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     print('Running MCMC...')
 
+    isjax = False
+
+    try:
+        import pymc.sampling.jax as pmjax
+
+    except ImportError:
+        print('JAX not found, using default sampler')
+
+    else:
+        isjax = True
+        import pymc.sampling.jax as pmjax
+
     with hydro_model:
 
         if find_map:
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, initvals=start, tune=tune)
+            if not isjax:
+
+                trace = pm.sample(nmcmc, initvals=start, tune=tune, return_inferencedata=True)
+
+            else:
+
+                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, return_inferencedata=True)
 
         else:
 
-            trace = pm.sample(nmcmc, tune=tune)
+            if not isjax:
+
+                trace = pm.sample(nmcmc, tune=tune)
+
+            else:
+
+                trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune)
 
     print('Done.')
 

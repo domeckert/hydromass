@@ -9,6 +9,20 @@ from .pnt import *
 from .nonparametric import *
 from astropy.io import fits
 import os
+
+isjax = False
+
+try:
+    import pymc.sampling.jax as pmjax
+
+except ImportError:
+    print('JAX not found, using default sampler')
+
+else:
+    print('We will use the JAX sampler')
+    isjax = True
+    import pymc.sampling.jax as pmjax
+
 import pymc as pm
 from .save import *
 from .wl import WLmodel
@@ -158,7 +172,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         testval = -10.
     else:
         testval = np.log(sb[0] / npt)
-    if np.isnan(back) or back == 0:
+    if np.isnan(back) or back <= 0 or back is None:
         testbkg = -10.
     else:
         testbkg = np.log(back)
@@ -493,12 +507,23 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, return_inferencedata=True,
+            if not isjax:
+
+                trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, return_inferencedata=True,
                               target_accept=target_accept)
+            else:
+
+                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, return_inferencedata=True, target_accept=target_accept)
 
         else:
 
-            trace = pm.sample(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
+            if not isjax:
+
+                trace = pm.sample(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
+
+            else:
+
+                trace = pmjax.sample_numpyro_nuts(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
 
 
         Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
