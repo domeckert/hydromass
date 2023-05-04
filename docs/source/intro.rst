@@ -25,3 +25,8 @@ Features
 - Saving/reloading options
 
 The current implementation has been developed in Python 3 and tested on Python 3.6+ under Linux and Mac OS.
+
+Citation
+********
+If you find the software useful, please cite `Eckert et al. 2022 <https://ui.adsabs.harvard.edu/abs/2022A%26A...662A.123E/abstract>`_ . The associated paper also provides extensive validation tests of the provided software.
+

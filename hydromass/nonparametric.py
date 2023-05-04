@@ -2,7 +2,11 @@ import numpy as np
 from .deproject import *
 from .plots import rads_more, get_coolfunc, estimate_P0, plt
 from scipy.interpolate import interp1d
+<<<<<<< HEAD
 import pymc as pm
+=======
+import pymc3 as pm
+>>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
 
 # Function to compute linear operator transforming norms of GP model into radial profile
 
@@ -1066,8 +1070,8 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
             pred = pm.math.dot(K, al)
 
         # GP parameters
-        #coefs_GP = pm.Normal('GP', mu=np.log(30./ngauss), sd=20, shape=ngauss)
-        coefs_GP = pm.Normal('GP', mu=1./np.sqrt(np.arange(1,ngauss+1)), sd=20, shape=ngauss)
+        #coefs_GP = pm.Normal('GP', mu=np.log(30./ngauss), sigma=20, shape=ngauss)
+        coefs_GP = pm.Normal('GP', mu=1./np.sqrt(np.arange(1,ngauss+1)), sigma=20, shape=ngauss)
 
         # Expected value of outcome
         gpp = pm.math.exp(coefs_GP)
@@ -1082,7 +1086,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
         extend = False
 
         if extend:
-            logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sd=err_P0_est / P0_est,
+            logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sigma=err_P0_est / P0_est,
                                        lower=np.log(P0_est) - err_P0_est / P0_est,
                                        upper=np.log(P0_est) + err_P0_est / P0_est)
 
@@ -1117,7 +1121,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sd=esb)  # Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb)  # Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -1130,7 +1134,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sd=Mhyd.spec_data.errt_x)  # temperature likelihood
+            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sigma=Mhyd.spec_data.errt_x)  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:

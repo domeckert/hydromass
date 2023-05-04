@@ -5,9 +5,13 @@
   </component>
   <component name="ChangeListManager">
 <<<<<<< HEAD
+<<<<<<< HEAD
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Created pymc4 (a.k.a pymc)-compatible version" />
 =======
     <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="Changed exponential from numpy to theano">
+=======
+    <list default="true" id="2e6b3625-bcc2-4100-8503-a605a49d6e1d" name="Default Changelist" comment="fixed bug in elongation">
+>>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
 >>>>>>> 36f920ad050d7b520dd35f4f78699183eae59e5b
@@ -93,6 +97,7 @@
       <option name="presentableId" value="Default" />
       <updated>1590752040766</updated>
     </task>
+<<<<<<< HEAD
     <task id="LOCAL-00038" summary="Tuned NUTS sampling parameters">
       <created>1622530863632</created>
       <option name="number" value="00038" />
@@ -107,6 +112,8 @@
       <option name="project" value="LOCAL" />
       <updated>1629363860369</updated>
     </task>
+=======
+>>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
     <task id="LOCAL-00040" summary="Added options to choose the range and number of points when computing hires profiles">
       <created>1629449252972</created>
       <option name="number" value="00040" />
@@ -429,6 +436,7 @@
       <option name="project" value="LOCAL" />
       <updated>1661176467399</updated>
     </task>
+<<<<<<< HEAD
     <task id="LOCAL-00086" summary="Created pymc4 (a.k.a pymc)-compatible version">
       <created>1668674530213</created>
       <option name="number" value="00086" />
@@ -437,6 +445,30 @@
       <updated>1668674530213</updated>
     </task>
     <option name="localTasksCounter" value="87" />
+=======
+    <task id="LOCAL-00086" summary="Added WL module">
+      <created>1679555317306</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1679555317306</updated>
+    </task>
+    <task id="LOCAL-00087" summary="fixed imports">
+      <created>1679555664024</created>
+      <option name="number" value="00087" />
+      <option name="presentableId" value="LOCAL-00087" />
+      <option name="project" value="LOCAL" />
+      <updated>1679555664024</updated>
+    </task>
+    <task id="LOCAL-00088" summary="fixed bug in elongation">
+      <created>1679567381492</created>
+      <option name="number" value="00088" />
+      <option name="presentableId" value="LOCAL-00088" />
+      <option name="project" value="LOCAL" />
+      <updated>1679567381492</updated>
+    </task>
+    <option name="localTasksCounter" value="89" />
+>>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -456,8 +488,11 @@
       <path value="$USER_HOME$/hydromass" />
       <path value="$PROJECT_DIR$/.." />
     </ignored-roots>
+<<<<<<< HEAD
     <MESSAGE value="Updated plot boundaries" />
     <MESSAGE value="New Mac" />
+=======
+>>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
     <MESSAGE value="Updated pymc3 sampling to &quot;return_inferencedata=True&quot;" />
     <MESSAGE value="Added lots of docstrings" />
     <MESSAGE value="Added requirements.txt" />
@@ -480,7 +515,14 @@
     <MESSAGE value="In the case of a variable conversion factor, added option to fit the input temperature profile with a Vikhlinin-like function and use the fitted function instead of interpolating" />
     <MESSAGE value="Changed exponential from numpy to theano" />
     <MESSAGE value="Increase version number and uploaded to PyPI" />
+<<<<<<< HEAD
     <MESSAGE value="Created pymc4 (a.k.a pymc)-compatible version" />
     <option name="LAST_COMMIT_MESSAGE" value="Created pymc4 (a.k.a pymc)-compatible version" />
+=======
+    <MESSAGE value="Added WL module" />
+    <MESSAGE value="fixed imports" />
+    <MESSAGE value="fixed bug in elongation" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed bug in elongation" />
+>>>>>>> 57619a5e9c71471bc5d7a57c371dd3559640cb3c
   </component>
 </project>

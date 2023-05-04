@@ -114,6 +114,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         valori = np.where(prof.bins <= rmax)
         nmax = np.max(valori[0])+1
 
+    nbin = len(sb)
+
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -444,13 +446,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
 
-            if Mhyd.sz_data.pres_sz is not None:
+            if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
                 pfit = pth[index_sz] * elongation
 
                 P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
-            if Mhyd.sz_data.y_sz is not None:
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
                 rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
                 deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
@@ -509,6 +511,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             # Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
             Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['Y'])
+
+        if Mhyd.wl_data is not None:
+
+            Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
 
         if Mhyd.wl_data is not None:
 
@@ -896,9 +902,9 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, pnt_model='Ettori',
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            fit_elong=True):
+            pnt_model='Ettori', fit_elong=False):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
