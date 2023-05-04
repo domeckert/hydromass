@@ -326,17 +326,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                                    lower=np.log(P0_est) - err_P0_est / P0_est,
                                    upper=np.log(P0_est) + err_P0_est / P0_est)
 
-        if pnt_model=='Angelinelli':
+        if pnt:
 
-            pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+            if pnt_model=='Angelinelli':
 
-        if pnt_model=='Ettori':
+                pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
 
-            beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
+            if pnt_model=='Ettori':
 
-            logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
+                beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
 
-            pnt_pars = [beta_nt, logp0_nt]
+                logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
+
+                pnt_pars = [beta_nt, logp0_nt]
 
         #for RV in hydro_model.basic_RVs:
         #    print(RV.name, RV.logp(hydro_model.test_point))
@@ -371,21 +373,24 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
 
         # Non-thermal pressure correction, if any
-        if pnt_model == 'Angelinelli':
+        if pnt:
+            if pnt_model == 'Angelinelli':
 
-            c200 = pmod[0]
+                c200 = pmod[0]
 
-            r200c = pmod[1]
+                r200c = pmod[1]
 
-            alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
+                alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
 
-            pth = press_out * (1. - alpha_turb)
+                pth_test = press_out * (1. - alpha_turb)
 
-        if pnt_model == 'Ettori' :
+            if pnt_model == 'Ettori' :
 
-            log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+                log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
 
-            pth = press_out - pm.math.exp(log_pnt)
+                pth_test = press_out - pm.math.exp(log_pnt)
+
+            pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
 
         else:
 
@@ -464,7 +469,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            trace = pm.sample(nmcmc, init=init, start=start, tune=tune, return_inferencedata=True,
+            trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, return_inferencedata=True,
                               target_accept=target_accept)
 
         else:
