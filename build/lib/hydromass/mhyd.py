@@ -17,7 +17,7 @@ import arviz as az
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
+                   pnt=False, pnt_model='Ettori', rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
                    fit_elong=True):
     """
 
@@ -328,7 +328,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         if pnt:
 
-            pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+            if pnt_model=='Angelinelli':
+
+                pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+
+            if pnt_model=='Ettori':
+
+                beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
+
+                logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
+
+                pnt_pars = [beta_nt, logp0_nt]
 
         #for RV in hydro_model.basic_RVs:
         #    print(RV.name, RV.logp(hydro_model.test_point))
@@ -364,14 +374,23 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         # Non-thermal pressure correction, if any
         if pnt:
+            if pnt_model == 'Angelinelli':
 
-            c200 = pmod[0]
+                c200 = pmod[0]
 
-            r200c = pmod[1]
+                r200c = pmod[1]
 
-            alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
+                alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
 
-            pth = press_out * (1. - alpha_turb)
+                pth_test = press_out * (1. - alpha_turb)
+
+            if pnt_model == 'Ettori' :
+
+                log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+
+                pth_test = press_out - pm.math.exp(log_pnt)
+
+            pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
 
         else:
 
@@ -563,8 +582,23 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.mstar = mstar
     Mhyd.pnt = pnt
     if pnt:
-        Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
+        if pnt_model == 'Angelinelli':
+            Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
+            Mhyd.pntmodel = 'Angelinelli'
+
+        if pnt_model == 'Ettori':
+            post_betant = np.array(trace.posterior['beta_nt']).flatten()
+
+            post_p0nt = np.array(trace.posterior['p0_nt']).flatten()
+
+            pnt_pars = np.empty((nsamp, 2))
+            pnt_pars[:,0] = post_p0nt
+            pnt_pars[:,1] = post_betant
+
+            Mhyd.pnt_pars = pnt_pars
+
+            Mhyd.pntmodel = 'Ettori'
 
     alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
 
@@ -618,40 +652,40 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     nptot = model.npar + 1
     thermolike = 0.
     npthermo = model.npar + 1
-    Mhyd.trace.log_likelihood['tot'] = 0.
 
-    if fit_bkg:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
-        nptot = nptot + npt + 1
-        #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
-
-    else:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
-        nptot = nptot + npt
-        #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
-
-    if Mhyd.spec_data is not None:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
-        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
-        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
-
-
-    if Mhyd.sz_data is not None:
-        totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
-        thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
-        Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
-
-    if pnt:
-        nptot = nptot + 3
-        npthermo = npthermo + 3
-
-    Mhyd.totlike = totlike
-    Mhyd.nptot = nptot
-    Mhyd.thermolike = thermolike
-    Mhyd.npthermo = npthermo
-    Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
-    Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
-
+    # Mhyd.trace.log_likelihood['tot'] = 0.
+    #
+    # if fit_bkg:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
+    #     nptot = nptot + npt + 1
+    #     #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
+    #
+    # else:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
+    #     nptot = nptot + npt
+    #     #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
+    #
+    # if Mhyd.spec_data is not None:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+    #     thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+    #     Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
+    #
+    #
+    # if Mhyd.sz_data is not None:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+    #     thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+    #     Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
+    #
+    # if pnt:
+    #     nptot = nptot + 3
+    #     npthermo = npthermo + 3
+    #
+    # Mhyd.totlike = totlike
+    # Mhyd.nptot = nptot
+    # Mhyd.thermolike = thermolike
+    # Mhyd.npthermo = npthermo
+    # Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
+    # Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
 
 class Mhyd:
     """
@@ -839,7 +873,9 @@ class Mhyd:
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
-            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False, rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9):
+            p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
+            rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
+            fit_elong=True):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -910,7 +946,8 @@ class Mhyd:
                        rmax=rmax,
                        p0_type=p0_type,
                        init=init,
-                       target_accept=target_accept)
+                       target_accept=target_accept,
+                       fit_elong=fit_elong)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,

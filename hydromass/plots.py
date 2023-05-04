@@ -397,13 +397,13 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     if Mhyd.pnt:
 
-        if Mhyd.pntmodel == 'Angelinelli':
+        if Mhyd.pnt_model == 'Angelinelli':
 
             alpha_turb = alpha_turb_np(rref_m, Mhyd.samppar, Mhyd.redshift, Mhyd.pnt_pars)
 
             pth = press_out * (1. - alpha_turb)
 
-        if Mhyd.pntmodel == 'Ettori':
+        if Mhyd.pnt_model == 'Ettori':
 
             log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
 
