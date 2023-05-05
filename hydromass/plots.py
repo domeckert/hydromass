@@ -227,6 +227,7 @@ def gnfw_p0(x,pars):
     t2=np.power(1.+np.power(x/rs,alpha),(beta-gamma)/alpha)
     return P0/t1/t2
 
+
 def estimate_P0(Mhyd, dens='sb'):
     '''
     Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. A rough electron density profile is estimated by deprojecting the surface brightness profile using the onion peeling techique, and temperature deprojection is neglected. The resulting pressure profile is fitted with a gNFW profile using the scipy.minimize function and the best-fit function is used to extrapolate the pressure to the outer boundary to provide a rough estimate of :math:`P_0`.
@@ -243,13 +244,32 @@ def estimate_P0(Mhyd, dens='sb'):
     if dens == 'sb' or spec_data.norm is None:
         sbprof = copy.copy(Mhyd.sbprof)
 
-        sbprof.profile = np.abs(sbprof.profile)
+        modbeta = pyproffit.Model(pyproffit.DoubleBeta)
 
-        deprop = pyproffit.Deproject(z=Mhyd.redshift, cf=Mhyd.ccf, profile=sbprof)
+        fitbeta = pyproffit.Fitter(model=modbeta, profile=sbprof, bkg=-12., beta=0.7, rc1=0.5, rc2=2., norm=-2, ratio=2)
 
-        deprop.OnionPeeling()
+        fitbeta.minuit.fixed['bkg'] = True
 
-        ne_interp = np.interp(spec_data.rref_x_am, sbprof.bins, deprop.dens) * Mhyd.nhc
+        fitbeta.Migrad()
+
+        rc1 = fitbeta.params['rc1'] * Mhyd.amin2kpc  # kpc
+        rc2 = fitbeta.params['rc2'] * Mhyd.amin2kpc
+
+        beta = fitbeta.params['beta']
+        norm = fitbeta.params['norm']
+        ratio = fitbeta.params['ratio']
+
+        cfact1 = gamma(3 * beta) / gamma(3 * beta - 0.5) / np.sqrt(np.pi) / rc1
+        cfact2 = gamma(3 * beta) / gamma(3 * beta - 0.5) / np.sqrt(np.pi) / rc2
+
+        rfit = sbprof.bins * Mhyd.amin2kpc
+
+        t1 = (1. + np.power(rfit / rc1, 2)) ** (-3. * beta) * cfact1
+        t2 = (1. + np.power(rfit / rc2, 2)) ** (-3. * beta) * cfact2
+
+        dens_prof = np.sqrt(10 ** norm * (t1 + ratio * t2) / Mhyd.ccf * Mhyd.transf)
+
+        ne_interp = np.interp(spec_data.rref_x_am, sbprof.bins, dens_prof)
 
         p_interp = ne_interp * spec_data.temp_x
         ep_interp = ne_interp * spec_data.errt_x
@@ -280,21 +300,33 @@ def estimate_P0(Mhyd, dens='sb'):
     pars_press = np.array([3.28, 1200., 1.33, 4.72, 0.59])
 
     def chi2_gnfw(pars):
-        pars_press[0] = pars[0]
+        pars_press[0] = 10 ** pars[0]
         pars_press[1] = pars[1]
         mm = gnfw_p0(spec_data.rref_x, pars_press)
         chi2 = np.sum((p_interp - mm) ** 2 / ep_interp ** 2)
         return chi2
 
-    res = minimize(chi2_gnfw, np.array([1e-4, 1200.]), method='Nelder-Mead')
+    bnds = ((None, None), (0, None))
+
+    res = minimize(chi2_gnfw, np.array([-4, 1200.]), method='Nelder-Mead', bounds=bnds)
 
     maxrad = np.max(sbprof.bins * Mhyd.amin2kpc)
 
-    pars_press[:2] = res['x']
+    if Mhyd.sz_data is not None:
+
+        rmaxsz = np.max(Mhyd.rout_sz)
+
+        if rmaxsz > maxrad:
+
+            maxrad = rmaxsz
+
+    pars_press[0] = 10 ** res['x'][0]
+    pars_press[1] = res['x'][1]
 
     p0 = gnfw_p0(maxrad, pars_press)
 
     return p0
+
 
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
     '''
