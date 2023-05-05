@@ -310,9 +310,7 @@ def kt_GP_from_samples(Mhyd, nmore=5):
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
-    extend = False
-
-    if extend:
+    if Mhyd.extend:
 
         if np.max(rout_m) > rout_m[ntm - 1]:
             # Power law outside of the fitted range
@@ -409,9 +407,7 @@ def P_GP_from_samples(Mhyd, nmore=5):
 
     t3d = np.dot(Mhyd.GPop, Mhyd.samppar.T)
 
-    extend = False
-
-    if extend:
+    if Mhyd.extend:
 
         if np.max(rout_m) > rout_m[ntm - 1]:
             # Power law outside of the fitted range
@@ -553,9 +549,7 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     rspo = np.max(rout_joint)
 
-    extend = False
-
-    if extend:
+    if Mhyd.extend:
 
         if rout > rspo:
             # Power law outside of the fitted range
@@ -754,9 +748,7 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 
     rspo = np.max(rout_joint)
 
-    extend = False
-
-    if extend:
+    if Mhyd.extend:
 
         if rout > rspo:
             # Power law outside of the fitted range
@@ -946,7 +938,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     z = Mhyd.redshift
 
-    transf = 4. * (1. + z) ** 2 * (180. * 60.) ** 2 / np.pi / 1e-14 * Mhyd.nhc / cgsMpc * 1e3
+    transf = Mhyd.transf
 
     pardens = list_params_density(rad, sourcereg, Mhyd.amin2kpc, nrc, nbetas, min_beta)
 
@@ -1040,11 +1032,20 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     GPgrad = calc_gp_grad_operator_lognormal(ngauss, rout_m, rin_joint, rout_joint, bin_fact=bin_fact, smin=smin, smax=smax)
 
-    P0_est = estimate_P0(Mhyd)
-
-    err_P0_est = P0_est  # 1-dex
-
     hydro_model = pm.Model()
+
+    P0_est, err_P0_est = None, None
+
+    if extend:
+
+        P0_est = estimate_P0(Mhyd)
+
+        err_P0_est = P0_est  # 1-dex
+
+        Mhyd.extend = True
+
+    else:
+        Mhyd.extend = False
 
     with hydro_model:
         # Priors for unknown model parameters
@@ -1105,6 +1106,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
                 t3d_out = Tspo * (rout_m[outspec] / rspo) ** (-alpha)
 
                 t3d = pm.math.concatenate([t3d_in, t3d_out])
+
 
         # Density Likelihood
         if fit_bkg:
