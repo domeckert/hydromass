@@ -179,7 +179,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     z = Mhyd.redshift
 
-    transf = 4. * (1. + z) ** 2 * (180. * 60.) ** 2 / np.pi / 1e-14 * Mhyd.nhc / cgsMpc * 1e3
+    transf = Mhyd.transf
 
     pardens = list_params_density(rad, sourcereg, Mhyd.amin2kpc, nrc, nbetas, min_beta)
 
@@ -684,7 +684,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.K = K
     Mhyd.Kdens = Kdens
     Mhyd.Ksb = Ksb
-    Mhyd.transf = transf
     Mhyd.Kdens_m = Kdens_m
 
     if Mhyd.spec_data is not None:
@@ -850,6 +849,8 @@ class Mhyd:
         self.mfact0 = kev2erg * cgskpc / (cgsG * cgsamu * self.mup) / Msun / 1e13
 
         self.mgas_fact = cgsamu * self.mu_e / Msun
+
+        self.transf = 4. * (1. + redshift) ** 2 * (180. * 60.) ** 2 / np.pi / 1e-14 * self.nhc / cgsMpc * 1e3
 
 
     def emissivity(self, nh, rmf, type='single', kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None, outz=None, method='interp', outkt=None):
