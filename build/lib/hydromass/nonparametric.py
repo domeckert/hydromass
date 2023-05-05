@@ -939,7 +939,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
         testval = -10.
     else:
         testval = np.log(sb[0] / npt)
-    if np.isnan(back) or back == 0:
+    if np.isnan(back) or back <= 0 or back is None:
         testbkg = -10.
     else:
         testbkg = np.log(back)

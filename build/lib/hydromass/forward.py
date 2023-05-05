@@ -677,7 +677,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
         testval = -10.
     else:
         testval = np.log(sb[0] / npt)
-    if np.isnan(back) or back == 0:
+    if np.isnan(back) or back <= 0 or back is None:
         testbkg = -10.
     else:
         testbkg = np.log(back)
