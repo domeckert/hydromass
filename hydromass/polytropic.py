@@ -954,9 +954,6 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
             allpmod.append(modpar)
 
-        for RV in hydro_model.basic_RVs:
-            print(RV.name, RV.logp(hydro_model.test_point))
-
         pmod = pm.math.stack(allpmod, axis=0)
 
         dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
@@ -1000,17 +997,42 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
         print('Running MCMC...')
 
+        isjax = False
+
+        try:
+            import pymc.sampling.jax as pmjax
+
+        except ImportError:
+            print('JAX not found, using default sampler')
+
+        else:
+            isjax = True
+            import pymc.sampling.jax as pmjax
+
         with hydro_model:
 
             if find_map:
 
                 start = pm.find_MAP()
 
-                trace = pm.sample(nmcmc, start=start, tune=tune, init='ADVI',  return_inferencedata=True, target_accept=0.9)
+                if not isjax:
+
+                    trace = pm.sample(nmcmc, initvals=start, init='ADVI',  tune=tune, return_inferencedata=True, target_accept=0.9)
+
+                else:
+
+                    trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, init='ADVI',  tune=tune,
+                                                      return_inferencedata=True, target_accept=0.9)
 
             else:
 
-                trace = pm.sample(nmcmc, tune=tune, init='ADVI',  return_inferencedata=True, target_accept=0.9)
+                if not isjax:
+
+                    trace = pm.sample(nmcmc, tune=tune, init='ADVI', target_accept=0.9)
+
+                else:
+
+                    trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, init='ADVI', target_accept=0.9)
 
         print('Done.')
 
