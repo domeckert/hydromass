@@ -1017,22 +1017,21 @@ def Run_Polytropic_PyMC3(Mhyd, Polytropic, bkglim=None,nmcmc=1000,fit_bkg=False,
 
                 if not isjax:
 
-                    trace = pm.sample(nmcmc, initvals=start, init='ADVI',  tune=tune, return_inferencedata=True, target_accept=0.9)
+                    trace = pm.sample(nmcmc, initvals=start, init='ADVI',  tune=tune, target_accept=0.9)
 
                 else:
 
-                    trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, init='ADVI',  tune=tune,
-                                                      return_inferencedata=True, target_accept=0.9)
+                    trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, init='ADVI',  tune=tune, target_accept=0.9)
 
             else:
 
                 if not isjax:
 
-                    trace = pm.sample(nmcmc, tune=tune, init='ADVI', target_accept=0.9)
+                    trace = pm.sample(nmcmc, tune=tune, init='ADVI')
 
                 else:
 
-                    trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, init='ADVI', target_accept=0.9)
+                    trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, init='ADVI')
 
         print('Done.')
 

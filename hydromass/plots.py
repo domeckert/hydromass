@@ -230,7 +230,13 @@ def gnfw_p0(x,pars):
 
 def estimate_P0(Mhyd, dens='sb'):
     '''
-    Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. A rough electron density profile is estimated by deprojecting the surface brightness profile using the onion peeling techique, and temperature deprojection is neglected. The resulting pressure profile is fitted with a gNFW profile using the scipy.minimize function and the best-fit function is used to extrapolate the pressure to the outer boundary to provide a rough estimate of :math:`P_0`.
+    Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. The value of :math:`P_0` is the integration constant that enters when we integrate the hydrostatic equilibrium equation to predict the pressure profile,
+
+    .. math::
+
+        P(r) = P_0 + \\int_0^r \\frac{GM(<r^{\\prime})} {r^{\\prime 2}} dr^{\\prime}
+
+    A rough electron density profile is estimated by fitting a double beta model profile to the surface brightness, and temperature deprojection is neglected. The resulting pressure profile is fitted with a gNFW profile using the scipy.minimize function and the best-fit function is used to extrapolate the pressure to the outer boundary to provide a rough estimate of :math:`P_0`.
 
     :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the loaded data
     :type Mhyd: class:`hydromass.mhyd.Mhyd`
@@ -252,8 +258,8 @@ def estimate_P0(Mhyd, dens='sb'):
 
         fitbeta.Migrad()
 
-        rc1 = fitbeta.params['rc1'] * Mhyd.amin2kpc  # kpc
-        rc2 = fitbeta.params['rc2'] * Mhyd.amin2kpc
+        rc1 = np.abs(fitbeta.params['rc1']) * Mhyd.amin2kpc  # kpc
+        rc2 = np.abs(fitbeta.params['rc2']) * Mhyd.amin2kpc
 
         beta = fitbeta.params['beta']
         norm = fitbeta.params['norm']
