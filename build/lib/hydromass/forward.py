@@ -868,22 +868,21 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             if not isjax:
 
-                trace = pm.sample(nmcmc, init='ADVI', initvals=start, tune=tune, return_inferencedata=True, target_accept=0.9)
+                trace = pm.sample(nmcmc, init='ADVI', initvals=start, tune=tune, target_accept=0.9)
 
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, init='ADVI', initvals=start, tune=tune, return_inferencedata=True,
-                                  target_accept=0.9)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, target_accept=0.9)
 
         else:
 
             if not isjax:
 
-                trace = pm.sample(nmcmc, tune=tune, init='ADVI',  return_inferencedata=True, target_accept=0.9)
+                trace = pm.sample(nmcmc, tune=tune, init='ADVI', target_accept=0.9)
 
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, return_inferencedata=True, target_accept=0.9)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, target_accept=0.9)
 
     print('Done.')
 

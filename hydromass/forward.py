@@ -872,7 +872,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, init='ADVI', initvals=start, tune=tune, target_accept=0.9)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, target_accept=0.9)
 
         else:
 
