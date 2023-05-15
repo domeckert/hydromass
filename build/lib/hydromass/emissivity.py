@@ -13,7 +13,7 @@ def is_tool(name):
     return find_executable(name) is not None
 
 
-def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None):
+def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=2.0, unit='cr', lum_elow=0.5, lum_ehigh=2.0, arf=None):
     """
 
     Function calc_emissivity, computes scaling factor between count rate and APEC/MEKAL norm using XSPEC. The tool performs an XSPEC simulation of an absorbed APEC model with parameters set by the user, and computes the expected count rate in the band of interest corresponding to an APEC normalization of unity. The corresponding number is then used as conversion between count rate and emission measure for the hydrostatic mass reconstruction step. Note that since the computed count rates are corrected for vignetting through the exposure map, the provided ARF should correspond to the on-axis (unvignetted) effective area.
@@ -29,7 +29,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=
     :type kt: float
     :param rmf: Path to response file (RMF/RSP)
     :type rmf: str
-    :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
+    :param abund: Solar abundance table in XSPEC format. Defaults to "aspl" (Asplund et al. 2009)
     :type abund: str
     :param Z: Metallicity with respect to solar. Defaults to 0.3
     :type Z: float
@@ -39,9 +39,20 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=
     :type ehigh: float
     :param arf: Path to on-axis ARF (optional, in case response file is RMF)
     :type arf: str
+    :param unit: Specify whether the exposure map is in units of sec (unit='cr') or photon flux (unit='photon'). By default unit='cr'.
+    :type unit: str
+    :param lum_elow: Low energy bound (rest frame) for luminosity calculation. Defaults to 0.5
+    :type lum_elow: float
+    :param lum_ehigh: High energy bound (rest frame) for luminosity calculation. Defaults to 2.0
+    :type lum_ehigh: float
     :return: Conversion factor
     :rtype: float
     """
+
+    if unit!='cr' and unit!='photon':
+
+        print('Unknown unit %s, aborting' % (unit))
+        return
 
     check_xspec = is_tool('xspec')
 
@@ -101,7 +112,21 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=
 
     fsim.write('log sim.txt\n')
 
-    fsim.write('show rates\n')
+    if unit == 'cr':
+
+        fsim.write('show rates\n')
+
+    elif unit == 'photon':
+
+        fsim.write('flux %1.2lf %1.2lf\n' % (elow, ehigh))
+
+    fsim.write('log none\n')
+
+    fsim.write('delcomp 1\n')
+
+    fsim.write('log lumin.txt\n')
+
+    fsim.write('lumin %1.2lf %1.2lf %g\n' % (lum_elow, lum_ehigh, z))
 
     fsim.write('log none\n')
 
@@ -125,15 +150,31 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='angr', Z=0.3, elow=0.5, ehigh=
 
     os.system('xspec < commands.xcm')
 
-    ssim = os.popen('grep cts/s sim.txt','r')
+    if unit == 'cr':
 
-    lsim = ssim.readline()
+        ssim = os.popen('grep cts/s sim.txt', 'r')
 
-    cr = float(lsim.split()[6])
+        lsim = ssim.readline()
 
-    #ccf = 1. / cr
+        cr = float(lsim.split()[6])
 
-    return cr
+    else:
+
+        ssim = os.popen('grep photons sim.txt', 'r')
+
+        lsim = ssim.readline()
+
+        cr = float(lsim.split()[3])
+
+    slum = os.popen('grep Luminosity lumin.txt', 'r')
+
+    llum = slum.readline()
+
+    lumtot = float(llum.split()[2])
+
+    lumfact = lumtot / cr
+
+    return cr, lumfact
 
 
 def medsmooth(prof):
@@ -176,7 +217,8 @@ def vikh_temp(x,pars):
     t2=np.power(1.+(x/rt)**2,-c/2)
     return T0*numer/denom*t2
 
-def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.5, ehigh=2.0, arf=None, outz=None, outkt=None):
+def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.5, ehigh=2.0,
+                 unit='cr', lum_elow=0.5, lum_ehigh=2.0, arf=None, outz=None, outkt=None):
     '''
 
     :param Mhyd: Hydromass object
@@ -191,7 +233,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
     :type rmf: str
     :param method: Choose whether the temperature profile will be interpolated (method='interp') or fitted with a parametric function (method='fit'). Defaults to 'interp'.
     :type method: str
-    :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
+    :param abund: Solar abundance table in XSPEC format. "aspl" (Asplund et al. 2009)
     :type abund: str
     :param elow: Low-energy bound of the input image in keV. Defaults to 0.5
     :type elow: float
@@ -219,7 +261,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
 
     nbin = Mhyd.sbprof.nbin
 
-    cf_prof = np.empty(nbin)
+    cf_prof, lf_prof = np.empty(nbin), np.empty(nbin)
 
     nkt = len(spec_data.temp_x)
 
@@ -300,7 +342,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
 
 
 
-            cf_prof[i] = calc_emissivity(cosmo=cosmo,
+            cf_prof[i], lf_prof[i] = calc_emissivity(cosmo=cosmo,
                                          z=z,
                                          nh=nh,
                                          kt=ktprof[i],
@@ -309,7 +351,10 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
                                          ehigh=ehigh,
                                          rmf=rmf,
                                          abund=abund,
-                                         arf=arf)
+                                         arf=arf,
+                                         unit=unit,
+                                         lum_elow=lum_elow,
+                                         lum_ehigh=lum_ehigh)
 
     else:
 
@@ -347,7 +392,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
 
         for i in range(nbin):
 
-            cf_prof[i] = calc_emissivity(cosmo=cosmo,
+            cf_prof[i], lf_prof[i] = calc_emissivity(cosmo=cosmo,
                                          z=z,
                                          nh=nh,
                                          kt=ktprof[i],
@@ -356,7 +401,10 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
                                          ehigh=ehigh,
                                          rmf=rmf,
                                          abund=abund,
-                                         arf=arf)
+                                         arf=arf,
+                                         unit=unit,
+                                         lum_elow=lum_elow,
+                                         lum_ehigh=lum_ehigh)
 
         if outz is not None:
 
@@ -409,4 +457,4 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='angr', elow=0.
             plt.savefig(outz)
 
 
-    return cf_prof
+    return cf_prof, lf_prof

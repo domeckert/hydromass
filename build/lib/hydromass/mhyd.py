@@ -509,21 +509,20 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             if not isjax:
 
-                trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, return_inferencedata=True,
-                              target_accept=target_accept)
+                trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, target_accept=target_accept)
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, return_inferencedata=True, target_accept=target_accept)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, target_accept=target_accept)
 
         else:
 
             if not isjax:
 
-                trace = pm.sample(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
+                trace = pm.sample(nmcmc, init=init, tune=tune, target_accept=target_accept)
 
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, init=init, tune=tune, return_inferencedata=True, target_accept=target_accept)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, init=init, tune=tune, target_accept=target_accept)
 
 
         Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
@@ -757,21 +756,21 @@ class Mhyd:
     :type redshift: float
     :param cosmo: Astropy cosmological model
     :type cosmo: class:`astropy.cosmology`
-    :param f_abund: Solar abundance table. Available are 'angr', 'aspl', and 'grsa'. Defaults to 'angr'
-    :type f_abund: str
+    :param abund: Solar abundance table. Available are 'angr' (Anders & Grevesse 1987), 'aspl' (Asplund et al. 2009), and 'grsa' (Grevesse & Sauval 2005). Defaults to 'aspl'
+    :type abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, directory=None, redshift=None, cosmo=None, f_abund = 'angr'):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl'):
 
-        if f_abund == 'angr':
+        if abund == 'angr':
             nhc = 1 / 0.8337
             mup = 0.6125
             mu_e = 1.1738
-        elif f_abund == 'aspl':
+        elif abund == 'aspl':
             nhc = 1 / 0.8527
             mup = 0.5994
             mu_e = 1.1548
-        elif f_abund == 'grsa':
+        elif abund == 'grsa':
             nhc = 1 / 0.8520
             mup = 0.6000
             mu_e = 1.1555
@@ -852,8 +851,11 @@ class Mhyd:
 
         self.transf = 4. * (1. + redshift) ** 2 * (180. * 60.) ** 2 / np.pi / 1e-14 * self.nhc / cgsMpc * 1e3
 
+        self.abund = abund
 
-    def emissivity(self, nh, rmf, type='single', kt=None, abund='angr', Z=0.3, elow=0.5, ehigh=2.0, arf=None, outz=None, method='interp', outkt=None):
+
+    def emissivity(self, nh, rmf, type='single', kt=None, Z=0.3, elow=0.5, ehigh=2.0,
+                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 
@@ -865,9 +867,7 @@ class Mhyd:
         :type rmf: str
         :param type: Set whether we will assume a constant conversion factor across the range (type="single") or if we will attempt to model the radial variations of the emissivity conversion factor (type="variable). Defaults to "single".
         :type type: str
-        :param abund: Solar abundance table in XSPEC format. Defaults to "angr"
-        :type abund: str
-        :param Z: Metallicity with respect to solar. Defaults to 0.3
+        :param Z: Metallicity with respect to solar. If type='variable' and an abundance profile is loaded, this parameter is ignored. Defaults to 0.3
         :type Z: float
         :param elow: Low-energy bound of the input image in keV. Defaults to 0.5
         :type elow: float
@@ -875,6 +875,12 @@ class Mhyd:
         :type ehigh: float
         :param arf: Path to on-axis ARF (optional, in case response file is RMF)
         :type arf: str
+        :param unit: Specify whether the exposure map is in units of sec (unit='cr') or photon flux (unit='photon'). By default unit='cr'.
+        :type unit: str
+        :param lum_elow: Low energy bound (rest frame) for luminosity calculation. Defaults to 0.5
+        :type lum_elow: float
+        :param lum_ehigh: High energy bound (rest frame) for luminosity calculation. Defaults to 2.0
+        :type lum_ehigh: float
         :param outz: If type='variable', name of output file including the fit to the metal abundance profile. If None, it is ignored. Defaults to None.
         :type outz: str
         :param method: If type='variable', choose whether the temperature profile will be interpolated (method='interp') or fitted with a parametric function (method='fit'). Defaults to 'interp'.
@@ -899,29 +905,35 @@ class Mhyd:
 
             print('Mean cluster temperature:', kt, ' keV')
 
-            self.ccf = calc_emissivity(cosmo=self.cosmo,
+            self.ccf, self.lumfact = calc_emissivity(cosmo=self.cosmo,
                                             z=self.redshift,
                                             nh=nh,
                                             kt=kt,
                                             rmf=rmf,
-                                            abund=abund,
+                                            abund=self.abund,
                                             Z=Z,
                                             elow=elow,
                                             ehigh=ehigh,
-                                            arf=arf)
+                                            arf=arf,
+                                            unit=unit,
+                                            lum_elow=lum_elow,
+                                            lum_ehigh=lum_ehigh)
 
         elif type == 'variable':
 
-            self.ccf = variable_ccf(self,
+            self.ccf, self.lumfact = variable_ccf(self,
                                     cosmo=self.cosmo,
                                     z=self.redshift,
                                     nh=nh,
                                     rmf=rmf,
                                     method=method,
-                                    abund=abund,
+                                    abund=self.abund,
                                     elow=elow,
                                     ehigh=ehigh,
                                     arf=arf,
+                                    unit=unit,
+                                    lum_elow=lum_elow,
+                                    lum_ehigh=lum_ehigh,
                                     outz=outz,
                                     outkt=outkt)
 
