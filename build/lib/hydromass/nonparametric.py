@@ -1163,11 +1163,11 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             if not isjax:
 
-                trace = pm.sample(nmcmc, initvals=start, tune=tune, return_inferencedata=True)
+                trace = pm.sample(nmcmc, initvals=start, tune=tune)
 
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune, return_inferencedata=True)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, initvals=start, tune=tune)
 
         else:
 
