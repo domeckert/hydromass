@@ -150,21 +150,25 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     os.system('xspec < commands.xcm')
 
+    ssim = open('sim.txt')
+    lsim = ssim.readlines()
+    ssim.close()
+
     if unit == 'cr':
 
-        ssim = os.popen('grep cts/s sim.txt', 'r')
+        for line in lsim:
 
-        lsim = ssim.readline()
+            if 'Model predicted rate:' in line:
 
-        cr = float(lsim.split()[6])
+                cr = float(line.split()[4])
 
     else:
 
-        ssim = os.popen('grep photons sim.txt', 'r')
+        for line in lsim:
 
-        lsim = ssim.readline()
+            if 'photons' in line:
 
-        cr = float(lsim.split()[3])
+                cr = float(line.split()[3])
 
     slum = os.popen('grep Luminosity lumin.txt', 'r')
 
@@ -364,29 +368,35 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
 
         rads_z = spec_data.rref_x[active]
 
-        modz = pm.Model()
-
         beta_fe = 0.3
 
-        with modz:
+        pars_fe = np.array([30., 0.5, 0.2])
 
-            rc = pm.TruncatedNormal('rc', mu=30., sigma=30., lower=0.2)
+        def optim_zfe(pars):
 
-            norm = pm.Normal('norm', mu=0.7, sigma=0.5)
-
-            floor = pm.HalfNormal('floor', sigma=0.2)
+            rc = pars[0]
+            norm = pars[1]
+            floor = pars[2]
 
             pred = floor + norm * (1. + (rads_z / rc) ** 2) ** (-beta_fe)
 
-            obs = pm.Normal('obs', mu=pred, sigma=spec_data.zfe_hi[active], observed=spec_data.zfe[active])
+            chi2 = np.sum((pred - spec_data.zfe[active]) ** 2 / spec_data.zfe_hi[active] ** 2)
 
-            trace_z = pm.sample(return_inferencedata=True)
+            if np.any(pars < 0.):
 
-        med_rc = np.median(trace_z.posterior['rc'])
+                chi2 = chi2 + 1e10
 
-        med_floor = np.median(trace_z.posterior['floor'])
+            return chi2
 
-        med_norm = np.median(trace_z.posterior['norm'])
+        res = minimize(optim_zfe, pars_fe, method='Nelder-Mead')
+
+        zfit = res['x']
+
+        med_rc = zfit[0]
+
+        med_floor = zfit[2]
+
+        med_norm = zfit[1]
 
         zfe_prof = med_floor + med_norm * (1. + (bins*Mhyd.amin2kpc/med_rc)**2) ** (-beta_fe)
 
@@ -430,25 +440,6 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
                          yerr=[spec_data.zfe_lo[active], spec_data.zfe_hi[active]], fmt='o', label='Data')
 
             plt.plot(bins*Mhyd.amin2kpc, zfe_prof, color='green', label='Z profile')
-
-            post_rc = np.array(trace_z.posterior['rc']).flatten()
-
-            post_floor = np.array(trace_z.posterior['floor']).flatten()
-
-            post_norm = np.array(trace_z.posterior['norm']).flatten()
-
-            nval = len(post_rc)
-
-            post_profs = np.empty((nval, len(rads_z)))
-
-            for i in range(nval):
-                post_profs[i] = post_floor[i] + post_norm[i] * (1. + (rads_z / post_rc[i]) ** 2) ** (-beta_fe)
-
-            med_prof, prof_lo, prof_hi = np.percentile(post_profs, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
-
-            plt.plot(rads_z, med_prof, color='magenta', label='Model')
-
-            plt.fill_between(rads_z, prof_lo, prof_hi, color='magenta', alpha=0.4)
 
             plt.xlabel('Radius [kpc]', fontsize=28)
 
