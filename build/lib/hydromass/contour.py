@@ -172,7 +172,7 @@ class Contour:
                     xcenters = (X[:-1] + X[1:]) / 2
                     ycenters = (Y[:-1] + Y[1:]) / 2
                     im.set_data(xcenters, ycenters, Z)
-                    ax.images.append(im)
+                    ax.add_artist(im)
                 else:
                     ax=fig.add_subplot(nplots,nplots,ii+1+nplots*jj)
 
