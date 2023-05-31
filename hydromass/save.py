@@ -114,8 +114,6 @@ def SaveModel(Mhyd, model, outfile=None):
 
     colr = fits.Column(name='RADIUS', format='E', unit='arcmin', array=bins)
 
-    ccfprof = None
-
     try:
         nn = len(Mhyd.ccf)
 
@@ -123,13 +121,19 @@ def SaveModel(Mhyd, model, outfile=None):
 
         ccfprof = np.ones(len(bins)) * Mhyd.ccf
 
+        lumprof = np.ones(len(bins)) * Mhyd.lumfact
+
     else:
 
         ccfprof = Mhyd.ccf
 
+        lumprof = Mhyd.lumfact
+
     colc = fits.Column(name='CCF', format='E', array=ccfprof)
 
-    coldefs = fits.ColDefs([colr, colc])
+    collx = fits.Column(name='LXFACT', format='E', array=np.log10(lumprof))
+
+    coldefs = fits.ColDefs([colr, colc, collx])
 
     ccfhdu = fits.BinTableHDU.from_columns(coldefs)
 
@@ -203,6 +207,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     Mhyd.ccf = tabccf['CCF']
 
+    if 'LXFACT' in tabccf.names:
+
+        Mhyd.lumfact = 10 ** tabccf['LXFACT']
+
     if is_elong:
 
         tabelong = fin['ELONG']
@@ -270,6 +278,10 @@ def ReloadModel(Mhyd, infile, mstar=None):
     sourcereg = np.where(rad < Mhyd.bkglim)
 
     pars = list_params(rad, sourcereg, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
+
+    Mhyd.pars = pars
+
+    Mhyd.sourcereg = sourcereg
 
     npt = len(pars)
 
@@ -433,8 +445,6 @@ def SaveGP(Mhyd, outfile=None):
 
     colr = fits.Column(name='RADIUS', format='E', unit='arcmin', array=bins)
 
-    ccfprof = None
-
     try:
         nn = len(Mhyd.ccf)
 
@@ -442,13 +452,19 @@ def SaveGP(Mhyd, outfile=None):
 
         ccfprof = np.ones(len(bins)) * Mhyd.ccf
 
+        lumprof = np.ones(len(bins)) * Mhyd.lumfact
+
     else:
 
         ccfprof = Mhyd.ccf
 
+        lumprof = Mhyd.lumfact
+
     colc = fits.Column(name='CCF', format='E', array=ccfprof)
 
-    coldefs = fits.ColDefs([colr, colc])
+    collx = fits.Column(name='LXFACT', format='E', array=np.log10(lumprof))
+
+    coldefs = fits.ColDefs([colr, colc, collx])
 
     ccfhdu = fits.BinTableHDU.from_columns(coldefs)
 
@@ -492,6 +508,10 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.ccf = tabccf['CCF']
 
+    if 'LXFACT' in tabccf.names:
+
+        Mhyd.lumfact = 10 ** tabccf['LXFACT']
+
     Mhyd.samppar = fin[2].data
 
     modhead = fin[2].header
@@ -519,6 +539,10 @@ def ReloadGP(Mhyd, infile):
     sourcereg = np.where(rad < Mhyd.bkglim)
 
     pars = list_params(rad, sourcereg, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
+
+    Mhyd.pars = pars
+
+    Mhyd.sourcereg = sourcereg
 
     npt = len(pars)
 
@@ -704,8 +728,6 @@ def SaveForward(Mhyd, Forward, outfile=None):
 
     colr = fits.Column(name='RADIUS', format='E', unit='arcmin', array=bins)
 
-    ccfprof = None
-
     try:
         nn = len(Mhyd.ccf)
 
@@ -713,13 +735,19 @@ def SaveForward(Mhyd, Forward, outfile=None):
 
         ccfprof = np.ones(len(bins)) * Mhyd.ccf
 
+        lumprof = np.ones(len(bins)) * Mhyd.lumfact
+
     else:
 
         ccfprof = Mhyd.ccf
 
+        lumprof = Mhyd.lumfact
+
     colc = fits.Column(name='CCF', format='E', array=ccfprof)
 
-    coldefs = fits.ColDefs([colr, colc])
+    collx = fits.Column(name='LXFACT', format='E', array=np.log10(lumprof))
+
+    coldefs = fits.ColDefs([colr, colc, collx])
 
     ccfhdu = fits.BinTableHDU.from_columns(coldefs)
 
@@ -762,9 +790,11 @@ def ReloadForward(Mhyd, infile):
 
     Mhyd.ccf = tabccf['CCF']
 
-    modhead = fin[2].header
+    if 'LXFACT' in tabccf.names:
 
-    Mhyd.cf_prof = None
+        Mhyd.lumfact = 10 ** tabccf['LXFACT']
+
+    modhead = fin[2].header
 
     mod = Forward()
 
@@ -804,6 +834,10 @@ def ReloadForward(Mhyd, infile):
 
     pars = list_params(rad, sourcereg, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
 
+    Mhyd.pars = pars
+
+    Mhyd.sourcereg = sourcereg
+
     npt = len(pars)
 
     if prof.psfmat is not None:
@@ -831,14 +865,13 @@ def ReloadForward(Mhyd, infile):
     # Define the fine grid onto which the mass model will be computed
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
-    if Mhyd.fit_bkg:
+    rref_m = (rin_m + rout_m)/2.
 
-        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+    cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
 
-    else:
+    Mhyd.cf_prof = cf
 
-        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
-                                                       withbkg=False)
+    Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
     if Mhyd.fit_bkg:
 
@@ -874,10 +907,10 @@ def ReloadForward(Mhyd, infile):
     Mhyd.sb_lo = pmcl
     Mhyd.sb_hi = pmch
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) * Mhyd.transf)
+    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch
