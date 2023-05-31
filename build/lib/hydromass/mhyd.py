@@ -149,6 +149,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     # Set vector with list of parameters
     pars = list_params(rad, sourcereg, nrc, nbetas, min_beta)
 
+    Mhyd.pars = pars
+
+    Mhyd.sourcereg = sourcereg
+
     npt = len(pars)
 
     if prof.psfmat is not None:
@@ -533,16 +537,18 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         if Mhyd.sz_data is not None:
 
-            # Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
-            Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['Y'])
+            if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
+
+                Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
+
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
+                Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['Y'])
 
         if Mhyd.wl_data is not None:
 
             Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
 
-        if Mhyd.wl_data is not None:
-
-            Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
 
     print('Done.')
 

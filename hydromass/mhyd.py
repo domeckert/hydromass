@@ -149,6 +149,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     # Set vector with list of parameters
     pars = list_params(rad, sourcereg, nrc, nbetas, min_beta)
 
+    Mhyd.pars = pars
+
+    Mhyd.sourcereg = sourcereg
+
     npt = len(pars)
 
     if prof.psfmat is not None:
