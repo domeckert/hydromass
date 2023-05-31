@@ -908,6 +908,10 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     # Set vector with list of parameters
     pars = list_params(rad, sourcereg, nrc, nbetas, min_beta)
 
+    Mhyd.pars = pars
+
+    Mhyd.sourcereg = sourcereg
+
     npt = len(pars)
 
     if prof.psfmat is not None:
