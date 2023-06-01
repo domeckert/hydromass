@@ -209,13 +209,13 @@ def medsmooth(prof):
     smoothed[nbin-1]=np.median(xx)
     return  smoothed
 
-def vikh_temp(x,pars):
+def vikh_temp(x, pars, Tmin):
     T0=pars[0]
-    Tmin=pars[1]
-    rcool=pars[2]
-    acool=pars[3]
-    rt=pars[4]
-    c=pars[5]
+    #Tmin=pars[1]
+    rcool=pars[1]
+    acool=pars[2]
+    rt=pars[3]
+    c=pars[4]
     numer=Tmin/T0+np.power(x/rcool,acool)
     denom=1.+np.power(x/rcool,acool)
     t2=np.power(1.+(x/rt)**2,-c/2)
@@ -271,13 +271,13 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
 
     if method=='fit':
 
-        pars_temp = np.array([1.2, 0.52 * 1.20, np.exp(-2.90), 1.06, 0.36, 0.28 * 2.0])
+        pars_temp = np.array([1.2, np.exp(-2.90), 1.06, 0.36, 0.28 * 2.0])
 
-        def optim_kt(pars):
+        def optim_kt(pars, Tmin):
 
             x = spec_data.rref_x / 500.  # assuming R500=500 kpc
 
-            mod_kt = vikh_temp(x, pars)
+            mod_kt = vikh_temp(x, pars, Tmin)
 
             chi2 = np.sum((mod_kt - spec_data.temp_x) ** 2 / spec_data.errt_x ** 2)
 
@@ -287,11 +287,13 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
 
             return chi2
 
-        res = minimize(optim_kt, pars_temp, method='Nelder-Mead')
+        Tmin = 0.6 * np.max(medsmooth(spec_data.temp_x))
+
+        res = minimize(optim_kt, pars_temp, method='Nelder-Mead', args=(Tmin))
 
         ktfit = res['x']
 
-        ktprof = vikh_temp(bins * Mhyd.amin2kpc / 500., ktfit)
+        ktprof = vikh_temp(bins * Mhyd.amin2kpc / 500., ktfit, Tmin)
 
         if outkt is not None:
 
@@ -382,7 +384,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
 
             chi2 = np.sum((pred - spec_data.zfe[active]) ** 2 / spec_data.zfe_hi[active] ** 2)
 
-            if np.any(pars < 0.):
+            if rc<=0 or floor<0:
 
                 chi2 = chi2 + 1e10
 
