@@ -31,7 +31,7 @@ import arviz as az
 def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
-                   pnt=False, pnt_model='Ettori', rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
+                   pnt=False, pnt_model='Ettori', rmin=0., rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
                    fit_elong=True):
     """
 
@@ -103,30 +103,35 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     nmin = 0
     nmax = len(sb)
 
-    if rmin is not None:
-        valid = np.where(rad>=rmin)
-        sb = sb[valid]
-        esb = esb[valid]
-        rad = rad[valid]
-        erad = erad[valid]
-        counts = counts[valid]
-        area = area[valid]
-        exposure = exposure[valid]
-        bkgcounts = bkgcounts[valid]
-        nmin = valid[0][0]
+    if rmax is None:
+        rmax = np.max(rad+erad)
 
-    if rmax is not None:
-        valid = np.where(rad <= rmax)
-        sb = sb[valid]
-        esb = esb[valid]
-        rad = rad[valid]
-        erad = erad[valid]
-        counts = counts[valid]
-        area = area[valid]
-        exposure = exposure[valid]
-        bkgcounts = bkgcounts[valid]
-        valori = np.where(prof.bins <= rmax)
-        nmax = np.max(valori[0])+1
+    valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
+
+#    if rmin is not None:
+#        valid = np.where(rad>=rmin)
+#        sb = sb[valid]
+#        esb = esb[valid]
+#        rad = rad[valid]
+#        erad = erad[valid]
+#        counts = counts[valid]
+#        area = area[valid]
+#        exposure = exposure[valid]
+#        bkgcounts = bkgcounts[valid]
+#        nmin = valid[0][0]
+#
+#    if rmax is not None:
+#        valid = np.where(rad <= rmax)
+#        sb = sb[valid]
+#        esb = esb[valid]
+#        rad = rad[valid]
+#        erad = erad[valid]
+#        counts = counts[valid]
+#        area = area[valid]
+#        exposure = exposure[valid]
+#        bkgcounts = bkgcounts[valid]
+#        valori = np.where(prof.bins <= rmax)
+#        nmax = np.max(valori[0])+1
 
     nbin = len(sb)
 
@@ -432,7 +437,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             sbmod = pred * elongation ** 0.5
 
-            sb_obs = pm.Normal('sb', mu=sbmod, observed=sb, sigma=esb) #Sx likelihood
+            sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
