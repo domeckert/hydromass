@@ -384,7 +384,7 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
 
             chi2 = np.sum((pred - spec_data.zfe[active]) ** 2 / spec_data.zfe_hi[active] ** 2)
 
-            if rc<=0 or floor<0:
+            if rc<=0 or floor<0 or norm<-0.2:
 
                 chi2 = chi2 + 1e10
 
