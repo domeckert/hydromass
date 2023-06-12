@@ -209,7 +209,7 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
     if 'LXFACT' in tabccf.names:
 
-        Mhyd.lumfact = 10 ** tabccf['LXFACT']
+        Mhyd.lumfact = 1e43 * 10 ** (tabccf['LXFACT']-43)
 
     if is_elong:
 
@@ -510,7 +510,7 @@ def ReloadGP(Mhyd, infile):
 
     if 'LXFACT' in tabccf.names:
 
-        Mhyd.lumfact = 10 ** tabccf['LXFACT']
+        Mhyd.lumfact = 1e43 * 10 ** (tabccf['LXFACT']-43)
 
     Mhyd.samppar = fin[2].data
 
@@ -792,7 +792,7 @@ def ReloadForward(Mhyd, infile):
 
     if 'LXFACT' in tabccf.names:
 
-        Mhyd.lumfact = 10 ** tabccf['LXFACT']
+        Mhyd.lumfact = 1e43 * 10 ** (tabccf['LXFACT']-43)
 
     modhead = fin[2].header
 

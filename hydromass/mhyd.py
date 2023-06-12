@@ -106,6 +106,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     if rmax is None:
         rmax = np.max(rad+erad)
 
+    if rmin is None:
+        rmin = 0
+
     valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
 
 #    if rmin is not None:
