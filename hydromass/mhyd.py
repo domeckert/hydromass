@@ -32,7 +32,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
                    pnt=False, pnt_model='Ettori', rmin=0., rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-                   fit_elong=True):
+                   fit_elong=True, use_jax=True):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -87,6 +87,16 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     :type rmax: float
     :param p0_type: For the estimation of P0, choose whether we will use the surface brightness profile (p0_type='sb') or the spectral normalization (p0_type='norm'). Defaults to 'sb'.
     :type p0_type: str
+    :param init: Choose the initialization method for PyMC. Defaults to 'ADVI'
+    :type init: str
+    :param target_accept: Set the target_accept parameter for PyMC. Defaults to 0.9
+    :type target_accept: float
+    :param pnt_model: Choose the analytic model for non-thermal pressure modeling. Available choices are 'Angelinelli' (Angelinelli+20) and 'Ettori' (Ettori\&Eckert22). Defaults to 'ettori'
+    :type pnt_model: str
+    :param fit_elong: Set whether the elongation of the system along the line of sight as a free model parameter to account for differences between various observables induced by line-of-sight elongation. Defaults to False
+    :type fit_elong: bool
+    :param use_jax: Use JAX optimization when sampling using the numpyro NUTS implementation. Defaults to True
+    :type use_jax: bool
 
     """
     prof = Mhyd.sbprof
@@ -519,7 +529,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             start = pm.find_MAP()
 
-            if not isjax:
+            if not isjax or not use_jax:
 
                 trace = pm.sample(nmcmc, init=init, initvals=start, tune=tune, target_accept=target_accept)
             else:
@@ -528,7 +538,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         else:
 
-            if not isjax:
+            if not isjax or not use_jax:
 
                 trace = pm.sample(nmcmc, init=init, tune=tune, target_accept=target_accept)
 
@@ -956,7 +966,7 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            pnt_model='Ettori', fit_elong=False):
+            pnt_model='Ettori', fit_elong=False, use_jax=True):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -998,7 +1008,16 @@ class Mhyd:
         :type rmax: float
         :param p0_type: For the estimation of P0, choose whether we will use the surface brightness profile (p0_type='sb') or the spectral normalization (p0_type='norm'). Defaults to 'sb'.
         :type p0_type: str
-
+        :param init: Choose the initialization method for PyMC. Defaults to 'ADVI'
+        :type init: str
+        :param target_accept: Set the target_accept parameter for PyMC. Defaults to 0.9
+        :type target_accept: float
+        :param pnt_model: Choose the analytic model for non-thermal pressure modeling. Available choices are 'Angelinelli' (Angelinelli+20) and 'Ettori' (Ettori\&Eckert22). Defaults to 'ettori'
+        :type pnt_model: str
+        :param fit_elong: Set whether the elongation of the system along the line of sight as a free model parameter to account for differences between various observables induced by line-of-sight elongation. Defaults to False
+        :type fit_elong: bool
+        :param use_jax: Use JAX optimization when sampling using the numpyro NUTS implementation. Defaults to True
+        :type use_jax: bool
         '''
         if model is None:
 
@@ -1029,7 +1048,8 @@ class Mhyd:
                        p0_type=p0_type,
                        init=init,
                        target_accept=target_accept,
-                       fit_elong=fit_elong)
+                       fit_elong=fit_elong,
+                       use_jax=use_jax)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
