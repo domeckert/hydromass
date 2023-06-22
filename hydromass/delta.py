@@ -492,7 +492,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         lxdelta[i] = np.interp(rdelta[i], rref, cslum)
 
-        p3d = Forward.func_np(rref, tpar)
+        p3d = Forward.func_np(rout, tpar)
 
         reg = np.where(rref <= rdelta[i])
 
@@ -522,6 +522,21 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     ktd, ktdlo, ktdhi = np.percentile(ktdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
+    yxdelta = mgdelta * ktdelta
+
+    yxd, yxdlo, yxdhi = np.percentile(yxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    all_vals = np.empty((7, nsamp))
+    all_vals[0] = mdelta
+    all_vals[1] = rdelta
+    all_vals[2] = mgdelta
+    all_vals[3] = lxdelta
+    all_vals[4] = ktdelta
+    all_vals[5] = yxdelta
+    all_vals[6] = fgdelta
+
+    covmat = np.corrcoef(all_vals)
+
     dict = {
         "R_DELTA": rd,
         "R_DELTA_LO": rdlo,
@@ -540,7 +555,10 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         "LX_DELTA_HI": lxdhi,
         "KT_DELTA": ktd,
         "KT_DELTA_LO": ktdlo,
-        "KT_DELTA_HI": ktdhi
+        "KT_DELTA_HI": ktdhi,
+        "YX_DELTA": yxd,
+        "YX_DELTA_LO": yxdlo,
+        "YX_DELTA_HI": yxdhi
     }
 
     if plot:
@@ -569,14 +587,14 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         plt.ylabel('Frequency', fontsize=40)
 
-        return dict, fig
+        return dict, covmat, fig
 
     else:
 
-        return dict
+        return dict, covmat
 
 
-def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500.):
+def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., rmax=4000.):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 

@@ -576,7 +576,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         return dict
 
 
-def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500.):
+def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., rmax=4000.):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
