@@ -699,7 +699,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.dens_lo = pmcl
         Mhyd.dens_hi = pmch
 
-    samppar = np.empty((len(samples), model.npar))
+    if not wlonly:
+        # Get chains and save them to file
+        chain_rd = np.array(trace.posterior['rdelta'])
+
+        nsamp = len(chain_rd.flatten())
+    else:
+        nsamp = len(samples)
+
+    samppar = np.empty(nsamp, model.npar)
     for i in range(model.npar):
 
         name = model.parnames[i]
