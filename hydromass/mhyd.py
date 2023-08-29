@@ -32,7 +32,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
                    pnt=False, pnt_model='Ettori', rmin=0., rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-                   fit_elong=True, use_jax=True):
+                   fit_elong=True, use_jax=True, wlonly=False):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -305,25 +305,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             pnt_cov = np.loadtxt(file_cov).astype(np.float32)
 
     with hydro_model:
-        # Priors for unknown model parameters
-        coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
-
-        if fit_bkg:
-
-            bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
-
-            ctot = pm.math.concatenate((coefs, bkgd), axis=0)
-
-            al = pm.math.exp(ctot)
-
-            pred = pm.math.dot(K, al) + bkgcounts  # Predicted number of counts per annulus
-
-        else:
-
-            al = pm.math.exp(coefs)
-
-            pred = pm.math.dot(K, al)
-
         # Model parameters
         allpmod = []
 
@@ -345,93 +326,113 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         pmod = pm.math.stack(allpmod, axis=0)
 
-        # Integration constant as a fitting (nuisance) parameter
-        if p0_prior is not None:
+        if not wlonly:
+            # Priors for unknown model parameters
+            coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
 
-            P0_est = p0_prior[0]
+            if fit_bkg:
 
-            err_P0_est = p0_prior[1]
+                bkgd = pm.Normal('bkg', mu=testbkg, sigma=0.05, shape=1) # in case fit_bkg = False this is not fitted
 
-        else:
+                ctot = pm.math.concatenate((coefs, bkgd), axis=0)
 
-            P0_est = estimate_P0(Mhyd=Mhyd, dens=p0_type)
+                al = pm.math.exp(ctot)
 
-            print('Estimated value of P0: %g' % (P0_est))
-
-            err_P0_est = P0_est # 1 in ln
-
-        logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sigma=err_P0_est / P0_est,
-                                   lower=np.log(P0_est) - err_P0_est / P0_est,
-                                   upper=np.log(P0_est) + err_P0_est / P0_est)
-
-        if pnt :
-            if pnt_model=='Angelinelli':
-
-                pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
-
-            if pnt_model=='Ettori':
-
-                beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
-
-                logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
-
-                pnt_pars = [beta_nt, logp0_nt]
-
-        #for RV in hydro_model.basic_RVs:
-        #    print(RV.name, RV.logp(hydro_model.test_point))
-
-        press00 = np.exp(logp0)
-
-        dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
-
-        # Evaluate mass model
-        mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
-
-        if dmonly:
-
-            nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
-
-            mgas = mgas_pm(rin_m, rout_m, dens_m) * nhconv / Mhyd.mfact0
-
-            # Add stellar mass if provided
-            if mstar is not None:
-
-                mbar = mgas + mstar_m / Mhyd.mfact0 / 1e13
+                pred = pm.math.dot(K, al) + bkgcounts  # Predicted number of counts per annulus
 
             else:
 
-                mbar = mgas
+                al = pm.math.exp(coefs)
 
-            mass = mass + mbar
+                pred = pm.math.dot(K, al)
 
-        # Pressure gradient
-        dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
+            # Integration constant as a fitting (nuisance) parameter
+            if p0_prior is not None:
 
-        press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
+                P0_est = p0_prior[0]
 
-        # Non-thermal pressure correction, if any
-        if pnt:
-            if pnt_model == 'Angelinelli':
+                err_P0_est = p0_prior[1]
 
-                c200 = pmod[0]
+            else:
 
-                r200c = pmod[1]
+                P0_est = estimate_P0(Mhyd=Mhyd, dens=p0_type)
 
-                alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
+                print('Estimated value of P0: %g' % (P0_est))
 
-                pth_test = press_out * (1. - alpha_turb)
+                err_P0_est = P0_est # 1 in ln
 
-            if pnt_model == 'Ettori' :
+            logp0 = pm.TruncatedNormal('logp0', mu=np.log(P0_est), sigma=err_P0_est / P0_est,
+                                       lower=np.log(P0_est) - err_P0_est / P0_est,
+                                       upper=np.log(P0_est) + err_P0_est / P0_est)
 
-                log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+            if pnt :
+                if pnt_model=='Angelinelli':
 
-                pth_test = press_out - pm.math.exp(log_pnt)
+                    pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
 
-            pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
+                if pnt_model=='Ettori':
 
-        else:
+                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
 
-            pth = press_out
+                    logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
+
+                    pnt_pars = [beta_nt, logp0_nt]
+
+            #for RV in hydro_model.basic_RVs:
+            #    print(RV.name, RV.logp(hydro_model.test_point))
+
+            press00 = np.exp(logp0)
+
+            dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
+
+            # Evaluate mass model
+            mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
+
+            if dmonly:
+
+                nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
+
+                mgas = mgas_pm(rin_m, rout_m, dens_m) * nhconv / Mhyd.mfact0
+
+                # Add stellar mass if provided
+                if mstar is not None:
+
+                    mbar = mgas + mstar_m / Mhyd.mfact0 / 1e13
+
+                else:
+
+                    mbar = mgas
+
+                mass = mass + mbar
+
+            # Pressure gradient
+            dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
+
+            press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
+
+            # Non-thermal pressure correction, if any
+            if pnt:
+                if pnt_model == 'Angelinelli':
+
+                    c200 = pmod[0]
+
+                    r200c = pmod[1]
+
+                    alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
+
+                    pth_test = press_out * (1. - alpha_turb)
+
+                if pnt_model == 'Ettori' :
+
+                    log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+
+                    pth_test = press_out - pm.math.exp(log_pnt)
+
+                pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
+
+            else:
+
+                pth = press_out
 
         if fit_elong:
             # Prior on the line-of-sight elongation parameter
@@ -441,73 +442,74 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             elongation = 1
 
 
-        # Density Likelihood
-        if fit_bkg:
+        if not wlonly:
+            # Density Likelihood
+            if fit_bkg:
 
-            count_obs = pm.Poisson('counts', mu=pred, observed=counts) #counts likelihood
+                count_obs = pm.Poisson('counts', mu=pred, observed=counts) #counts likelihood
 
-        else:
+            else:
 
-            sbmod = pred * elongation ** 0.5
+                sbmod = pred * elongation ** 0.5
 
-            sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
+                sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
-        # Temperature model and likelihood
-        if Mhyd.spec_data is not None:
+            # Temperature model and likelihood
+            if Mhyd.spec_data is not None:
 
-            # Model temperature
-            t3d = pth / dens_m
+                # Model temperature
+                t3d = pth / dens_m
 
-            # Mazzotta weights
-            ei = dens_m ** 2 * t3d ** (-0.75)
+                # Mazzotta weights
+                ei = dens_m ** 2 * t3d ** (-0.75)
 
-            # Temperature projection
-            flux = pm.math.dot(proj_mat, ei)
+                # Temperature projection
+                flux = pm.math.dot(proj_mat, ei)
 
-            tproj = pm.math.dot(proj_mat, t3d * ei) / flux
+                tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            rmin_spec = 0.
-            rmax_spec = np.max(Mhyd.spec_data.rref_x_am)
+                rmin_spec = 0.
+                rmax_spec = np.max(Mhyd.spec_data.rref_x_am)
 
-            if rmin is not None:
-                rmin_spec = rmin
+                if rmin is not None:
+                    rmin_spec = rmin
 
-            if rmax is not None:
-                rmax_spec = rmax
+                if rmax is not None:
+                    rmax_spec = rmax
 
-            valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am>=rmin_spec, Mhyd.spec_data.rref_x_am<=rmax_spec))
+                valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am>=rmin_spec, Mhyd.spec_data.rref_x_am<=rmax_spec))
 
-            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sigma=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
+                T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sigma=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
 
-        # SZ pressure model and likelihood
-        if Mhyd.sz_data is not None:
+            # SZ pressure model and likelihood
+            if Mhyd.sz_data is not None:
 
-            if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
+                if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
-                pfit = pth[index_sz] * elongation
+                    pfit = pth[index_sz] * elongation
 
-                P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+                    P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
-            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
-                rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+                elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+                    rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
-                deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+                    deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
 
-                proj_vol = deproj.deproj_vol().T
+                    proj_vol = deproj.deproj_vol().T
 
-                area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+                    area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
 
-                integ = pm.math.dot(proj_vol, pth) / area_proj
+                    integ = pm.math.dot(proj_vol, pth) / area_proj
 
-                y_num = y_prefactor * integ  # prefactor in cm2/keV
+                    y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                yfit = y_num[index_sz] * elongation
+                    yfit = y_num[index_sz] * elongation
 
-                if Mhyd.sz_data.psfmat is not None:
+                    if Mhyd.sz_data.psfmat is not None:
 
-                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit)
+                        yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit)
 
-                Y_obs = pm.MvNormal('Y', mu=yfit, observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
+                    Y_obs = pm.MvNormal('Y', mu=yfit, observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 
         if Mhyd.wl_data is not None:
 
@@ -546,14 +548,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 trace = pmjax.sample_numpyro_nuts(nmcmc, init=init, tune=tune, target_accept=target_accept)
 
+        if not wlonly:
+            Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
 
-        Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
-
-        if Mhyd.spec_data is not None:
+        if Mhyd.spec_data is not None and not wlonly:
 
             Mhyd.ppc_kt = pm.sample_posterior_predictive(trace, var_names=['kt'])
 
-        if Mhyd.sz_data is not None:
+        if Mhyd.sz_data is not None and not wlonly:
 
             if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
@@ -578,28 +580,29 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     Mhyd.hydro_model = hydro_model
 
-    # Get chains and save them to file
-    chain_coefs = np.array(trace.posterior['coefs'])
+    if not wlonly:
+        # Get chains and save them to file
+        chain_coefs = np.array(trace.posterior['coefs'])
 
-    sc_coefs = chain_coefs.shape
+        sc_coefs = chain_coefs.shape
 
-    sampc = chain_coefs.reshape(sc_coefs[0]*sc_coefs[1], sc_coefs[2])
+        sampc = chain_coefs.reshape(sc_coefs[0]*sc_coefs[1], sc_coefs[2])
 
-    if fit_bkg:
+        if fit_bkg:
 
-        sampb = np.array(trace.posterior['bkg']).flatten()
+            sampb = np.array(trace.posterior['bkg']).flatten()
 
-        samples = np.append(sampc, sampb, axis=1)
+            samples = np.append(sampc, sampb, axis=1)
 
-    else:
-        samples = sampc
+        else:
+            samples = sampc
 
-    Mhyd.samples = samples
-    nsamp = len(samples)
+        Mhyd.samples = samples
+        nsamp = len(samples)
 
-    if samplefile is not None:
-        np.savetxt(samplefile, samples)
-        np.savetxt(samplefile+'.par',np.array([pars.shape[0]/nbetas,nbetas,min_beta,nmcmc]),header='pymc3')
+        if samplefile is not None:
+            np.savetxt(samplefile, samples)
+            np.savetxt(samplefile+'.par',np.array([pars.shape[0]/nbetas,nbetas,min_beta,nmcmc]),header='pymc3')
 
     # Compute output deconvolved brightness profile
     if fit_elong:
@@ -607,47 +610,48 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     else:
         elong = 1
 
-    if fit_bkg:
-        Ksb = calc_sb_operator(rad, sourcereg, pars)
-
-        allsb = np.dot(Ksb, np.exp(samples.T))
-
-        bfit = np.median(np.exp(samples[:, npt]))
-
-        Mhyd.bkg = bfit
-
-        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
-
-    else:
-        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
-
-        if fit_elong:
-
-            elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
-
-            allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
-
-            allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
-
-        else:
+    if not wlonly:
+        if fit_bkg:
+            Ksb = calc_sb_operator(rad, sourcereg, pars)
 
             allsb = np.dot(Ksb, np.exp(samples.T))
 
-            allsb_conv = np.dot(K, np.exp(samples.T))
+            bfit = np.median(np.exp(samples[:, npt]))
 
-    pmc = np.median(allsb, axis=1)
-    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
-    Mhyd.sb_dec = pmc
-    Mhyd.sb_dec_lo = pmcl
-    Mhyd.sb_dec_hi = pmch
+            Mhyd.bkg = bfit
 
-    pmc = np.median(allsb_conv, axis=1)
-    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
-    Mhyd.sb = pmc
-    Mhyd.sb_lo = pmcl
-    Mhyd.sb_hi = pmch
+            allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
+
+        else:
+            Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+            if fit_elong:
+
+                elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
+
+                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
+
+                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
+
+            else:
+
+                allsb = np.dot(Ksb, np.exp(samples.T))
+
+                allsb_conv = np.dot(K, np.exp(samples.T))
+
+        pmc = np.median(allsb, axis=1)
+        pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
+        pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+        Mhyd.sb_dec = pmc
+        Mhyd.sb_dec_lo = pmcl
+        Mhyd.sb_dec_hi = pmch
+
+        pmc = np.median(allsb_conv, axis=1)
+        pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+        pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
+        Mhyd.sb = pmc
+        Mhyd.sb_lo = pmcl
+        Mhyd.sb_hi = pmch
 
     Mhyd.nrc = nrc
     Mhyd.nbetas = nbetas
@@ -656,9 +660,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.pardens = pardens
     Mhyd.fit_bkg = fit_bkg
     Mhyd.dmonly = dmonly
+    Mhyd.wlonly = wlonly
     Mhyd.mstar = mstar
     Mhyd.pnt = pnt
-    if pnt:
+    if pnt and not wlonly:
         if pnt_model == 'Angelinelli':
             Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
@@ -677,21 +682,22 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             Mhyd.pnt_model = 'Ettori'
 
-    alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
+    if not wlonly:
+        alldens = np.sqrt(np.dot(Kdens, np.exp(samples.T)) * transf)
 
-    if Mhyd.cf_prof is not None:
-        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
-        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+        if Mhyd.cf_prof is not None:
+            pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+            pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
+            pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf[nmin:nmax])
 
-    else:
-        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
-        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
-        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+        else:
+            pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+            pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+            pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
 
-    Mhyd.dens = pmc
-    Mhyd.dens_lo = pmcl
-    Mhyd.dens_hi = pmch
+        Mhyd.dens = pmc
+        Mhyd.dens_lo = pmcl
+        Mhyd.dens_hi = pmch
 
     samppar = np.empty((len(samples), model.npar))
     for i in range(model.npar):
@@ -699,17 +705,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         name = model.parnames[i]
         samppar[:, i] = np.array(trace.posterior[name]).flatten()
 
-    samplogp0 = np.array(trace.posterior['logp0']).flatten()
+    if not wlonly:
+        samplogp0 = np.array(trace.posterior['logp0']).flatten()
 
     Mhyd.samppar = samppar
-    Mhyd.samplogp0 = samplogp0
+    if not wlonly:
+        Mhyd.samplogp0 = samplogp0
+        Mhyd.K = K
+        Mhyd.Kdens = Kdens
+        Mhyd.Ksb = Ksb
+        Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
-    Mhyd.K = K
-    Mhyd.Kdens = Kdens
-    Mhyd.Ksb = Ksb
-    Mhyd.Kdens_m = Kdens_m
 
-    if Mhyd.spec_data is not None:
+    if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
         Mhyd.ktmod = kt_mod['TSPEC']
         Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
@@ -718,7 +726,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.kt3d_lo = kt_mod['T3D_LO']
         Mhyd.kt3d_hi = kt_mod['T3D_HI']
 
-    if Mhyd.sz_data is not None:
+    if Mhyd.sz_data is not None and not wlonly:
         pmed, plo, phi = P_from_samples(Mhyd, model, nmore=nmore)
         Mhyd.pmod = pmed
         Mhyd.pmod_lo = plo
@@ -966,7 +974,7 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            pnt_model='Ettori', fit_elong=False, use_jax=True):
+            pnt_model='Ettori', fit_elong=False, use_jax=True, wlonly=False):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -1049,7 +1057,8 @@ class Mhyd:
                        init=init,
                        target_accept=target_accept,
                        fit_elong=fit_elong,
-                       use_jax=use_jax)
+                       use_jax=use_jax,
+                       wlonly=wlonly)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
