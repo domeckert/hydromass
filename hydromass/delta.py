@@ -197,9 +197,17 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(Mhyd.redshift).value / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
+        if not Mhyd.wlonly:
 
-        fgdelta[i] = mgdelta[i] / mdelta[i]
+            mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
+
+            fgdelta[i] = mgdelta[i] / mdelta[i]
+
+        else:
+
+            mgdelta[i] = 0.
+
+            fgdelta[i] = 0.
 
     rd, rdlo, rdhi = np.percentile(rdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 

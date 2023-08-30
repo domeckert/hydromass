@@ -573,16 +573,25 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
     :rtype: dict(16xnpt)
     """
 
-    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+    if not Mhyd.wlonly:
+        rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
-    if rin is None:
-        rin = np.min(rin_m)
+        if rin is None:
+            rin = np.min(rin_m)
 
-        if rin == 0:
-            rin = 1.
+            if rin == 0:
+                rin = 1.
 
-    if rout is None:
-        rout = np.max(rout_m)
+        if rout is None:
+            rout = np.max(rout_m)
+
+    else:
+
+        if rin is None:
+            rin = 10.
+
+        if rout is None:
+            rout = 3000.
 
     bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
 
@@ -601,97 +610,122 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
     nvalm = len(rin_m)
 
-    if Mhyd.cf_prof is not None:
+    if not Mhyd.wlonly:
 
-        rref_m = (rin_m + rout_m) / 2.
+        if Mhyd.cf_prof is not None:
 
-        rad = Mhyd.sbprof.bins
+            rref_m = (rin_m + rout_m) / 2.
 
-        tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+            rad = Mhyd.sbprof.bins
 
-        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+            tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+            cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+
+        else:
+
+            cf_prof = Mhyd.ccf
+
+        if Mhyd.fit_bkg:
+
+            Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+        else:
+
+            Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+        alldens = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+
+        # Matrix containing integration volumes
+        volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
+
+        # Compute Mgas profile as cumulative sum over the volume
+
+        nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
+
+        ones_mat = np.ones((nvalm, nvalm))
+
+        cs_mat = np.tril(ones_mat)
+
+        mgas = np.dot(cs_mat, alldens * nhconv * volmat)
+
+        mg, mgl, mgh = np.percentile(mgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+        if Mhyd.mstar is not None:
+
+            r_mstar = Mhyd.mstar[:, 0]
+
+            cum_mstar = Mhyd.mstar[:, 1]
+
+            mstar_m = np.interp(rout_m, r_mstar, cum_mstar)
+
+        else:
+
+            mstar_m = np.zeros(nvalm)
+
+        if Mhyd.dmonly:
+
+            mtot = mass + mgas.T + mstar_m.T
+
+            fgas = mgas / mtot.T
+
+        else:
+
+            fgas = mgas / mass.T
+
+        fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+        mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+
+        if Mhyd.dmonly:
+
+            mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+
+        else:
+
+            mtotm, mtotlo, mtothi = mmed, mlo, mhi
+
+        dict = {
+            "R_IN": rin_m,
+            "R_OUT": rout_m,
+            "R_REF": rref_m,
+            "MASS": mtotm,
+            "MASS_LO": mtotlo,
+            "MASS_HI": mtothi,
+            "M_DM": mmed,
+            "M_DM_LO": mlo,
+            "M_DM_HI": mhi,
+            "MGAS": mg,
+            "MGAS_LO": mgl,
+            "MGAS_HI": mgh,
+            "FGAS": fg,
+            "FGAS_LO": fgl,
+            "FGAS_HI": fgh,
+            "M_STAR": mstar_m
+        }
 
     else:
 
-        cf_prof = Mhyd.ccf
+        mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
 
-    if Mhyd.fit_bkg:
-
-        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
-
-    else:
-
-        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
-
-    alldens = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
-
-    # Matrix containing integration volumes
-    volmat = np.repeat(4. / 3. * np.pi * (rout_m ** 3 - rin_m ** 3), nsamp).reshape(nvalm, nsamp)
-
-    # Compute Mgas profile as cumulative sum over the volume
-
-    nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
-
-    ones_mat = np.ones((nvalm, nvalm))
-
-    cs_mat = np.tril(ones_mat)
-
-    mgas = np.dot(cs_mat, alldens * nhconv * volmat)
-
-    mg, mgl, mgh = np.percentile(mgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
-
-    if Mhyd.mstar is not None:
-
-        r_mstar = Mhyd.mstar[:, 0]
-
-        cum_mstar = Mhyd.mstar[:, 1]
-
-        mstar_m = np.interp(rout_m, r_mstar, cum_mstar)
-
-    else:
-
-        mstar_m = np.zeros(nvalm)
-
-    if Mhyd.dmonly:
-
-        mtot = mass + mgas.T + mstar_m.T
-
-        fgas = mgas / mtot.T
-
-    else:
-
-        fgas = mgas / mass.T
-
-    fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
-
-    mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
-
-    if Mhyd.dmonly:
-
-        mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
-
-    else:
-
-        mtotm, mtotlo, mtothi = mmed, mlo, mhi
-
-    dict = {
-        "R_IN": rin_m,
-        "R_OUT": rout_m,
-        "R_REF": rref_m,
-        "MASS": mtotm,
-        "MASS_LO": mtotlo,
-        "MASS_HI": mtothi,
-        "M_DM": mmed,
-        "M_DM_LO": mlo,
-        "M_DM_HI": mhi,
-        "MGAS": mg,
-        "MGAS_LO": mgl,
-        "MGAS_HI": mgh,
-        "FGAS": fg,
-        "FGAS_LO": fgl,
-        "FGAS_HI": fgh,
-        "M_STAR": mstar_m
-    }
+        dict = {
+            "R_IN": rin_m,
+            "R_OUT": rout_m,
+            "R_REF": rref_m,
+            "MASS": mmed,
+            "MASS_LO": mlo,
+            "MASS_HI": mhi,
+            "M_DM": mmed,
+            "M_DM_LO": mlo,
+            "M_DM_HI": mhi,
+            "MGAS": np.zeros(nvalm),
+            "MGAS_LO": np.zeros(nvalm),
+            "MGAS_HI": np.zeros(nvalm),
+            "FGAS": np.zeros(nvalm),
+            "FGAS_LO": np.zeros(nvalm),
+            "FGAS_HI": np.zeros(nvalm),
+            "M_STAR": np.zeros(nvalm)
+        }
 
     if plot:
 
@@ -716,11 +750,12 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
         plt.yscale('log')
 
-        plt.plot(rout_m, mg, color='blue', label='$M_{gas}$')
+        if not Mhyd.wlonly:
+            plt.plot(rout_m, mg, color='blue', label='$M_{gas}$')
 
-        plt.fill_between(rout_m, mgl, mgh, color='blue', alpha=0.4)
+            plt.fill_between(rout_m, mgl, mgh, color='blue', alpha=0.4)
 
-        plt.plot(rout_m, mmed, color='red', label='$M_{Hyd}$')
+        plt.plot(rout_m, mmed, color='red', label='$M_{tot}$')
 
         plt.fill_between(rout_m, mlo, mhi, color='red', alpha=0.4)
 

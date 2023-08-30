@@ -699,7 +699,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.dens_lo = pmcl
         Mhyd.dens_hi = pmch
 
-    if not wlonly:
+    if wlonly:
         # Get chains and save them to file
         chain_rd = np.array(trace.posterior['rdelta'])
 
