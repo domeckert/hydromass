@@ -546,7 +546,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                trace = pmjax.sample_numpyro_nuts(nmcmc, init=init, tune=tune, target_accept=target_accept)
+                trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, target_accept=target_accept)
 
         if not wlonly:
             Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
@@ -707,7 +707,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     else:
         nsamp = len(samples)
 
-    samppar = np.empty(nsamp, model.npar)
+    samppar = np.empty((nsamp, model.npar))
     for i in range(model.npar):
 
         name = model.parnames[i]
@@ -1179,7 +1179,7 @@ class Mhyd:
 
     def run_GP(self, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
-            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False):
+            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False, T0extend=None):
 
         '''
         Run a non-parametric log-normal mixture reconstruction. See :func:`hydromass.nonparametric.Run_NonParametric_PyMC3`
@@ -1232,7 +1232,8 @@ class Mhyd:
                                 smin=smin,
                                 smax=smax,
                                 ngauss=ngauss,
-                                extend=extend)
+                                extend=extend,
+                                T0extend=T0extend)
 
     def SaveModel(self, model, outfile=None):
         '''

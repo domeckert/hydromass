@@ -45,6 +45,7 @@ def SaveModel(Mhyd, model, outfile=None):
     headsamp['NMORE'] = Mhyd.nmore
     headsamp['DMONLY'] = Mhyd.dmonly
     headsamp['PNT'] = Mhyd.pnt
+    headsamp['WLONLY'] = Mhyd.wlonly
     if Mhyd.pnt:
         headsamp['PNTMODEL'] = Mhyd.pnt_model
 
@@ -190,6 +191,11 @@ def ReloadModel(Mhyd, infile, mstar=None):
     Mhyd.nmore = headden['NMORE']
 
     Mhyd.dmonly = headden['DMONLY']
+
+    if 'WLONLY' in headden:
+        Mhyd.wlonly = headden['WLONLY']
+    else:
+        Mhyd.wlonly = False
 
     if 'ELONG' in headden:
 
@@ -429,6 +435,7 @@ def SaveGP(Mhyd, outfile=None):
     headsamp['TRANSF'] = Mhyd.transf
     headsamp['FITBKG'] = Mhyd.fit_bkg
     headsamp['NMORE'] = Mhyd.nmore
+    headsamp['EXTEND'] = Mhyd.extend
 
     hdus.append(denshdu)
 
@@ -504,6 +511,12 @@ def ReloadGP(Mhyd, infile):
 
     Mhyd.nmore = headden['NMORE']
 
+    if 'EXTEND' in headden:
+        Mhyd.extend = headden['EXTEND']
+
+    else:
+        Mhyd.extend = False
+
     tabccf = fin['CCF'].data
 
     Mhyd.ccf = tabccf['CCF']
@@ -523,8 +536,6 @@ def ReloadGP(Mhyd, infile):
     Mhyd.bin_fact = modhead['BINFACT']
 
     Mhyd.ngauss = modhead['NGAUSS']
-
-    Mhyd.cf_prof = None
 
     # Now recreate operators
 
@@ -555,6 +566,12 @@ def ReloadGP(Mhyd, infile):
 
     # Define the fine grid onto which the mass model will be computed
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+    rref_m = (rin_m + rout_m)/2.
+
+    cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+    Mhyd.cf_prof = cf
 
     # Compute linear combination kernel
     if Mhyd.fit_bkg:
@@ -635,10 +652,10 @@ def ReloadGP(Mhyd, infile):
     Mhyd.GPgrad = calc_gp_grad_operator_lognormal(Mhyd.ngauss, rout_m, rin_joint, rout_joint, bin_fact=Mhyd.bin_fact,
                                                   smin=Mhyd.smin, smax=Mhyd.smax)
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) / Mhyd.ccf * Mhyd.transf)
-    pmc = np.median(alldens, axis=1)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1)
+    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)))
+    pmc = np.median(alldens, axis=1) / Mhyd.ccf * Mhyd.transf
+    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / Mhyd.ccf * Mhyd.transf
+    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / Mhyd.ccf * Mhyd.transf
     Mhyd.dens = pmc
     Mhyd.dens_lo = pmcl
     Mhyd.dens_hi = pmch

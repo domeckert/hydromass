@@ -4,6 +4,7 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from .deproject import calc_density_operator, calc_grad_operator, calc_sb_operator, MyDeprojVol
 from .plots import rads_more
+from astropy.io import fits
 
 def delta_func(r, Mhyd, model, pars):
     """
@@ -151,7 +152,7 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     return rout, mbar_ov
 
 
-def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
+def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000., thin=10):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded mass model reconstruction
 
@@ -163,17 +164,19 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
     :type model: class:`hydromass.functions.Model`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
-    :param rmin: Minimum radius where to search for the overdensity radius (in kpc). Defaults to 100
-    :type rmin: float
+    :param r0: Initial guess for the overdensity radius (in kpc). Defaults to 500
+    :type r0: float
     :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
     :type rmax: float
+    :param thin: Thinning factor for the calculation. If the number of samples is large the calculation can be long. If thin is greater than 1 then the calculation while be done for fewer samples every "thin" value. Defaults to 10.
+    :type thin: int
     :return:  Dictionary containing values of R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, and figure if plot=True
     :rtype:
         - dict{12xfloat}
         - matplotlib.pyplot.figure
     '''
 
-    nsamp = len(Mhyd.samppar)
+    nsamp = int(len(Mhyd.samppar) / thin)
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
@@ -181,15 +184,17 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
 
     for i in range(nsamp):
 
+        ti = i * thin
+
         if Mhyd.dmonly:
 
             r_mbar, mbar_ov = mbar_overdens(rmax, Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
 
-            temp_func = lambda x: (delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) + np.interp(x, r_mbar, mbar_ov) - delta) ** 2
+            temp_func = lambda x: (delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[ti]])) + np.interp(x, r_mbar, mbar_ov) - delta) ** 2
 
         else:
 
-            temp_func = lambda x: (delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[i]])) - delta) ** 2
+            temp_func = lambda x: (delta_func(np.array([x]), Mhyd, model, np.array([Mhyd.samppar[ti]])) - delta) ** 2
 
         res = minimize(temp_func, r0, method='Nelder-Mead')
 
@@ -199,7 +204,7 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
 
         if not Mhyd.wlonly:
 
-            mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
+            mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[ti], Mhyd, fit_bkg = Mhyd.fit_bkg, rout_m=rout_m)
 
             fgdelta[i] = mgdelta[i] / mdelta[i]
 
@@ -269,7 +274,7 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000.):
 from scipy.optimize import brentq
 
 
-def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
+def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500., thin=10):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded non-parametric GP reconstruction
 
@@ -279,7 +284,7 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
     :type Mhyd: class:`hydromass.mhyd.Mhyd`
     :param plot: If plot=True, returns a matplotlib.pyplot.figure drawing the mass distribution of the chains at R_delta. In case plot=False the function returns an empty figure.
     :type plot: bool
-    :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
+    :param r0: Initial guess for the overdensity radius (in kpc). Defaults to 500
     :type r0: float
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
     :rtype:
@@ -287,7 +292,7 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
         - matplotlib.pyplot.figure
     '''
 
-    nsamp = len(Mhyd.samppar)
+    nsamp = int(len(Mhyd.samppar) / thin)
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
@@ -295,9 +300,11 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
 
     nvalm = len(rin_m)
 
+    nori = len(Mhyd.samppar)
+
     if Mhyd.cf_prof is not None:
 
-        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nsamp)
+        cf_prof = np.repeat(Mhyd.cf_prof, nsamp).reshape(nvalm, nori)
 
     else:
 
@@ -323,7 +330,10 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
     delta_prof = mass.T / vol / rhoc
 
     for i in range(nsamp):
-        temp_func = lambda x: (np.interp(x, rout_m, delta_prof[i, :]) - delta) ** 2
+
+        ti = i * thin
+
+        temp_func = lambda x: (np.interp(x, rout_m, delta_prof[ti, :]) - delta) ** 2
 
         res = minimize(temp_func, r0, method='Nelder-Mead')
 
@@ -332,7 +342,7 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(
             Mhyd.redshift).value / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[ti], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
         fgdelta[i] = mgdelta[i] / mdelta[i]
 
@@ -395,7 +405,7 @@ def calc_rdelta_mdelta_GP(delta, Mhyd, plot=False, r0=500.):
 from scipy.optimize import minimize
 
 
-def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4000.):
+def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4000., thin=10):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
@@ -409,6 +419,10 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
     :type plot: bool
     :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
     :type r0: float
+    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
+    :type rmax: float
+    :param thin: Thinning factor for the calculation. If the number of samples is large the calculation can be long. If thin is greater than 1 then the calculation while be done for fewer samples every "thin" value. Defaults to 10.
+    :type thin: int
     :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
     :rtype:
         - dict{12xfloat}
@@ -449,7 +463,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         cfp = Mhyd.ccf
 
-    nsamp = len(Mhyd.samppar)
+    nsamp = int(len(Mhyd.samppar) / thin)
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
@@ -458,9 +472,12 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
 
     for i in range(nsamp):
-        tpar = np.array([Mhyd.samppar[i]])
 
-        coefs = Mhyd.samples[i]
+        ti = i * thin
+
+        tpar = np.array([Mhyd.samppar[ti]])
+
+        coefs = Mhyd.samples[ti]
 
         dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / cfp * Mhyd.transf)
 
@@ -494,7 +511,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * rhoc / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[ti], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
         fgdelta[i] = mgdelta[i] / mdelta[i]
 
@@ -602,7 +619,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         return dict, covmat
 
 
-def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., rmax=4000.):
+def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., rmax=4000., thin=10):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded Forward mass reconstruction
 
@@ -616,7 +633,11 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., 
     :type plot: bool
     :param r0: Initial value to initiate the search for the overdensity radius (in kpc). Defaults to 500
     :type r0: float
-   :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
+    :param rmax: Maximum radius where to search for the overdensity radius (in kpc). Defaults to 4000
+    :type rmax: float
+    :param thin: Thinning factor for the calculation. If the number of samples is large the calculation can be long. If thin is greater than 1 then the calculation while be done for fewer samples every "thin" value. Defaults to 10.
+    :type thin: int
+    :return:  Dictionary containing values R_delta, M_delta, Mgas_delta, Fgas_delta and their 1-sigma percentiles, figure if plot=True
     :rtype:
         - dict{12xfloat}
         - matplotlib.pyplot.figure
@@ -646,19 +667,23 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., 
 
         cfp = Mhyd.ccf
 
-    nsamp = len(Mhyd.samppar)
+    nsamp = int(len(Mhyd.samppar) / thin)
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
 
     for i in range(nsamp):
+
+        ti = i * thin
+
         def temp_func(x):
-            coefs = Mhyd.samples[i]
+
+            coefs = Mhyd.samples[ti]
 
             dens = np.sqrt(np.dot(Kdens, np.exp(coefs)) / cfp * Mhyd.transf)
 
-            tpar = np.array([Mhyd.samppar[i]])
+            tpar = np.array([Mhyd.samppar[ti]])
 
             grad_dens = np.dot(Kdens_grad, np.exp(coefs)) / 2. / dens ** 2 / cfp * Mhyd.transf
 
@@ -684,7 +709,7 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., 
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * rhoc / Msun
 
-        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[i], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
+        mgdelta[i] = mgas_delta(rdelta[i], Mhyd.samples[ti], Mhyd, fit_bkg=Mhyd.fit_bkg, rout_m=rout_m)
 
         fgdelta[i] = mgdelta[i] / mdelta[i]
 
@@ -745,7 +770,7 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., 
 
 
 
-def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000.):
+def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000., thin=10):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file.
 
@@ -783,7 +808,7 @@ def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000.):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta(delta, Mhyd, model, r0=r0, rmax=rmax)
+        res = calc_rdelta_mdelta(delta, Mhyd, model, r0=r0, rmax=rmax, thin=thin)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -791,7 +816,7 @@ def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000.):
 
     fout.close()
 
-def write_all_mdelta_GP(Mhyd, outfile=None, r0=500.):
+def write_all_mdelta_GP(Mhyd, outfile=None, r0=500., thin=10):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file. In case the fitted model is noisy and shows local (or non-local) reversals, the procedure can fail if the function Delta(r)-Delta does not change sign over the range of interest. In this case, consider changing the values of rmin and rmax
 
@@ -821,7 +846,7 @@ def write_all_mdelta_GP(Mhyd, outfile=None, r0=500.):
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_GP(delta, Mhyd, r0=r0)
+        res = calc_rdelta_mdelta_GP(delta, Mhyd, r0=r0, thin=thin)
 
         fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
@@ -829,8 +854,40 @@ def write_all_mdelta_GP(Mhyd, outfile=None, r0=500.):
 
     fout.close()
 
+def write_covmat(covmat, outfile, res, delta):
 
-def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500.):
+    hdus = fits.HDUList(hdus=[fits.PrimaryHDU()])
+
+    col1 = fits.Column(name='M_DELTA', format='E', array=covmat[:,0])
+    col2 = fits.Column(name='R_DELTA', format='E', array=covmat[:,1])
+    col3 = fits.Column(name='MGAS', format='E', array=covmat[:,2])
+    col4 = fits.Column(name='LX', format='E', array=covmat[:,3])
+    col5 = fits.Column(name='KT', format='E', array=covmat[:,4])
+    col6 = fits.Column(name='YX', format='E', array=covmat[:,5])
+    col7 = fits.Column(name='FGAS', format='E', array=covmat[:,6])
+
+    cols = [col1, col2, col3, col4, col5, col6, col7]
+
+    coldefs = fits.ColDefs(cols)
+
+    modhdu = fits.BinTableHDU.from_columns(coldefs)
+
+    modhdu.name = 'COVMAT'
+
+    headhdu = modhdu.header
+
+    headhdu['DELTA'] = delta
+
+    for key, value in res.items():
+
+        headhdu[key] = value
+
+    hdus.append(modhdu)
+
+    hdus.writeto(outfile, overwrite=True)
+
+
+def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500., thin=10):
     """
     Write the results of the mass reconstruction run evaluated at overdensities 2500, 1000, 500, and 200 to an output file. In case the fitted model is noisy and shows local (or non-local) reversals, the procedure can fail if the function Delta(r)-Delta does not change sign over the range of interest. In this case, consider changing the values of rmin and rmax
 
@@ -849,17 +906,22 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500.):
     fout = open(outfile, 'w')
 
     fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas"
-               "               Lx             Tx\n")
+               "                       Lx                                     Tx                         Yx\n")
 
     delta_vals = [2500, 1000, 500, 200]
 
     for delta in delta_vals:
 
-        res = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, r0=r0)
+        res, covmat = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, r0=r0, thin=thin)
 
-        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)\n" % (
+        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
         res['MGAS_DELTA'], res['MGAS_DELTA_LO'], res['MGAS_DELTA_HI'], res['FGAS_DELTA'], res['FGAS_DELTA_LO'], res['FGAS_DELTA_HI'],
-        res['LX_DELTA'], res['LX_DELTA_LO'], res['LX_DELTA_HI'], res['KT_DELTA'], res['KT_DELTA_LO'], res['KT_DELTA_HI']))
+        res['LX_DELTA'], res['LX_DELTA_LO'], res['LX_DELTA_HI'], res['KT_DELTA'], res['KT_DELTA_LO'], res['KT_DELTA_HI'],
+        res['YX_DELTA'], res['YX_DELTA_LO'], res['YX_DELTA_HI']))
+
+        outcov = '%s/covmat_%d.fits' % (Mhyd.dir, delta)
+
+        write_covmat(covmat, outcov, res, delta)
 
     fout.close()
