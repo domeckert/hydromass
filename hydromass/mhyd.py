@@ -288,9 +288,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     if pnt:
 
-        if model.massmod != 'NFW':
+        if model.massmod not in ['NFW', 'EIN3']:
 
-            print('Non-thermal pressure correction is currently implemented only for the NFW model, reverting to thermal only')
+            print('Non-thermal pressure correction is currently implemented only for the NFW and Einasto model, reverting to thermal only')
 
             pnt = False
 
