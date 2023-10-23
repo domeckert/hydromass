@@ -255,6 +255,34 @@ def f_ein3_np(xout, pars, delta=200.):
 
     return r200mul ** 3 * fcc * fx
 
+def rho_ein3_pm(xout, cnorm, rs, mu, delta=200.):
+
+    fcc = delta / 3. * cnorm ** 3 / (pm.math.log(1. + cnorm) - cnorm / (1. + cnorm))
+
+    npt = len(xout)
+
+    x = (xout[1:] + xout[:-1]) * 1000 / 2 / rs
+
+    n0 = 2. * mu
+
+    integrand = pm.math.exp(n0) * pm.math.exp(- n0 * x ** (1. / mu))
+
+    return integrand * fcc
+
+def rho_ein3_np(xout, cnorm, rs, mu, delta=200.):
+
+    fcc = delta / 3. * cnorm ** 3 / (np.log(1. + cnorm) - cnorm / (1. + cnorm))
+
+    npt = len(xout)
+
+    x = (xout[1:] + xout[:-1]) * 1000 / 2 / rs
+
+    n0 = 2. * mu
+
+    integrand = np.exp(n0) * np.exp(- n0 * x ** (1. / mu))
+
+    return integrand * fcc
+
 
 # Isothermal sphere function
 def f_iso_pm(xout, c200, r200, delta=200.):
@@ -778,6 +806,10 @@ class Model:
             self.npar = 3
 
             self.parnames = ['cdelta', 'rdelta', 'mu']
+
+            self.rho_pm = rho_ein3_pm
+
+            self.rho_np = rho_ein3_np
 
             if start is None:
                 self.start = [1.8, 700., 5.]
