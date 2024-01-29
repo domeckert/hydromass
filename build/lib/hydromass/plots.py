@@ -191,13 +191,17 @@ def rads_more(Mhyd, nmore=5, extend=False):
 
         nx = len(Mhyd.spec_data.rref_x)
 
-        if not  extend:
+        if not extend:
 
             sum_mat = np.zeros((nx, ntot))
 
         else:
 
-            sum_mat = np.zeros((nx+1, ntot))
+            if Mhyd.spec_data.rout_x[nx-1] < np.max(rin_more):
+                sum_mat = np.zeros((nx+1, ntot))
+
+            else:
+                sum_mat = np.zeros((nx, ntot))
 
         for i in range(nx):
 
@@ -209,11 +213,13 @@ def rads_more(Mhyd, nmore=5, extend=False):
 
         if extend:
 
-            ix = np.where(rin_more >= Mhyd.spec_data.rout_x[nx-1])
+            if Mhyd.spec_data.rout_x[nx-1] < np.max(rin_more):
 
-            nval = len(ix[0])
+                ix = np.where(rin_more >= Mhyd.spec_data.rout_x[nx-1])
 
-            sum_mat[nx, :][ix] = 1. / nval
+                nval = len(ix[0])
+
+                sum_mat[nx, :][ix] = 1. / nval
 
     return rin_more, rout_more, index_x, index_sz, sum_mat, ntm
 
@@ -242,7 +248,7 @@ def gnfw_p0(x,pars):
     return P0/t1/t2
 
 
-def estimate_P0(Mhyd, dens='sb'):
+def estimate_P0(Mhyd, dens='sb', outfile=None):
     '''
     Provide an estimate of the pressure at the outer boundary by fitting a rough gNFW profile to the data. The value of :math:`P_0` is the integration constant that enters when we integrate the hydrostatic equilibrium equation to predict the pressure profile,
 
@@ -344,6 +350,42 @@ def estimate_P0(Mhyd, dens='sb'):
     pars_press[1] = res['x'][1]
 
     p0 = gnfw_p0(maxrad, pars_press)
+
+    if outfile is not None:
+
+        plt.clf()
+
+        fig = plt.figure(figsize=(13, 10))
+
+        ax_size = [0.14, 0.12,
+                   0.85, 0.85]
+
+        ax = fig.add_axes(ax_size)
+
+        ax.minorticks_on()
+
+        ax.tick_params(length=20, width=1, which='major', direction='in', right=True, top=True)
+
+        ax.tick_params(length=10, width=1, which='minor', direction='in', right=True, top=True)
+
+        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(22)
+
+        plt.xscale('log')
+
+        plt.yscale('log')
+
+        plt.errorbar(spec_data.rref_x, p_interp, yerr=ep_interp, fmt='o', markersize=10, label='P data')
+
+        xp = np.logspace(np.min(spec_data.rref_x), maxrad, 100)
+
+        yp = gnfw_p0(xp, pars_press)
+
+        plt.plot(xp, yp, label='P model')
+
+        plt.plot(maxrad, p0, 's', markersize=20, label='P0')
+
+        plt.savefig(outfile)
 
     return p0
 

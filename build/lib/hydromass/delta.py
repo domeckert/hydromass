@@ -441,7 +441,15 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     area = 2. * np.pi * rref / Mhyd.amin2kpc * dr
 
-    lf = np.interp(rref / Mhyd.amin2kpc, Mhyd.sbprof.bins, Mhyd.lumfact)  # luminosity conversion factor
+    try:
+        nn = len(Mhyd.lumfact)
+
+    except TypeError:
+
+        lf = Mhyd.lumfact
+
+    else:
+        lf = np.interp(rref / Mhyd.amin2kpc, Mhyd.sbprof.bins, Mhyd.lumfact)  # luminosity conversion factor
 
     sourcereg = np.where(rref < rmax)
 
