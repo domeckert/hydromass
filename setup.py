@@ -10,7 +10,7 @@ setup(
       url="https://github.com/domeckert/hydromass",
       packages=['hydromass'],
       install_requires=[
-            'numpy','scipy','astropy','matplotlib','pymc','aesara','pyproffit','numpyro','corner'
+            'numpy','scipy','astropy','matplotlib','pymc','pytensor','pyproffit','numpyro','corner'
       ],
       include_package_data=True,
 )
