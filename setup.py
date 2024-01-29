@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
       name='hydromass',    # This is the name of your PyPI-package.
-      version='0.5.2',
+      version='0.5.3',
       description='Hydrostatic mass calculator',
       author='Dominique Eckert, Vittorio Ghirardini, Stefano Ettori',
       author_email='Dominique.Eckert@unige.ch',
