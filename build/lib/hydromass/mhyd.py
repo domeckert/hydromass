@@ -318,6 +318,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 modpar = pm.TruncatedNormal(name, mu=model.start[i], sigma=model.sd[i], lower=lim[0], upper=lim[1]) #
 
+                #modpar = pm.Uniform(name, lower=lim[0], upper=lim[1])
+
+
             else:
 
                 modpar = pm.ConstantDist(name, model.start[i])
@@ -491,6 +494,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
                 elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
                     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
                     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm

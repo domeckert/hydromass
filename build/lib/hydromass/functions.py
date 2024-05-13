@@ -634,10 +634,14 @@ class Model:
             if limits is None:
 
                 limits = np.empty((self.npar, 2))
-
+                #
                 limits[0] = [0., 15.]
-
+                #
                 limits[1] = [300., 3000.]
+
+                #limits[0] = [0., 20.]   # Adriana prior
+
+                #limits[1] = [900., 4000.]
 
             else:
 

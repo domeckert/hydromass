@@ -625,7 +625,7 @@ def kt_from_samples(Mhyd, model, nmore=5):
     return dict
 
 
-def P_from_samples(Mhyd, model, nmore=5):
+def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
     """
     Compute model pressure profile from an existing mass reconstruction run and evaluate it at the reference SZ radii
 
@@ -650,6 +650,28 @@ def P_from_samples(Mhyd, model, nmore=5):
     pmt, plot, phit = np.percentile(pth, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     pmed, plo, phi = pmt[index_sz], plot[index_sz], phit[index_sz]
+
+    if return_Y == True:
+
+        rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+
+        deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+
+        proj_vol = deproj.deproj_vol().T
+
+        area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+
+        integ = np.dot(proj_vol, pth) / np.tile(area_proj[:, np.newaxis], (1, len(Mhyd.samppar)))
+
+        y_num = y_prefactor * integ  # prefactor in cm2/keV
+
+        ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+
+        if Mhyd.sz_data.psfmat is not None:
+
+            ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
+
+        pmed, plo, phi = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     return pmed, plo, phi
 
@@ -921,6 +943,58 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
 
     dens_m, p3d, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
+    # if Mhyd.sz_data:
+    #
+    #     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+    #
+    #     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+    #
+    #     proj_vol = deproj.deproj_vol().T
+    #
+    #     area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+    #
+    #     area_proj = area_proj[:, np.newaxis]
+    #
+    #     integ = np.dot(proj_vol, pth) / area_proj
+    #
+    #     ynum = (y_prefactor * integ)
+    #
+    #     ysz = ynum * Mhyd.elong
+    #
+    #     if Mhyd.sz_data.psfmat is not None:
+    #
+    #         ysz = np.dot(Mhyd.sz_data.psfmat, ysz[index_sz])
+
+#    if Mhyd.sz_data is not None:
+
+#        if Mhyd.sz_data.y_sz is not None:  # Fitting the Compton y parameter
+
+            #rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+ #           rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+
+            #deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+
+            #proj_vol = deproj.deproj_vol().T
+
+ #           area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+
+ #           integ = np.dot(vol_x, pth) / np.tile(area_proj[:, np.newaxis], (1, 4000))
+
+ #           y_num = y_prefactor * integ  # prefactor in cm2/keV
+
+ #           ysz = y_num * np.tile(Mhyd.elong, (200, 1))
+
+#            if Mhyd.sz_data.psfmat is not None:
+
+ #               ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
+        #
+       # yszm, yszl, yszh = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+#    else:
+
+ #       yszm, yszl, yszh = 0, 0, 0
+
     t3d = pth / dens_m
 
     # Mazzotta weights
@@ -976,6 +1050,9 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
         "P_TH": mp,
         "P_TH_LO": mpl,
         "P_TH_HI": mph,
+        #"Y": yszm,
+        #"Y_LO": yszl,
+        #"Y_HI": yszh,
         "T3D": mt3d,
         "T3D_LO": mt3dl,
         "T3D_HI": mt3dh,
