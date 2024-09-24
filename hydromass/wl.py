@@ -72,6 +72,7 @@ def get_shear(sigma, dsigma, mean_sigm_crit_inv, fl):
     # situation of background sources(mean_sigm_crit_inv, fl)
 
     shear = (dsigma * mean_sigm_crit_inv)/(1 - fl * sigma * mean_sigm_crit_inv)
+
     return shear
 
 

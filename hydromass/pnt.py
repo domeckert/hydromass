@@ -46,7 +46,7 @@ def alpha_turb_pm(rad, r200c, c200, z, pars):
 
     a1 = pars[0,1]
 
-    a2 = pars[0,2]
+    a2 = pm.math.exp(pars[0,2])
 
     r200m = r200c * r200m_from_params(c200, z)
 
@@ -77,7 +77,7 @@ def alpha_turb_np(rad, pars, z, pnt_pars):
 
     a1 = pnt_pars[:, 1]
 
-    a2 = pnt_pars[:, 2]
+    a2 = np.exp(pnt_pars[:, 2])
 
     npt = len(rad)
 

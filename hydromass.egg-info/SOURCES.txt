@@ -22,6 +22,9 @@ hydromass.egg-info/SOURCES.txt
 hydromass.egg-info/dependency_links.txt
 hydromass.egg-info/requires.txt
 hydromass.egg-info/top_level.txt
+hydromass/data/.DS_Store
 hydromass/data/coolfunc_table.fits
 hydromass/data/pnt_covmat.dat
+hydromass/data/pnt_covmat_log.dat
 hydromass/data/pnt_mean.dat
+hydromass/data/pnt_mean_log.dat

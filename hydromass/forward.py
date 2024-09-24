@@ -386,7 +386,7 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
         return dict
 
-def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3):
+def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3): #, extra=False, max_radius=20):
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
@@ -403,6 +403,32 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3):
     """
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
+
+    # if extra:
+    #     # Extend the radial bins up to max_radius
+    #     max_radius = np.max(rout_m) + np.mean(rout_m - rin_m) * nmore
+    #     step_size = np.mean(rout_m - rin_m)
+    #     new_rin = np.append(rin_m, np.linspace(rout_m[-1], max_radius, nmore))
+    #     new_rout = np.append(rout_m, np.linspace(rout_m[-1] + step_size, max_radius + step_size, nmore))
+    #
+    #     rin_m = new_rin
+    #     rout_m = new_rout
+    #     # Calculate new radial midpoints (rad) corresponding to the extended bins
+    #     extended_rad = (new_rin + new_rout) / 2.
+    #     pardens = list_params_density(extended_rad, Mhyd.sourcereg, Mhyd.amin2kpc, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
+    #     # Recompute Kdens_m with the extended radial grid
+    #     Kdens_extended = calc_density_operator(extended_rad / Mhyd.amin2kpc, pardens, Mhyd.amin2kpc)
+    #
+    #     # Ensure dimensions match
+    #     if Kdens_extended.shape[1] != Mhyd.samples.shape[0]:
+    #         raise ValueError(
+    #             f"Shape mismatch: Kdens_extended has {Kdens_extended.shape[1]} columns, but Mhyd.samples has {Mhyd.samples.shape[0]} rows")
+    #
+    #     # Use Kdens_extended instead of the original Kdens_m
+    #     dens_m = np.sqrt(np.dot(Kdens_extended, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    # else:
+    #     # Original code for non-extended binning
+    #     dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
 

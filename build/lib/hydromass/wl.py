@@ -67,26 +67,14 @@ def dsigma_trap_np(sigma, radii):
     return dsigma
 
 
-#def get_shear(sigma, dsigma, mean_sigm_crit_inv, fl):
-    # computes the tangential shear g+ given the mass profile of the cluster (sigma, dsigma) and geometrical
-    # situation of background sources(mean_sigm_crit_inv, fl)
-#    if fl == 0:
-#        shear = dsigma * mean_sigm_crit_inv
-#    else:
- #       shear = dsigma * (mean_sigm_crit_inv + fl * sigma * mean_sigm_crit_inv ** 2)
- #   return shear
-
 def get_shear(sigma, dsigma, mean_sigm_crit_inv, fl):
     # computes the tangential shear g+ given the mass profile of the cluster (sigma, dsigma) and geometrical
     # situation of background sources(mean_sigm_crit_inv, fl)
 
     shear = (dsigma * mean_sigm_crit_inv)/(1 - fl * sigma * mean_sigm_crit_inv)
+
     return shear
 
-def get_convergence(sigma, dsigma, mean_sigm_crit_inv):
-    # computes the tangential shear g+ given the mass profile of the cluster (sigma, dsigma) and geometrical
-    # situation of background sources(mean_sigm_crit_inv, fl)
-    return (dsigma + sigma) * mean_sigm_crit_inv
 
 
 def get_radplus(radii, rmin=1e-3, rmax=1e2, nptplus=19):
@@ -121,20 +109,3 @@ def WLmodel_np(WLdata, model, pmod):
     dsigma = dsigma_trap_np(sig, radplus)
     gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
     return gplus, rm, ev
-
-def WLmodel_conv(WLdata, model, pmod):
-    radplus, rm, ev = get_radplus(WLdata.radii_wl)
-    rho_out = model.rho_pm(radplus, *pmod) * WLdata.rho_crit
-    sig = rho_to_sigma(radplus, rho_out)
-    dsigma = dsigma_trap(sig, radplus)
-    kappa = get_convergence(sig, dsigma, WLdata.msigmacrit)
-    return kappa, rm, ev
-
-
-def WLmodel_np_conv(WLdata, model, pmod):
-    radplus, rm, ev = get_radplus(WLdata.radii_wl)
-    rho_out = model.rho_np(radplus, *pmod) * WLdata.rho_crit
-    sig = rho_to_sigma_np(radplus, rho_out)
-    dsigma = dsigma_trap_np(sig, radplus)
-    kappa = get_convergence(sig, dsigma, WLdata.msigmacrit)
-    return kappa, rm, ev
