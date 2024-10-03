@@ -7,26 +7,39 @@ from astropy import constants as const
 from astropy import units as u
 
 def rho_to_sigma(radii_bins, rho):
-    # computes the projected mass density sigma given a density profile rho
-    # radii_bins*=1e-6
+    """
+    Theano function. Computes the projected mass density sigma given a density profile rho.
+    :param radii_bins: array-like, radii bins
+    :param rho: array-like, density profile
+    return: sigma, array-like, surface mass density [M_sun * Mpc**-2]
+    """
     deproj = MyDeprojVol(radii_bins[:-1], radii_bins[1:])
     proj_vol = deproj.deproj_vol().T
     area_proj = np.pi * (-(radii_bins[:-1] * 1e6) ** 2 + (radii_bins[1:] * 1e6) ** 2)
     sigma = pm.math.dot(proj_vol, rho) / area_proj
-    return sigma * 1e12  # to get result in M_sun * Mpc**-2
+    return sigma * 1e12  
 
 def rho_to_sigma_np(radii_bins, rho):
-    # computes the projected mass density sigma given a density profile rho
-    # radii_bins*=1e-6
+    """
+    Numpy function. Computes the projected mass density sigma given a density profile rho.
+    :param radii_bins: array-like, radii bins
+    :param rho: array-like, density profile
+    return: sigma, array-like, surface mass density [M_sun * Mpc**-2]
+    """
     deproj = MyDeprojVol(radii_bins[:-1], radii_bins[1:])
     proj_vol = deproj.deproj_vol().T
     area_proj = np.pi * (-(radii_bins[:-1] * 1e6) ** 2 + (radii_bins[1:] * 1e6) ** 2)
     sigma = np.dot(proj_vol, rho) / area_proj
-    return sigma * 1e12  # to get result in M_sun * Mpc**-2
+    return sigma * 1e12  
 
 
 def dsigma_trap(sigma, radii):
-    # computes dsigma using numerical trap intergration
+    """
+    Theano function. Computes dsigma using numerical trap intergration 
+    :param sigma: array-like, surface mass density
+    :param radii: array-like, radii bins
+    return: dsigma, array-like, excess surface mass density [M_sun * Mpc**-2]
+    """
     rmean = (radii[1:] + radii[:-1]) / 2
     rmean2 = (rmean[1:] + rmean[:-1]) / 2
     m = np.tril(np.ones((len(rmean2) + 1, len(rmean2) + 1)))
@@ -49,7 +62,13 @@ def dsigma_trap(sigma, radii):
     return dsigma
 
 def dsigma_trap_np(sigma, radii):
-    # computes dsigma using numerical trap intergration
+    """
+    Numpy function. Computes excess surface mass density dsigma using numerical trap intergration
+    :param sigma: array-like, surface mass density
+    :param radii: array-like, radii bins
+    return: sigmabar, array-like, excess surface mass density [M_sun * Mpc**-2]
+            dsigma, array-like, average surface mass density [M_sun * Mpc**-2]
+    """
     rmean = (radii[1:] + radii[:-1]) / 2
     rmean2 = (rmean[1:] + rmean[:-1]) / 2
     m = np.tril(np.ones((len(rmean2) + 1, len(rmean2) + 1)))
@@ -69,8 +88,15 @@ def dsigma_trap_np(sigma, radii):
 
 
 def get_shear(sigma, dsigma, mean_sigm_crit_inv, fl):
-    # computes the tangential shear g+ given the mass profile of the cluster (sigma, dsigma) and geometrical
-    # situation of background sources(mean_sigm_crit_inv, fl)
+    """
+    Computes the tangential shear g+ given the mass profile of the cluster (sigma, dsigma) and geometrical situation of background sources(mean_sigm_crit_inv, fl)
+    Using the approximation of Seitz and Schneider 1997 (or Umetsu 2020 eq.93) formula.
+    :param sigma: array-like, surface mass density
+    :param dsigma: array-like, excess surface mass density 
+    :param mean_sigm_crit_inv: float, value of the inverse mean critical density <sigcrit**-1> in Mpc**2.Msun**-1
+    :param fl: float, value of <sigcrit**-2> / (<sigcrit**-1>**2), useful for 2nd order approximation of the shear.
+    return: shear, array-like, tangential shear
+    """
 
     shear = (dsigma * mean_sigm_crit_inv)/(1 - fl * sigma * mean_sigm_crit_inv)
 
@@ -79,7 +105,18 @@ def get_shear(sigma, dsigma, mean_sigm_crit_inv, fl):
 
 
 def get_radplus(radii, rmin=1e-3, rmax=1e2, nptplus=19):
-    # for the numerical integration to be successful, it is useful to create a set of fictive points at low radii 
+    """
+    Creates a set of radii for the numerical integration of the mass profile by interpolating
+    and extrapolating both at low and high radii.
+    :param radii: array-like, radii bins
+    :param rmin: float, minimum radius
+    :param rmax: float, maximum radius
+    :param nptplus: int, number for low radii extrapolation and interpolation (high radii extrapolation fixed to 20)
+    returns:
+        radplus: array-like, radii for the numerical integration
+        rmeanplus: array-like, mean radii for the numerical integration
+        evalrad: array-like, indices for the evaluation of the mass profile
+    """
     if nptplus % 2 == 0:
         nptplus = nptplus + 1
     rmean = (radii[1:] + radii[:-1]) / 2.
@@ -95,6 +132,14 @@ def get_radplus(radii, rmin=1e-3, rmax=1e2, nptplus=19):
 
 
 def WLmodel(WLdata, model, pmod):
+    """
+    Theano function. Computes the tangential shear g+ for a given model and set of parameters.
+    :param WLdata: object, weak lensing data
+    :param model: object, mass model (e.g. NFW, Einasto)
+    :param pmod: array-like, model parameters (e.g. [c200, r200] for NFW)
+    return: gplus, array-like, tangential shear
+            rm, array-like, mean radii for the numerical integration
+            ev, array-like, indices for the evaluation of the mass profile"""
     radplus, rm, ev = get_radplus(WLdata.radii_wl)
     rho_out = model.rho_pm(radplus, *pmod) * WLdata.rho_crit
     sig = rho_to_sigma(radplus, rho_out)
@@ -104,6 +149,14 @@ def WLmodel(WLdata, model, pmod):
 
 
 def WLmodel_np(WLdata, model, pmod):
+    """
+    Numpy function. Computes the tangential shear g+ for a given model and set of parameters.
+    :param WLdata: object, weak lensing data
+    :param model: object, mass model (e.g. NFW, Einasto)
+    :param pmod: array-like, model parameters (e.g. [c200, r200] for NFW)
+    return: gplus, array-like, tangential shear
+            rm, array-like, mean radii for the numerical integration
+            ev, array-like, indices for the evaluation of the mass profile"""
     radplus, rm, ev = get_radplus(WLdata.radii_wl)
     rho_out = model.rho_np(radplus, *pmod) * WLdata.rho_crit
     sig = rho_to_sigma_np(radplus, rho_out)
@@ -112,6 +165,21 @@ def WLmodel_np(WLdata, model, pmod):
     return gplus, rm, ev
 
 def WLmodel_profiles_np(WLdata, model, pmod, rmin, rmax, npt):
+    """
+    Numpy function. Computes the mass profile, surface mass density, excess surface mass density, 
+    mean radii and indices for the evaluation of the mass profile. 
+    Option to directly tune the radial range and number of points for higher radial resolution.
+    :param WLdata: object, weak lensing data
+    :param model: object, mass model (e.g. NFW, Einasto)
+    :param pmod: array-like, model parameters (e.g. [c200, r200] for NFW)
+    :param rmin: float, minimum radius
+    :param rmax: float, maximum radius
+    :param npt: int, number of points for the numerical integration
+    return: rho_out, array-like, mass profile
+            sig, array-like, surface mass density
+            sigbar, array-like, mean surface mass density
+            rm, array-like, mean radii for the numerical integration
+            ev, array-like, indices for the evaluation of the mass profile"""
     radplus, rm, ev = get_radplus(WLdata.radii_wl, rmin, rmax, npt)
     rho_out = model.rho_np(radplus, *pmod) * WLdata.rho_crit
     sig = rho_to_sigma_np(radplus, rho_out)
@@ -119,6 +187,18 @@ def WLmodel_profiles_np(WLdata, model, pmod, rmin, rmax, npt):
     return rho_out, sig, sigbar, rm, ev
 
 def sigbar_envelope_hires(tmhyd, wldata, model, ndraws=500, rmin=1e-3, rmax=1e1, npt=100):
+    """
+    Computes the mean surface mass density profiles sigbar for all the posterior chain of a previous analysis.
+    :param tmhyd: object, hydrostatic mass profile
+    :param wldata: object, weak lensing data
+    :param model: object, mass model (e.g. NFW, Einasto)
+    :param ndraws: int, number of profiles to sample
+    :param rmin: float, minimum radius
+    :param rmax: float, maximum radius
+    :param npt: int, number of points for the numerical integration
+    return: sigbar_all, array-like, mean surface mass density profiles
+            rm, array-like, mean radii for the numerical integration"""
+    
     num_pairs = len(tmhyd.samppar)
     sigbar_arr = []
 
@@ -143,6 +223,25 @@ def sigbar_envelope_hires(tmhyd, wldata, model, ndraws=500, rmin=1e-3, rmax=1e1,
 
 
 def get_einstein_r(tmhyd, wldata, model, z_cl, zs, rmin=1e-3, rmax=1e2, npt=100, ndraws=500):
+    """
+    Computes the Einstein radius for a given cluster and source redshift by equalizing the average surface mass density
+    to the critical surface mass density. Einstein radius having values of the order of the arscecond, it is necessary to
+    extrapolate at lower radii and with more points than usual with the get_radplus function.
+    :param tmhyd: object, hydrostatic mass profile
+    :param wldata: object, weak lensing data
+    :param model: object, mass model (e.g. NFW, Einasto)
+    :param z_cl: float, cluster redshift
+    :param zs: float, source redshift
+    :param rmin: float, minimum radius
+    :param rmax: float, maximum radius
+    :param npt: int, number of points for the numerical integration
+    :param ndraws: int, number of profiles to sample
+    return: rm, array-like, mean radii for the numerical integration
+            sigbar_arr, array-like, mean surface mass density profiles
+            einstein_r_median, float, median Einstein radius
+            einstein_r_16th, float, 16th percentile Einstein radius
+            einstein_r_84th, float, 84th percentile Einstein radius
+            sigcrit, float, critical surface mass density [M_sun * Mpc**-2]"""
     # Compute sigma critical
     cosmo = tmhyd.cosmo
     c_mpc = const.c.to(u.Mpc / u.s)
