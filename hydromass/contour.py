@@ -127,7 +127,8 @@ class Contour:
                     xx=(xxt[0:len(yy)]+xxt[1:len(yy)+1])/2.
                     ax1.plot(xx, yy, color='k',linewidth=2)
                     #ax1.hist(xxx,normed=True,bins=nbins,histtype='step',color='k',linewidth=2)
-                    if ii != 0:	ax1.set_yticklabels([])
+                    if ii != 0:	
+                        ax1.set_yticklabels([])
                     if ii != nplots-1:	ax1.set_xticklabels([])
                     lo, me ,hi = np.percentile(xxx, [16,50,84],axis=0)
                     if error_on_top == True:

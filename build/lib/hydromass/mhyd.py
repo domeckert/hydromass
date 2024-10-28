@@ -121,6 +121,30 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
 
+#    if rmin is not None:
+#        valid = np.where(rad>=rmin)
+#        sb = sb[valid]
+#        esb = esb[valid]
+#        rad = rad[valid]
+#        erad = erad[valid]
+#        counts = counts[valid]
+#        area = area[valid]
+#        exposure = exposure[valid]
+#        bkgcounts = bkgcounts[valid]
+#        nmin = valid[0][0]
+#
+#    if rmax is not None:
+#        valid = np.where(rad <= rmax)
+#        sb = sb[valid]
+#        esb = esb[valid]
+#        rad = rad[valid]
+#        erad = erad[valid]
+#        counts = counts[valid]
+#        area = area[valid]
+#        exposure = exposure[valid]
+#        bkgcounts = bkgcounts[valid]
+#        valori = np.where(prof.bins <= rmax)
+#        nmax = np.max(valori[0])+1
 
     nbin = len(sb)
 
@@ -355,9 +379,25 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
 
+                    #a2 = pnt_pars[0, 2]
+
+                    #pm.Potential("bound", tt.switch(a2 > 0, 0, -np.inf))
+
+                    #pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean[:2], cov=pnt_cov[:2, :2], shape=(2,))
+                    #a0 = pnt_pars[0, 0]
+                    #a1 = pnt_pars[0, 1]
+                    #a2 = pm.math.exp(pnt_pars[0, 2])
+
+                    # Log-normal prior for a2
+                    #mu_a2 = np.log(7.25e-2)
+                    #sigma_a2 = np.sqrt(3.44e-3)
+                    #a2 = pm.Lognormal('a2', mu=mu_a2, sigma=sigma_a2)
+
+                    #pnt_pars = tt.stack([a0, a1, a2], axis=0).reshape((1, 3))
+
                 if pnt_model=='Ettori':
 
-                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.3) #0.13
+                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13) #0.13
 
                     logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2.) #-2
 
@@ -435,7 +475,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                sbmod = pred * elongation ** 0.5
+                sbmod = pred * elongation #** 0.5
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
@@ -504,6 +544,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
             gmodel_elong = elongation * gmodel
+
+
+            #g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
 
             g_obs = pm.MvNormal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, cov=WLdata.covmat)
 
@@ -615,9 +658,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
 
-                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
+                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat #** 0.5
 
-                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
+                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat #** 0.5
 
             else:
 
@@ -713,6 +756,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Ksb = Ksb
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
+    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
@@ -734,6 +778,39 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     thermolike = 0.
     npthermo = model.npar + 1
 
+    # Mhyd.trace.log_likelihood['tot'] = 0.
+    #
+    # if fit_bkg:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['counts']), axis=2).flatten()
+    #     nptot = nptot + npt + 1
+    #     #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['counts']
+    #
+    # else:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['sb']), axis=2).flatten()
+    #     nptot = nptot + npt
+    #     #Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['sb']
+    #
+    # if Mhyd.spec_data is not None:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+    #     thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['kt']), axis=2).flatten()
+    #     Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['kt']
+    #
+    #
+    # if Mhyd.sz_data is not None:
+    #     totlike = totlike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+    #     thermolike = thermolike + np.sum(np.asarray(Mhyd.trace['log_likelihood']['P']), axis=2).flatten()
+    #     Mhyd.trace.log_likelihood['tot'] = Mhyd.trace.log_likelihood['tot'] + Mhyd.trace.log_likelihood['P']
+    #
+    # if pnt:
+    #     nptot = nptot + 3
+    #     npthermo = npthermo + 3
+    #
+    # Mhyd.totlike = totlike
+    # Mhyd.nptot = nptot
+    # Mhyd.thermolike = thermolike
+    # Mhyd.npthermo = npthermo
+    # Mhyd.waic = az.waic(Mhyd.trace, var_name='tot')
+    # Mhyd.loo = az.loo(Mhyd.trace, var_name='tot')
 
 class Mhyd:
     """

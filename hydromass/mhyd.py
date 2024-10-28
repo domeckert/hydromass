@@ -397,7 +397,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 if pnt_model=='Ettori':
 
-                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.3) #0.13
+                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13) #0.13
 
                     logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2.) #-2
 
@@ -475,7 +475,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                sbmod = pred * elongation ** 0.5
+                sbmod = pred * elongation #** 0.5
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
@@ -658,9 +658,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
 
-                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
+                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat #** 0.5
 
-                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
+                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat #** 0.5
 
             else:
 
@@ -756,6 +756,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Ksb = Ksb
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
+    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
