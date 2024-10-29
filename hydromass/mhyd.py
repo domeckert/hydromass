@@ -450,7 +450,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                sbmod = pred * elongation ** 0.5
+                sbmod = pred * elongation
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 

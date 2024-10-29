@@ -6,8 +6,17 @@ from .functions import rho_nfw_cr
 
 
 def rho_to_sigma(radii_bins, rho):
-    # computes the projected mass density sigma given a density profile rho
-    # radii_bins*=1e-6
+    """
+    This function computes the projected mass density sigma given a density profile rho (pymc version)
+
+    :param radii_bins: Array containing the radial grid onto which the projection volumes will be calculated in units of Mpc
+    :type radii_bins: numpy.ndarray
+    :param rho: Density profile in unit of g/cm3
+    :type rho: pytensor.tensor
+    :return: Projected surface mass density in unit of M_sun / Mpc2
+    :rtype: pytensor.tensor
+    """
+
     deproj = MyDeprojVol(radii_bins[:-1], radii_bins[1:])
     proj_vol = deproj.deproj_vol().T
     area_proj = np.pi * (-(radii_bins[:-1] * 1e6) ** 2 + (radii_bins[1:] * 1e6) ** 2)
@@ -15,8 +24,17 @@ def rho_to_sigma(radii_bins, rho):
     return sigma * 1e12  # to get result in M_sun * Mpc**-2
 
 def rho_to_sigma_np(radii_bins, rho):
-    # computes the projected mass density sigma given a density profile rho
-    # radii_bins*=1e-6
+    """
+    Computes the projected mass density sigma given a density profile rho (numpy version)
+
+    :param radii_bins: Array containing the radial grid onto which the projection volumes will be calculated in units of Mpc
+    :type radii_bins: numpy.ndarray
+    :param rho: Density profile in unit of g/cm3
+    :type rho: numpy.ndarray
+    :return: Projected surface mass density in unit of M_sun / Mpc2
+    :rtype: numpy.ndarray
+    """
+
     deproj = MyDeprojVol(radii_bins[:-1], radii_bins[1:])
     proj_vol = deproj.deproj_vol().T
     area_proj = np.pi * (-(radii_bins[:-1] * 1e6) ** 2 + (radii_bins[1:] * 1e6) ** 2)
