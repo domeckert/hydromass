@@ -70,7 +70,11 @@ def dsigma_trap_np(sigma, radii):
 def get_shear(sigma, dsigma, mean_sigm_crit_inv, fl):
     # computes the tangential shear g+ given the mass profile of the cluster (sigma, dsigma) and geometrical
     # situation of background sources(mean_sigm_crit_inv, fl)
-    return dsigma * (mean_sigm_crit_inv + fl * sigma * mean_sigm_crit_inv ** 2)
+
+    shear = (dsigma * mean_sigm_crit_inv)/(1 - fl * sigma * mean_sigm_crit_inv)
+
+    return shear
+
 
 
 def get_radplus(radii, rmin=1e-3, rmax=1e2, nptplus=19):

@@ -127,8 +127,10 @@ class Contour:
                     xx=(xxt[0:len(yy)]+xxt[1:len(yy)+1])/2.
                     ax1.plot(xx, yy, color='k',linewidth=2)
                     #ax1.hist(xxx,normed=True,bins=nbins,histtype='step',color='k',linewidth=2)
-                    if ii != 0:	ax1.set_yticklabels([])
-                    if ii != nplots-1:	ax1.set_xticklabels([])
+                    if ii != 0:	
+                        ax1.set_yticklabels([])
+                    if ii != nplots-1:	
+                        ax1.set_xticklabels([])
                     lo, me ,hi = np.percentile(xxx, [16,50,84],axis=0)
                     if error_on_top == True:
                         order_mag=int(np.log10(abs(me)))
@@ -158,6 +160,10 @@ class Contour:
                         ax1.set_xlabel(labels[i],fontsize=32)
                     if i == 0:
                         ax1.set_ylabel(labels[i],fontsize=32)
+                        if ii != 0:
+                            ax1.set_yticklabels([])  # Hide y-tick labels if not in the leftmost column
+                        if ii != nplots - 1:
+                            ax1.set_xticklabels([])  # Hide x-tick labels if not in the bottom row
 
 
             else:
@@ -178,14 +184,15 @@ class Contour:
 
                 mx=np.median(xxx)
                 my=np.median(yyy)
-                if jj != nplots-1:
+                if jj != nplots - 1:
                     ax.set_xticklabels([])
                 else:
-                    ax.set_xlabel(labels[i],fontsize=32)
+                    ax.set_xlabel(labels[i], fontsize=32)
+
                 if ii == 0:
-                    ax.set_ylabel(labels[j],fontsize=32)
+                    ax.set_ylabel(labels[j], fontsize=32)
                 else:
-                    ax.set_yticklabels([])
+                    ax.set_yticklabels([]) 
                 corner.hist2d(xxx,yyy,ax=ax,plot_datapoints=False,plot_density=False,levels=(0.393,0.675,0.865),smooth=(smo,smo),bins=(nbins,nbins),no_fill_contours=True)
                 if coloured == True:
                     ax.errorbar(mx,my,fmt='D',color='darkorange')
@@ -198,6 +205,11 @@ class Contour:
                 ax.tick_params(which='major',length=5,labelsize=22,width=2,direction='in',right=True,top=True,pad=pad)
                 ax.tick_params(which='minor',length=2.5,labelsize=10,width=1.5,direction='in',right=True,top=True,pad=pad)
                 ax.minorticks_on()
+
+        for ax in fig.get_axes():
+            ax.yaxis.set_major_locator(MaxNLocator(2))
+            ax.xaxis.set_major_locator(MaxNLocator(2))
+
         if title is not None and error_on_top == True:
             top=0.9
         else:

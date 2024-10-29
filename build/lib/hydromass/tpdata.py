@@ -659,10 +659,10 @@ class WLData:
     :param cosmo: Astropy cosmology object including the cosmology definition
     :type cosmo: astropy.cosmology
     '''
-    def __init__(self, redshift, rin=None, rout=None, gplus=None, err_gplus=None,
+    def __init__(self, redshift, rin=None, rout=None, gplus=None, err_gplus=None, covmat=None,
                  sigmacrit_inv=None, fl=None, cosmo=None):
 
-        if rin is None or rout is None or gplus is None or err_gplus is None:
+        if rin is None or rout is None or gplus is None or covmat is None:
 
             print('Missing input, please provide rin, rout, gplus, and err_gplus')
 
@@ -680,7 +680,9 @@ class WLData:
 
         self.gplus = gplus
 
-        self.err_gplus = err_gplus
+        self.covmat = covmat
+
+        self.err_gplus = np.sqrt(np.diag(covmat))
 
         if cosmo is None:
 
