@@ -74,143 +74,117 @@ class Contour:
     :type y: float
     '''
 
-    def __init__(self, data=np.random.multivariate_normal([5, 2], [[.5, -0.5], [-0.5, 1.5]],10000), labels=['A','B'],toplot=[0,1],outname='test.pdf',nbins=20,smo=1,coloured=True,title=None, verbose=True,error_on_top=True, pad=10, y=1.05):
-        #toplot gives which column to use in plotting
-        #labels gives the labels of each column
-        #data is the array of data as in example above
-        #outname is the name of the file to create
-        #nbins sets the number of bins to use for posterior distributions
-        #smo indicates how to smooth the coloured data points
-        #coloured set indicates whether use colors for data or not
-        #title sets the title of the figure to put boldface on top
-        #verbose spits out some cute sentences
-        #error_on_top puts "variable = value +- error" on top of each plot
-        if verbose == True:
-            if title is not None:
-                print('Producing output corner plot called \"'+outname+'\" and titled: \"'+title+"\"")
+    def __init__(self, data=np.random.multivariate_normal([5, 2], [[.5, -0.5], [-0.5, 1.5]], 10000), labels=['A','B'], toplot=[0,1], outname='test.pdf', nbins=20, smo=1, coloured=True, title=None, verbose=True, error_on_top=True, pad=10, y=1.05):
+        if verbose:
+            if title:
+                print(f'Producing output corner plot called "{outname}" and titled: "{title}"')
             else:
-                print('Producing output corner plot called \"'+outname+'\" and without a title')
-            print('Using %.0f bins' % nbins)
-            print('Using a gaussian smoothing of %.0f' % smo)
-            if coloured == True:
-                print('Colouring beautifully everything')
-            else:
-                print('Without coloring a thing :-( sad')
-        fig = pl.figure(figsize=(14,14))
-        nplots=len(toplot)
-        if data.all() == 0:
-            data=np.random.randn(10000,2)
-            print('creating an example of output in test.pdf')
+                print(f'Producing output corner plot called "{outname}" without a title')
+            print(f'Using {nbins} bins')
+            print(f'Using a Gaussian smoothing of {smo}')
+            print('Colouring beautifully everything' if coloured else 'Without coloring a thing :-( sad')
 
-        fsize=20
-        if nplots == 2:
-            fsize=32
-        if nplots == 3:
-            fsize=15
-        if nplots == 4:
-            fsize=12
-        if nplots == 5:
-            fsize=10
-        if nplots == 6:
-            fsize=9
-        if nplots >= 7:
-            fsize=8
+        fig = pl.figure(figsize=(14, 14))
+        nplots = len(toplot)
+        fsize = max(8, 32 - 3 * (nplots - 2))
+
+        if data.all() == 0:
+            data = np.random.randn(10000, 2)
+            print('Creating an example of output in test.pdf')
 
         for ii in range(nplots):
-          for jj in range(ii, nplots):
-            i=toplot[ii]
-            j=toplot[jj]
-            if i == j:
-                    ax1 = fig.add_subplot(nplots,nplots,1+(nplots+1)*ii)
-                    xxx=data[:,i]
-                    yy,xxt=np.histogram(xxx, bins=nbins, density=True)
-                    xx=(xxt[0:len(yy)]+xxt[1:len(yy)+1])/2.
-                    ax1.plot(xx, yy, color='k',linewidth=2)
-                    #ax1.hist(xxx,normed=True,bins=nbins,histtype='step',color='k',linewidth=2)
-                    if ii != 0:	ax1.set_yticklabels([])
-                    if ii != nplots-1:	ax1.set_xticklabels([])
-                    lo, me ,hi = np.percentile(xxx, [16,50,84],axis=0)
-                    if error_on_top == True:
-                        order_mag=int(np.log10(abs(me)))
-                        if order_mag == 0:
-                            ax1.set_title(labels[i]+'=%.2f $\pm$ %.2f' % (me,(hi-lo)/2),fontsize=fsize, y=y)
-                        else:
-                            ax1.set_title(labels[i]+'=(%.2f $\pm$ %.2f)$ \cdot 10^{%d}$' % (me*10**(-order_mag),(hi-lo)/2*10**(-order_mag),order_mag),fontsize=fsize, y=y)
+            for jj in range(ii, nplots):
+                i = toplot[ii]
+                j = toplot[jj]
 
-                    xxi=np.linspace(lo,hi,100)
-                    yyi=Interp(xx,yy,xxi)
-                    mi,ma=np.percentile(xxx, [1,99],axis=0)
-                    maxd=Interp(xx,yy,me)
-                    #ax1.axvline(me, color='k', linestyle='-')
+                if i == j:  # Diagonal plot
+                    ax1 = fig.add_subplot(nplots, nplots, 1 + (nplots + 1) * ii)
+                    xxx = data[:, i]
+                    yy, xxt = np.histogram(xxx, bins=nbins, density=True)
+                    xx = (xxt[:-1] + xxt[1:]) / 2.
+                    ax1.plot(xx, yy, color='k', linewidth=2)
+
+                    if ii != 0:
+                        ax1.set_yticklabels([])
+                    if ii != nplots - 1:
+                        ax1.set_xticklabels([])
+
+                    lo, me, hi = np.percentile(xxx, [16, 50, 84], axis=0)
+                    if error_on_top:
+                        order_mag = int(np.log10(abs(me)))
+                        if order_mag == 0:
+                            ax1.set_title(f'{labels[i]}={me:.2f} ± {(hi-lo)/2:.2f}', fontsize=fsize, y=y)
+                        else:
+                            ax1.set_title(f'{labels[i]}=({me*10**(-order_mag):.2f} ± {(hi-lo)/2*10**(-order_mag):.2f}) × 10^{order_mag}', fontsize=fsize, y=y)
+
+                    xxi = np.linspace(lo, hi, 100)
+                    yyi = Interp(xx, yy, xxi)
+                    mi, ma = np.percentile(xxx, [1, 99], axis=0)
+                    maxd = Interp(xx, yy, me)
+
                     ax1.vlines(x=me, ymin=0, ymax=maxd, color='k', linewidth=2)
-                    if coloured == True:
-                        ax1.fill_between(xxi,0,yyi,color='cornflowerblue',alpha=0.7,hatch='//')
-                    ax1.set_xlim([mi,ma])
-                    ax1.set_ylim([0,np.max(yy)*1.1])
-                    ax1.tick_params(which='major',length=4,labelsize=22,width=2,direction='in',right=True,top=True,pad=pad)
-                    ax1.tick_params(which='minor',length=2,labelsize=10,width=1.5,direction='in',right=True,top=True,pad=pad)
+                    if coloured:
+                        ax1.fill_between(xxi, 0, yyi, color='cornflowerblue', alpha=0.7, hatch='//')        
+
+                    ax1.set_xlim([mi, ma])
+                    ax1.set_ylim([0, max(yy) * 1.1])
                     ax1.xaxis.set_major_locator(MaxNLocator(2))
                     ax1.yaxis.set_major_locator(MaxNLocator(2))
-                    ax1.tick_params(which='major',length=5,labelsize=22,width=2,direction='in',right=True,top=True,pad=pad)
-                    ax1.tick_params(which='minor',length=2.5,labelsize=10,width=1.5,direction='in',right=True,top=True,pad=pad)
+                    ax1.tick_params(which='both', length=5, labelsize=22, width=2, direction='in', pad=pad)
                     ax1.minorticks_on()
-                    if j == toplot[-1]:
-                        ax1.set_xlabel(labels[i],fontsize=32)
-                    if i == 0:
-                        ax1.set_ylabel(labels[i],fontsize=32)
 
+                else:  # Off-diagonal plot
+                    xxx = data[:, i]
+                    yyy = data[:, j]
+                    if coloured:
+                        H, X, Y = np.histogram2d(xxx.flatten(), yyy.flatten(), bins=20)
+                        ax = fig.add_subplot(nplots, nplots, ii + 1 + nplots * jj, xlim=X[[0, -1]], ylim=Y[[0, -1]])
+                        Hs = gaussian_filter(H, 2)
+                        Z = Hs.max() - Hs.T
+                        im = mpl.image.NonUniformImage(ax, interpolation='bilinear', cmap=light_jet)
+                        xcenters = (X[:-1] + X[1:]) / 2
+                        ycenters = (Y[:-1] + Y[1:]) / 2
+                        im.set_data(xcenters, ycenters, Z)
+                        ax.add_artist(im)
+                    else:
+                        ax = fig.add_subplot(nplots, nplots, ii + 1 + nplots * jj)
 
-            else:
-                xxx=data[:,i]
-                yyy=data[:,j]
-                if coloured == True:
-                    H, X, Y = np.histogram2d(xxx.flatten(), yyy.flatten(), bins=20,  weights=None)
-                    ax = fig.add_subplot(nplots,nplots,ii+1+nplots*jj, xlim=X[[0, -1]], ylim=Y[[0, -1]])
-                    Hs = gaussian_filter(H, 2)
-                    Z=Hs.max() - Hs.T
-                    im = mpl.image.NonUniformImage(ax, interpolation='bilinear',cmap=light_jet)
-                    xcenters = (X[:-1] + X[1:]) / 2
-                    ycenters = (Y[:-1] + Y[1:]) / 2
-                    im.set_data(xcenters, ycenters, Z)
-                    ax.add_artist(im)
-                else:
-                    ax=fig.add_subplot(nplots,nplots,ii+1+nplots*jj)
+                    mx = np.median(xxx)
+                    my = np.median(yyy)
 
-                mx=np.median(xxx)
-                my=np.median(yyy)
-                if jj != nplots-1:
-                    ax.set_xticklabels([])
-                else:
-                    ax.set_xlabel(labels[i],fontsize=32)
-                if ii == 0:
-                    ax.set_ylabel(labels[j],fontsize=32)
-                else:
-                    ax.set_yticklabels([])
-                corner.hist2d(xxx,yyy,ax=ax,plot_datapoints=False,plot_density=False,levels=(0.393,0.675,0.865),smooth=(smo,smo),bins=(nbins,nbins),no_fill_contours=True)
-                if coloured == True:
-                    ax.errorbar(mx,my,fmt='D',color='darkorange')
-                mi,ma=np.percentile(xxx, [1,99],axis=0)
-                ax.set_xlim([mi,ma])
-                mi2,ma2=np.percentile(yyy, [1,99],axis=0)
-                ax.set_ylim([mi2,ma2])
-                ax.xaxis.set_major_locator(MaxNLocator(2))
-                ax.yaxis.set_major_locator(MaxNLocator(2))
-                ax.tick_params(which='major',length=5,labelsize=22,width=2,direction='in',right=True,top=True,pad=pad)
-                ax.tick_params(which='minor',length=2.5,labelsize=10,width=1.5,direction='in',right=True,top=True,pad=pad)
-                ax.minorticks_on()
-        if title is not None and error_on_top == True:
-            top=0.9
-        else:
-            if error_on_top == True:
-                top=0.95
-            else:
-                if title == '':
-                    top=0.99
-                else:
-                    top=0.95
-        pl.subplots_adjust(left=0.11, bottom=0.08, right=0.96, top=top,wspace=0.05, hspace=0.05)
-        pl.suptitle(title, fontsize=16,fontweight='bold')
+                    # Set labels only on leftmost edge and bottom row
+                    if jj != nplots - 1:
+                        ax.set_xticklabels([])
+                    else:
+                        ax.set_xlabel(labels[i], fontsize=32)
 
+                    if ii == 0:
+                        ax.set_ylabel(labels[j], fontsize=32)
+                    else:
+                        ax.set_yticklabels([])
+
+                    corner.hist2d(xxx, yyy, ax=ax, plot_datapoints=False, plot_density=False, levels=(0.393, 0.675, 0.865), smooth=(smo, smo), bins=(nbins, nbins), no_fill_contours=True)
+                    if coloured:
+                        ax.errorbar(mx, my, fmt='D', color='darkorange')
+
+                    mi, ma = np.percentile(xxx, [1, 99], axis=0)
+                    ax.set_xlim([mi, ma])
+                    mi2, ma2 = np.percentile(yyy, [1, 99], axis=0)
+                    ax.set_ylim([mi2, ma2])
+                    ax.xaxis.set_major_locator(MaxNLocator(2))
+                    ax.yaxis.set_major_locator(MaxNLocator(2))
+                    ax.tick_params(which='both', length=5, labelsize=22, width=2, direction='in', pad=pad)
+                    ax.minorticks_on()
+                    if ii == 0:
+                        ax.set_ylabel(labels[j], fontsize=32)
+                    else:
+                        ax.set_yticklabels([])
+
+        
+        # Adjust layout and save figure
+        top_margin = 0.9 if title and error_on_top else 0.95 if error_on_top else 0.99
+        pl.subplots_adjust(left=0.11, bottom=0.08, right=0.96, top=top_margin, wspace=0.05, hspace=0.05)
+        pl.suptitle(title, fontsize=16, fontweight='bold')
         fig.savefig(outname)
 
 

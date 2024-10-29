@@ -152,7 +152,7 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     return rout, mbar_ov
 
 
-def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000., thin=10):
+def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000., thin=10, r3D=True):
     '''
     For a given input overdensity Delta, compute R_delta, M_delta, Mgas_delta, fgas_delta and their uncertainties from a loaded mass model reconstruction
 
@@ -178,6 +178,15 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000., thin
 
     nsamp = int(len(Mhyd.samppar) / thin)
 
+    if np.isscalar(Mhyd.elong):
+        elong_thin = np.ones(nsamp)
+    else:
+        elong_thin = Mhyd.elong[::thin]
+    
+    # Apply elongation adjustment to initial `r0`
+    #if r3D:
+    #    r0 *= elong_thin ** (1. / 3.) 
+
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
@@ -199,6 +208,21 @@ def calc_rdelta_mdelta(delta, Mhyd, model, plot=False, r0=500., rmax=4000., thin
         res = minimize(temp_func, r0, method='Nelder-Mead')
 
         rdelta[i] = res['x'][0]
+
+        if r3D:
+            rdelta[i] *= elong_thin[i] ** (1. / 3.) 
+
+#        if np.isscalar(Mhyd.elong):
+
+#            elong_thin = Mhyd.elong  
+
+#        else:
+
+#            elong_thin = Mhyd.elong[::thin] 
+
+#        if r3D:
+
+#            rdelta *= (elong_thin ** (1. / 3.))   # Correct for elongation to obtain averaged radius 
 
         mdelta[i] = 4. / 3. * np.pi * rdelta[i] ** 3 * cgskpc ** 3 * delta * Mhyd.cosmo.critical_density(Mhyd.redshift).value / Msun
 

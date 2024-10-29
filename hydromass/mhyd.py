@@ -291,14 +291,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         if model.massmod not in ['NFW'] and pnt_model in ['Angelinelli']:
 
             print('Angelinelli non-thermal pressure correction is currently implemented only for NFW, reverting to thermal only')
-            print('toto')
+
             pnt = False
 
         else:
 
-            file_means = get_data_file_path('pnt_mean.dat')
+            file_means = get_data_file_path('pnt_mean_log.dat')
 
-            file_cov = get_data_file_path('pnt_covmat.dat')
+            file_cov = get_data_file_path('pnt_covmat_log.dat')
 
             pnt_mean = np.loadtxt(file_means).astype(np.float32)
 
@@ -316,7 +316,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 lim = model.limits[i]
 
-                modpar = pm.TruncatedNormal(name, mu=model.start[i], sigma=model.sd[i], lower=lim[0], upper=lim[1]) #
+                if model.massmod == 'EIN3':
+
+                    print('using truncated normal priors')
+                    modpar = pm.TruncatedNormal(name, mu=model.start[i], sigma=model.sd[i], lower=lim[0], upper=lim[1])
+
+                else:
+                    print('using uniform priors')
+                    modpar = pm.Uniform(name, lower=lim[0], upper=lim[1])
+
 
             else:
 
@@ -366,15 +374,32 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                                        upper=np.log(P0_est) + err_P0_est / P0_est)
 
             if pnt :
+
                 if pnt_model=='Angelinelli':
 
                     pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
 
+                    #a2 = pnt_pars[0, 2]
+
+                    #pm.Potential("bound", tt.switch(a2 > 0, 0, -np.inf))
+
+                    #pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean[:2], cov=pnt_cov[:2, :2], shape=(2,))
+                    #a0 = pnt_pars[0, 0]
+                    #a1 = pnt_pars[0, 1]
+                    #a2 = pm.math.exp(pnt_pars[0, 2])
+
+                    # Log-normal prior for a2
+                    #mu_a2 = np.log(7.25e-2)
+                    #sigma_a2 = np.sqrt(3.44e-3)
+                    #a2 = pm.Lognormal('a2', mu=mu_a2, sigma=sigma_a2)
+
+                    #pnt_pars = tt.stack([a0, a1, a2], axis=0).reshape((1, 3))
+
                 if pnt_model=='Ettori':
 
-                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13)
+                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13) #0.13
 
-                    logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2)
+                    logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2.) #-2
 
                     pnt_pars = [beta_nt, logp0_nt]
 
@@ -491,6 +516,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
                 elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
                     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
                     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
@@ -519,7 +545,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             gmodel_elong = elongation * gmodel
 
-            g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
+
+            #g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
+
+            g_obs = pm.MvNormal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, cov=WLdata.covmat)
 
     tinit = time.time()
 
@@ -629,9 +658,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 elong_mat = np.tile(elong, nbin).reshape(nbin,nsamp)
 
-                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat ** 0.5
+                allsb = np.dot(Ksb, np.exp(samples.T)) * elong_mat #** 0.5
 
-                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat ** 0.5
+                allsb_conv = np.dot(K, np.exp(samples.T)) * elong_mat #** 0.5
 
             else:
 
@@ -663,8 +692,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     Mhyd.wlonly = wlonly
     Mhyd.mstar = mstar
     Mhyd.pnt = pnt
+
     if pnt and not wlonly:
+
         if pnt_model == 'Angelinelli':
+
             Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
 
             Mhyd.pnt_model = 'Angelinelli'
@@ -724,6 +756,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Ksb = Ksb
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
+    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
@@ -1035,6 +1068,7 @@ class Mhyd:
         :param use_jax: Use JAX optimization when sampling using the numpyro NUTS implementation. Defaults to True
         :type use_jax: bool
         '''
+
         if model is None:
 
             print('Error: No mass model provided')

@@ -351,9 +351,9 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
             elong_mat = np.tile(Mhyd.elong, Mhyd.sbprof.nbin).reshape(Mhyd.sbprof.nbin,nsamp)
 
-            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
+            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat #** 0.5
 
-            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T)) * elong_mat ** 0.5
+            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T)) * elong_mat #** 0.5
 
         else:
 

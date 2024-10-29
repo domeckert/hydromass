@@ -386,7 +386,7 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
         return dict
 
-def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3):
+def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3): 
     """
     Compute best-fitting profiles and error envelopes from fitted data
 
