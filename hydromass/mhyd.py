@@ -334,6 +334,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         pmod = pm.math.stack(allpmod, axis=0)
 
+        if fit_elong:
+            # Prior on the line-of-sight elongation parameter
+            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
+
+        else:
+            elongation = 1
+
         if not wlonly:
             # Priors for unknown model parameters
             coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
@@ -408,7 +415,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             press00 = np.exp(logp0)
 
-            dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
+            if fit_elong and not fit_bkg:
+
+                Kdens_t = calc_density_operator_pm(rref_m / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc)
+
+                dens_m = pm.math.sqrt(pm.math.dot(Kdens_t, al) / cf * transf)  # electron density in cm-3
+
+            else:
+
+                dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
             # Evaluate mass model
             mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
@@ -458,14 +473,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             else:
 
                 pth = press_out
-
-        if fit_elong:
-            # Prior on the line-of-sight elongation parameter
-            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
-
-        else:
-            elongation = 1
-
 
         if not wlonly:
             # Density Likelihood
@@ -521,7 +528,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
 
-                    proj_vol = deproj.deproj_vol().T
+                    proj_vol = deproj.deproj_vol().T * elongation # accounting for LOS stretching; volume scales as elongation
 
                     area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
 
@@ -544,7 +551,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
             gmodel_elong = elongation * gmodel
-
 
             #g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
 

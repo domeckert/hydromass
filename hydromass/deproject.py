@@ -323,6 +323,45 @@ def calc_density_operator(rad, pars, kpcp, withbkg=True):
 
     return Ktot
 
+def calc_density_operator_pm(rad, pars, elong, kpcp):
+    """
+    Compute linear operator to transform a parameter vector into a gas density profile
+
+    .. math::
+
+        n_e(r) = \\sum_{i=1}^P \\alpha_i f_i(r)
+
+    with :math:`\\alpha_i` the parameter values and :math:`f_i(r)` the profiles of each basis function, i.e. the indices of the output matrix
+
+    :param rad: Array of input radii in arcmin
+    :type rad: numpy.ndarray
+    :param pars: List of beta model parameters obtained through :func:`hydromass.deproject.list_params_density`
+    :type pars: numpy.ndarray
+    :param kpcp: Kiloparsec equivalent of 1 arcmin at the redshift of the source
+    :type kpcp: float
+    :param withbkg: Set whether the background is fitted jointly (True) or subtracted (False). Defaults to True.
+    :type withbkg: bool
+    :return: Linear operator for gas density
+    :rtype: numpy.ndarray
+    """
+    # Select values in the source region
+    rfit = rad * kpcp
+    npt = len(rfit)
+    npars = len(pars[:, 0])
+
+    # Compute linear combination of basis functions in the source region
+    beta = np.repeat(pars[:, 0], npt).reshape(npars, npt)
+    rc = np.repeat(pars[:, 1], npt).reshape(npars, npt) * elong ** (1/3)
+    base = 1. + (rfit / rc) ** 2
+    expon = -3. * beta
+    func_base = base ** expon
+    cfact = gamma(3 * beta) / gamma(3 * beta - 0.5) / np.sqrt(np.pi) / rc
+    fng = func_base * cfact
+
+    Ktot = fng.T
+
+    return Ktot
+
 # Function to compute d(log n)/d(log r)
 def calc_grad_operator(rad, pars, kpcp, withbkg=True):
     '''
