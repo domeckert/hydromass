@@ -5,7 +5,7 @@ from .deproject import MyDeprojVol
 from .functions import rho_nfw_cr
 
 
-def rho_to_sigma(radii_bins, rho, elong):
+def rho_to_sigma(radii_bins, rho):
     """
     This function computes the projected mass density sigma given a density profile rho (pymc version)
 
@@ -23,7 +23,7 @@ def rho_to_sigma(radii_bins, rho, elong):
     sigma = pm.math.dot(proj_vol, rho) / area_proj
     return sigma * 1e12  # to get result in M_sun * Mpc**-2
 
-def rho_to_sigma_np(radii_bins, rho, elong):
+def rho_to_sigma_np(radii_bins, rho):
     """
     Computes the projected mass density sigma given a density profile rho (numpy version)
 

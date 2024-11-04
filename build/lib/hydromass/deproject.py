@@ -3,6 +3,7 @@ from scipy.special import gamma
 from .constants import *
 from astropy.io import fits
 import time
+import pymc as pm
 
 # Function to calculate a linear operator transforming parameter vector into predicted model counts
 
@@ -323,6 +324,45 @@ def calc_density_operator(rad, pars, kpcp, withbkg=True):
 
     return Ktot
 
+def calc_density_operator_pm(rad, pars, elong, kpcp):
+    """
+    Compute linear operator to transform a parameter vector into a gas density profile
+
+    .. math::
+
+        n_e(r) = \\sum_{i=1}^P \\alpha_i f_i(r)
+
+    with :math:`\\alpha_i` the parameter values and :math:`f_i(r)` the profiles of each basis function, i.e. the indices of the output matrix
+
+    :param rad: Array of input radii in arcmin
+    :type rad: numpy.ndarray
+    :param pars: List of beta model parameters obtained through :func:`hydromass.deproject.list_params_density`
+    :type pars: numpy.ndarray
+    :param kpcp: Kiloparsec equivalent of 1 arcmin at the redshift of the source
+    :type kpcp: float
+    :param withbkg: Set whether the background is fitted jointly (True) or subtracted (False). Defaults to True.
+    :type withbkg: bool
+    :return: Linear operator for gas density
+    :rtype: numpy.ndarray
+    """
+    # Select values in the source region
+    rfit = rad * kpcp
+    npt = len(rfit)
+    npars = len(pars[:, 0])
+
+    # Compute linear combination of basis functions in the source region
+    beta = np.repeat(pars[:, 0], npt).reshape(npars, npt)
+    rc = np.repeat(pars[:, 1], npt).reshape(npars, npt) * elong ** (1/3)
+    base = 1. + (rfit / rc) ** 2
+    expon = -3. * beta
+    func_base = base ** expon
+    cfact = gamma(3 * beta) / gamma(3 * beta - 0.5) / np.sqrt(np.pi) / rc
+    fng = func_base * cfact
+
+    Ktot = fng.T
+
+    return Ktot
+
 # Function to compute d(log n)/d(log r)
 def calc_grad_operator(rad, pars, kpcp, withbkg=True):
     '''
@@ -372,6 +412,89 @@ def calc_grad_operator(rad, pars, kpcp, withbkg=True):
         Ktot = grad.T
 
     return Ktot
+
+
+def elongation_correction_np(profile_values, r_values, elongation):
+    """
+    Apply elongation correction to a given profile using rin, rout, and elongation factor.
+    
+    Parameters:
+    - profile_values: array-like, profile values to correct (e.g., y profile or shear profile).
+    - r_values: tensor-like, radius values.
+    - elongation: float, elongation factor to apply.
+    
+    Returns:
+    - corrected_profile: array-like, profile values after elongation correction.
+    """    
+    # Calculate log-gradient of profile
+    def log_gradient(values, r_values):
+        # Logarithmic gradient between consecutive points
+        log_gradients = np.array((np.log(values[1:]) - np.log(values[:-1])) / (np.log(r_values[1:]) - np.log(r_values[:-1])))
+        # Average left and right gradients at each point
+        return 0.5 * (np.concatenate(([log_gradients[0]], log_gradients)) + np.concatenate((log_gradients, [log_gradients[-1]])))
+
+    log_gradients = log_gradient(profile_values, r_values)
+
+    # Apply elongation correction (linear expension)
+    corrected_profile = profile_values * elongation * (1 + log_gradients * (elongation ** (1/3) - 1)) 
+    
+    return corrected_profile
+
+
+import pymc as pm
+import numpy as np
+
+def elongation_correction(profile_values, r_values, ev, elongation):
+    """
+    Apply elongation correction to a given profile using rin, rout, and elongation factor.
+
+    Parameters:
+    - profile_values: tensor-like, profile values to correct (e.g., y profile or shear profile).
+    - r_values: tensor-like, radius values.
+    - ev: int or array-like of int, indices of the points to correct.
+    - elongation: scalar, elongation factor to apply.
+
+    Returns:
+    - corrected_profile: tensor-like, profile values after elongation correction.
+    """
+    # If elongation is 1, skip correction and return original values
+    if elongation == 1:
+        return profile_values[ev]
+
+    elongation_term = elongation ** (1/3) - 1
+
+    # Ensure ev is an array of integers
+    if isinstance(ev, int):
+        ev = np.array([ev])
+    elif isinstance(ev, (list, tuple)):
+        ev = np.array(ev)
+
+    # Slice neighboring points for all indices in ev
+    left_values = profile_values[ev - 1]
+    right_values = profile_values[ev + 1]
+    center_values = profile_values[ev]
+
+    left_r = r_values[ev - 1]
+    right_r = r_values[ev + 1]
+    center_r = r_values[ev]
+
+    # Compute left and right gradients 
+    left_gradient = (pm.math.log(center_values) - pm.math.log(left_values)) / (pm.math.log(center_r) - pm.math.log(left_r))
+    right_gradient = (pm.math.log(right_values) - pm.math.log(center_values)) / (pm.math.log(right_r) - pm.math.log(center_r))
+
+    # Average the gradients
+    log_gradient = 0.5 * (left_gradient + right_gradient)
+
+    # Apply elongation correction
+    corrected_profile = center_values * elongation * (1 + log_gradient * elongation_term)
+    
+    return corrected_profile
+
+
+
+
+
+
 
 
 class MyDeprojVol:

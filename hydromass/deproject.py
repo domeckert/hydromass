@@ -3,6 +3,7 @@ from scipy.special import gamma
 from .constants import *
 from astropy.io import fits
 import time
+import pymc as pm
 
 # Function to calculate a linear operator transforming parameter vector into predicted model counts
 
@@ -411,6 +412,100 @@ def calc_grad_operator(rad, pars, kpcp, withbkg=True):
         Ktot = grad.T
 
     return Ktot
+
+
+def elongation_correction(profile_values, r_values, ev, elongation):
+    """
+    Apply elongation correction to a given profile using rin, rout, and elongation factor.
+
+    Parameters:
+    - profile_values: tensor-like, profile values to correct (e.g., y profile or shear profile).
+    - r_values: tensor-like, radius values.
+    - ev: int or array-like of int, indices of the points to correct.
+    - elongation: scalar, elongation factor to apply.
+
+    Returns:
+    - corrected_profile: tensor-like, profile values after elongation correction.
+    """
+    # If elongation is 1, skip correction and return original values
+    if elongation == 1:
+        return profile_values[ev]
+
+    elongation_term = elongation ** (1/3) - 1
+
+    # Ensure ev is an array of integers
+    if isinstance(ev, int):
+        ev = np.array([ev])
+    elif isinstance(ev, (list, tuple)):
+        ev = np.array(ev)
+
+    # Slice neighboring points for all indices in ev
+    left_values = profile_values[ev - 1]
+    right_values = profile_values[ev + 1]
+    center_values = profile_values[ev]
+
+    left_r = r_values[ev - 1]
+    right_r = r_values[ev + 1]
+    center_r = r_values[ev]
+
+    # Compute left and right gradients 
+    left_gradient = (pm.math.log(center_values) - pm.math.log(left_values)) / (pm.math.log(center_r) - pm.math.log(left_r))
+    right_gradient = (pm.math.log(right_values) - pm.math.log(center_values)) / (pm.math.log(right_r) - pm.math.log(center_r))
+
+    # Average the gradients
+    log_gradient = 0.5 * (left_gradient + right_gradient)
+
+    # Apply elongation correction
+    corrected_profile = center_values * elongation * (1 + log_gradient * elongation_term)
+    
+    return corrected_profile
+
+
+def elongation_correction_np(profile_values, r_values, ev, elongation):
+    """
+    Apply elongation correction to a given profile using rin, rout, and elongation factor.
+
+    Parameters:
+    - profile_values: numpy.ndarray, profile values to correct (e.g., y profile or shear profile).
+    - r_values: numpy.ndarray, radius values.
+    - ev: int or array-like of int, indices of the points to correct.
+    - elongation: float, elongation factor to apply.
+
+    Returns:
+    - corrected_profile: numpy.ndarray, profile values after elongation correction.
+    """
+    # If elongation is 1, skip correction and return original values
+    if elongation == 1:
+        return profile_values[ev]
+
+    elongation_term = elongation ** (1/3) - 1
+
+    # Ensure ev is an array of integers
+    if isinstance(ev, int):
+        ev = np.array([ev])
+    elif isinstance(ev, (list, tuple)):
+        ev = np.array(ev)
+
+    # Slice neighboring points for all indices in ev
+    left_values = profile_values[ev - 1]
+    right_values = profile_values[ev + 1]
+    center_values = profile_values[ev]
+
+    left_r = r_values[ev - 1]
+    right_r = r_values[ev + 1]
+    center_r = r_values[ev]
+
+    # Compute left and right gradients
+    left_gradient = (np.log(center_values) - np.log(left_values)) / (np.log(center_r) - np.log(left_r))
+    right_gradient = (np.log(right_values) - np.log(center_values)) / (np.log(right_r) - np.log(center_r))
+
+    # Average the gradients
+    log_gradient = 0.5 * (left_gradient + right_gradient)
+
+    # Apply elongation correction
+    corrected_profile = center_values * elongation * (1 + log_gradient * elongation_term)
+    
+    return corrected_profile
 
 
 class MyDeprojVol:

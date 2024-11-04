@@ -334,6 +334,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         pmod = pm.math.stack(allpmod, axis=0)
 
+        if fit_elong:
+            # Prior on the line-of-sight elongation parameter
+            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
+
+        else:
+            elongation = 1
+
         if not wlonly:
             # Priors for unknown model parameters
             coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
@@ -408,7 +415,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             press00 = np.exp(logp0)
 
-            dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
+            if fit_elong and not fit_bkg:
+
+                Kdens_t = calc_density_operator_pm(rref_m / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc)
+
+                dens_m = pm.math.sqrt(pm.math.dot(Kdens_t, al) / cf * transf)  # electron density in cm-3
+
+            else:
+
+                dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
             # Evaluate mass model
             mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
@@ -459,14 +474,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 pth = press_out
 
-        if fit_elong:
-            # Prior on the line-of-sight elongation parameter
-            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
-
-        else:
-            elongation = 1
-
-
         if not wlonly:
             # Density Likelihood
             if fit_bkg:
@@ -475,7 +482,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                sbmod = pred * elongation #** 0.5
+                sbmod = pred * elongation
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
@@ -511,7 +518,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
-                    pfit = pth[index_sz] * elongation
+                    pfit = pth[index_sz] 
 
                     P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
@@ -521,7 +528,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
 
-                    proj_vol = deproj.deproj_vol().T
+                    proj_vol = deproj.deproj_vol().T # * elongation # accounting for LOS stretching; volume scales as elongation
 
                     area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
 
@@ -529,7 +536,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = y_num[index_sz] * elongation
+                    yfit = elongation_correction(y_num, (rin_cm + rout_cm)/2, index_sz, elongation).flatten()
 
                     if Mhyd.sz_data.psfmat is not None:
 
@@ -543,12 +550,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
-            gmodel_elong = elongation * gmodel
+            # gmodel_elong = elongation * gmodel
 
+            gmodel_elong = elongation_correction(gmodel, rm, ev, elongation).flatten()
 
-            #g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
-
-            g_obs = pm.MvNormal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, cov=WLdata.covmat)
+            g_obs = pm.MvNormal('WL', mu=gmodel_elong, observed=WLdata.gplus, cov=WLdata.covmat)
 
     tinit = time.time()
 
@@ -756,7 +762,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Ksb = Ksb
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
-    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
