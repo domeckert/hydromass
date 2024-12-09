@@ -413,7 +413,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             #for RV in hydro_model.basic_RVs:
             #    print(RV.name, RV.logp(hydro_model.test_point))
 
-            press00 = np.exp(logp0)
+            press00 = pm.math.exp(logp0)
 
             if fit_elong and not fit_bkg:
 
@@ -526,17 +526,33 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
-                    deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+                    nout = 2 * nmore
 
-                    proj_vol = deproj.deproj_vol().T * elongation # accounting for LOS stretching; volume scales as elongation
+                    rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+                    rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
 
-                    area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+                    rref_m_p = (rin_m_p + rout_m_p) / 2.
 
-                    integ = pm.math.dot(proj_vol, pth) / area_proj
+                    slope = (pm.math.log(pth[ntm - 1]) - pm.math.log(pth[ntm - nout])) / (
+                                pm.math.log(rref_m[ntm - 1]) - pm.math.log(rref_m[ntm - nout]))
+
+                    rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
+
+                    pth_out = pth[ntm - 1] * (rref_m_p[ntm:] / rref_m[ntm-1]) ** slope
+
+                    pth_p = pm.math.concatenate([pth, pth_out], axis = 0)
+
+                    deproj = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
+
+                    proj_vol = deproj.deproj_vol().T
+
+                    area_proj = np.pi * (-(rin_cm_p) ** 2 + (rout_cm_p) ** 2)
+
+                    integ = pm.math.dot(proj_vol, pth_p) / area_proj
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = y_num[index_sz] * elongation
+                    yfit = y_num[index_sz] * elongation # accounting for LOS stretching; volume scales as elongation
 
                     if Mhyd.sz_data.psfmat is not None:
 

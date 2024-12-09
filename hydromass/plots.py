@@ -477,6 +477,7 @@ def estimate_T0(Mhyd):
     T0 = p0 / neout
 
     return T0
+
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
     '''
     Compute the model 3D density and pressure profiles from the output NUTS sample on an arbitrary output grid
@@ -667,7 +668,7 @@ def kt_from_samples(Mhyd, model, nmore=5):
     return dict
 
 
-def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
+def P_from_samples(Mhyd, model, nmore=5, return_Y=False, nout=10):
     """
     Compute model pressure profile from an existing mass reconstruction run and evaluate it at the reference SZ radii
 
@@ -680,7 +681,6 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
     """
 
     if Mhyd.sz_data is None:
-
         print('No SZ data provided')
 
         return
@@ -689,28 +689,53 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
 
     dens_m, press_tot, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
+    print(pth.shape)
+
     pmt, plot, phit = np.percentile(pth, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     pmed, plo, phi = pmt[index_sz], plot[index_sz], phit[index_sz]
+
+    nsamp = len(Mhyd.samppar)
 
     if return_Y == True:
 
         rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
-        deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+        rref_m = (rin_m + rout_m) / 2.
 
-        proj_vol = deproj.deproj_vol().T
+        rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+        rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
 
-        area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+        rref_m_p = (rin_m_p + rout_m_p) / 2.
 
-        integ = np.dot(proj_vol, pth) / np.tile(area_proj[:, np.newaxis], (1, len(Mhyd.samppar)))
+        pth_p = np.empty((ntm + nout, nsamp))
 
-        y_num = y_prefactor * integ  # prefactor in cm2/keV
+        pth_p[:ntm, :] = pth
+
+        slope = (np.log10(pth[ntm - 1, :]) - np.log10(pth[ntm - 10, :])) / (
+                    np.log10(rref_m[ntm - 1]) - np.log10(rref_m[ntm - 10]))
+
+        P0 = pth[ntm - 1]
+
+        routmat = np.repeat(rref_m_p[ntm:], nsamp).reshape(nout, nsamp)
+
+        pth_p[ntm:, :] = P0 * (routmat / rref_m[ntm - 1]) ** slope
+
+        rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
+
+        deproj_p = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
+
+        proj_vol_p = deproj_p.deproj_vol().T
+
+        area_proj_p = np.pi * (-(rin_cm_p) ** 2 + (rout_cm_p) ** 2)
+
+        integ_p = np.dot(proj_vol_p, pth_p) / np.tile(area_proj_p[:, np.newaxis], (1, nsamp))
+
+        y_num = y_prefactor * integ_p  # prefactor in cm2/keV
 
         ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
 
         if Mhyd.sz_data.psfmat is not None:
-
             ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
 
         pmed, plo, phi = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)

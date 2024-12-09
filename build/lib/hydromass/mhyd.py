@@ -334,6 +334,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         pmod = pm.math.stack(allpmod, axis=0)
 
+        if fit_elong:
+            # Prior on the line-of-sight elongation parameter
+            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
+
+        else:
+            elongation = 1
+
         if not wlonly:
             # Priors for unknown model parameters
             coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
@@ -406,9 +413,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             #for RV in hydro_model.basic_RVs:
             #    print(RV.name, RV.logp(hydro_model.test_point))
 
-            press00 = np.exp(logp0)
+            press00 = pm.math.exp(logp0)
 
-            dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
+            if fit_elong and not fit_bkg:
+
+                Kdens_t = calc_density_operator_pm(rref_m / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc)
+
+                dens_m = pm.math.sqrt(pm.math.dot(Kdens_t, al) / cf * transf)  # electron density in cm-3
+
+            else:
+
+                dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
             # Evaluate mass model
             mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
@@ -459,14 +474,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 pth = press_out
 
-        if fit_elong:
-            # Prior on the line-of-sight elongation parameter
-            elongation = pm.TruncatedNormal('elong', mu=1.0, sigma=0.2, lower=0.1, upper=10)
-
-        else:
-            elongation = 1
-
-
         if not wlonly:
             # Density Likelihood
             if fit_bkg:
@@ -475,7 +482,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                sbmod = pred * elongation #** 0.5
+                sbmod = pred * elongation
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
@@ -519,17 +526,33 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
 
-                    deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+                    nout = 2 * nmore
+
+                    rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+                    rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
+
+                    rref_m_p = (rin_m_p + rout_m_p) / 2.
+
+                    slope = (pm.math.log(pth[ntm - 1]) - pm.math.log(pth[ntm - nout])) / (
+                                pm.math.log(rref_m[ntm - 1]) - pm.math.log(rref_m[ntm - nout]))
+
+                    rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
+
+                    pth_out = pth[ntm - 1] * (rref_m_p[ntm:] / rref_m[ntm-1]) ** slope
+
+                    pth_p = pm.math.concatenate([pth, pth_out], axis = 0)
+
+                    deproj = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
 
                     proj_vol = deproj.deproj_vol().T
 
-                    area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+                    area_proj = np.pi * (-(rin_cm_p) ** 2 + (rout_cm_p) ** 2)
 
-                    integ = pm.math.dot(proj_vol, pth) / area_proj
+                    integ = pm.math.dot(proj_vol, pth_p) / area_proj
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = y_num[index_sz] * elongation
+                    yfit = y_num[index_sz] * elongation # accounting for LOS stretching; volume scales as elongation
 
                     if Mhyd.sz_data.psfmat is not None:
 
@@ -544,7 +567,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
             gmodel_elong = elongation * gmodel
-
 
             #g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
 

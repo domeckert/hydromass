@@ -473,3 +473,26 @@ class MyDeprojVol:
         volume2=np.copy(volmat)
         return volume2
 
+    def EdgeCorr(self):
+        # edge correction
+
+        rin_cm = self.radin
+        rout_cm = self.radot
+        nbin = len(rin_cm)
+
+        mrad = [rin_cm[nbin - 1], rout_cm[nbin - 1]]
+        edge0 = (mrad[0] + mrad[1]) * mrad[0] * mrad[1] / rout_cm ** 3
+        edge1 = 2. * rout_cm / mrad[1] + np.arccos(rout_cm / mrad[1])
+        edge2 = rout_cm / mrad[1] * np.sqrt(1. - rout_cm ** 2 / mrad[1] ** 2)
+        edget = edge0 * (-1. + 2. / np.pi * (edge1 - edge2))
+        j = np.where(rin_cm != 0)
+        edge0[j] = (mrad[0] + mrad[1]) * mrad[0] * mrad[1] / (rin_cm[j] + rout_cm[j]) / rin_cm[j] / rout_cm[j]
+        edge1[j] = rout_cm[j] / rin_cm[j] * np.arccos(rin_cm[j] / mrad[1]) - np.arccos(rout_cm[j] / mrad[1])
+        edge2[j] = rout_cm[j] / mrad[1] * (
+                np.sqrt(1. - rin_cm[j] ** 2 / mrad[1] ** 2) - np.sqrt(1. - rout_cm[j] ** 2 / mrad[1] ** 2))
+        edget[j] = edge0[j] * (1. - 2. / np.pi * (edge1[j] - edge2[j]) / (rout_cm[j] / rin_cm[j] - 1.))
+        surf = (rout_cm ** 2 - rin_cm ** 2) / (rout_cm[nbin - 1] ** 2 - rin_cm[nbin - 1] ** 2)
+        corr = edget * surf
+        return corr
+
+

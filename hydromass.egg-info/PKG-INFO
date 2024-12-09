@@ -10,11 +10,7 @@ Requires-Dist: scipy
 Requires-Dist: astropy
 Requires-Dist: matplotlib
 Requires-Dist: pymc
-<<<<<<< HEAD
 Requires-Dist: pytensor
-=======
-Requires-Dist: aesara
->>>>>>> fc69d30194144d4c415b37dcde139bcfe9791d74
 Requires-Dist: pyproffit
 Requires-Dist: numpyro
 Requires-Dist: corner
