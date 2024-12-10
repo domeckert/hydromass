@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .deproject import *
 from .constants import *
+from .wl import *
 from .pnt import *
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
@@ -477,6 +478,7 @@ def estimate_T0(Mhyd):
     T0 = p0 / neout
 
     return T0
+
 def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
     '''
     Compute the model 3D density and pressure profiles from the output NUTS sample on an arbitrary output grid
@@ -707,7 +709,13 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
 
         y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-        ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+        # ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+
+        index_sz = np.array(index_sz).flatten()
+
+        # ysz = y_num[index_sz]*Mhyd.elong
+
+        ysz = elongation_correction_np(y_num, (rin_cm + rout_cm)/2, index_sz, Mhyd.elong)
 
         if Mhyd.sz_data.psfmat is not None:
 
@@ -716,6 +724,62 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
         pmed, plo, phi = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     return pmed, plo, phi
+
+
+def g_from_samples(Mhyd, model, n_draw=None, random_state=None):
+    """
+    Computes the tangential shear g+ from an existing mass reconstruction run, accounting for los elongation.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :param n_draw: int, optional, number of random samples to draw from pmod.
+                   If None, all samples are used.
+    :param random_state: int or np.random.Generator, optional, seed for reproducibility.
+    :return:
+        gplus_all: 2D array of tangential shear, shape (M, n_draw), where M = len(rm), n_draw = selected parameter sets
+        rm: array-like, mean radii for the numerical integration
+        ev: array-like, indices for the evaluation of the mass profile
+    """
+    WLdata = Mhyd.wl_data
+
+    pmod = Mhyd.samppar
+
+    elong = Mhyd.elong
+
+    radplus, rm, ev = get_radplus(WLdata.radii_wl)
+    
+    # Ensure pmod is 2D for consistency
+    pmod = np.atleast_2d(pmod)  # Converts 1D array to 2D if needed
+    n_samples = pmod.shape[0]
+    
+    # Select samples if n_draw is specified
+    if n_draw is not None and n_draw < n_samples:
+        rng = np.random.default_rng(random_state)
+        indices = rng.choice(n_samples, n_draw, replace=False)
+        pmod = pmod[indices]
+        n_samples = pmod.shape[0]
+    
+    # Initialize the result array
+    gplus_all = np.zeros((len(rm), n_samples))
+    
+    # Loop over all parameter sets
+    for i in tqdm(range(n_samples)):
+        rho_out = model.rho_np(radplus, *pmod[i]) * WLdata.rho_crit
+        sig = rho_to_sigma_np(radplus, rho_out)
+        _, dsigma = dsigma_trap_np(sig, radplus)
+        gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
+        
+        # Extract values at the evaluation radii
+        gplus_all[:, i] = gplus
+
+    if np.isscalar(elong) and elong == 1:
+        gplus_elong = gplus_all[np.arange(len(rm)-2)+1]
+    else:
+        elong = elong[indices]
+        gplus_elong = elongation_correction_np(gplus_all, rm, np.arange(len(rm)-2)+1, elong)    
+    return gplus_elong, rm[np.arange(len(rm)-2)+1], ev
 
 
 def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):

@@ -24,6 +24,7 @@ else:
     import pymc.sampling.jax as pmjax
 
 import pymc as pm
+import aesara.tensor as at
 from .save import *
 from .wl import WLmodel
 import arviz as az
@@ -448,8 +449,69 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             # Pressure gradient
             dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
 
-            press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
+            if fit_elong:
 
+                r_0s = np.max(rout_m)
+                r_0p = r_0s / elongation.eval() ** (1. / 3.)
+                # r_0m = np.array([(r_0s + r_0p) / 2.])
+                # mass_0m = Mhyd.mfact * model.func_pm(r_0m, *pmod, delta=model.delta) / Mhyd.mfact0
+
+                # Kdens_t_corr = calc_density_operator_pm(
+                #     r_0m / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc
+                # )
+                # print('r_0p, r_0s, r_0m = ', r_0p, r_0s, r_0m)
+                # print(Kdens_t_corr.eval())
+
+
+                # r_0p = np.max(rout_m)
+                # r_0s = r_0p * elongation.eval() ** (1. / 3.)
+                rm_corr = np.array([(r_0s + r_0p) / 2.], dtype=float)
+                rm_corr_arr = np.append(rref_m, rm_corr).astype(float)
+                Kdens_t_corr = calc_density_operator_pm(
+                    rm_corr / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc
+                )
+                dens_m_corr = pm.math.sqrt(pm.math.dot(Kdens_t_corr, al) / cf * transf)[-1]
+
+                # Compute enclosed mass at rm_corr
+                mcorr = (Mhyd.mfact * model.func_pm(rm_corr_arr, *pmod, delta=model.delta) / Mhyd.mfact0)[-1]
+
+                # Approximate pressure correction term
+                pcorr = (mcorr * dens_m_corr / rm_corr ** 2) * (r_0s - r_0p)
+
+                # Add correction to the original pressure calculation
+                press_out = press00 - pcorr - pm.math.dot(int_mat, dpres)
+            else:
+                # Original method when no elongation correction is applied
+                press_out = press00 - pm.math.dot(int_mat, dpres)
+
+            #if fit_elong:
+                # Define r_0p and r_0s for elongation correction
+            #    r_0p = np.max(rout_m)
+            #    r_0s = r_0p * elongation.eval() ** (1. / 3.)
+            #    rm_corr = np.array((r_0s + r_0p) / 2., dtype=float)  # Midpoint for density and mass evaluation
+
+                # Compute density operator with elongation correction
+            #    rm_corr_arr = np.append(rref_m, rm_corr).astype(float)
+            #    Kdens_t_corr = calc_density_operator_pm(
+            #        rm_corr_arr / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc
+            #        )
+            #    dens_m_corr = pm.math.sqrt(pm.math.dot(Kdens_t_corr, al) / cf * transf)[-1]
+
+                # Compute enclosed mass at rm_corr
+            #    mcorr = (Mhyd.mfact * model.func_pm(rm_corr_arr, *pmod, delta=model.delta) / Mhyd.mfact0)[-1]
+
+                # Compute correction term as a constant pressure adjustment
+            #    dpcorr = - mcorr / rm_corr ** 2 * dens_m_corr * (r_0s - r_0p)
+
+            #    int_mat_corr = cumsum_mat(len(rout_m) + 1)
+
+            #    pcorr = pm.math.dot(int_mat_corr[-1, :], pm.math.concatenate([dpres, dpcorr]))
+
+                # Final pressure calculation
+            #    press_out = press00 + pcorr - pm.math.dot(int_mat, dpres)
+            #else:
+                # Original method when no elongation correction is applied
+            #    press_out = press00 - pm.math.dot(int_mat, dpres)
             # Non-thermal pressure correction, if any
             if pnt:
                 if pnt_model == 'Angelinelli':
@@ -481,8 +543,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 count_obs = pm.Poisson('counts', mu=pred, observed=counts) #counts likelihood
 
             else:
-
                 sbmod = pred * elongation
+                # print(np.append(rin_m, rout_m[-1]))
+                # print(valid)
+                # sbmod = elongation_correction(pred, np.append(rin_m, rout_m[-1]), valid, elongation).flatten()
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
