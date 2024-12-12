@@ -5,7 +5,6 @@ from astropy import units as u
 import random 
 from tqdm import tqdm
 from .deproject import *
-# from .functions import rho_nfw_cr
 
 
 def rho_to_sigma(radii_bins, rho):
@@ -310,7 +309,7 @@ def get_einstein_r(tmhyd, wldata, model, z_cl, zs, rmin=1e-3, rmax=1e2, npt=100,
             einstein_r_16th, float, 16th percentile Einstein radius
             einstein_r_84th, float, 84th percentile Einstein radius
             sigcrit, float, critical surface mass density [M_sun * Mpc**-2]"""
-    # Compute sigma critical
+    # Compute sigma crit
     cosmo = tmhyd.cosmo
     c_mpc = const.c.to(u.Mpc / u.s)
     g_mpc = const.G.to(u.Mpc**3 / (u.kg * u.s**2))

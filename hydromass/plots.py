@@ -510,7 +510,13 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
 
-        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+        if np.isscalar(Mhyd.elong):
+
+            cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+
+        else:
+
+            cf_prof = tcf
 
     else:
 
@@ -518,15 +524,21 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     rref_m = (rin_m + rout_m) / 2.
 
-    if Mhyd.fit_bkg:
+    if not np.isscalar(Mhyd.elong) and not Mhyd.fit_bkg:
 
-        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+        dens_m = np.empty((nsamp, nvalm))
+
+        for i in range(nsamp):
+
+            Kdens_t = calc_density_operator_pm(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.elong[i], Mhyd.amin2kpc)
+
+            dens_m[i] = np.sqrt(np.dot(Kdens_t, np.exp(samples[i])) / cf_prof * Mhyd.transf)  # electron density in cm-3
 
     else:
 
-        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
-    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
+        dens_m = np.transpose(np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf))
 
     mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
@@ -570,7 +582,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
         mass = mass + mbar.T
 
     # Pressure gradient
-    dpres = - mass / rref_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
+    dpres = - mass / rref_mul ** 2 * dens_m * (rout_mul - rin_mul)
 
     press00 = np.exp(Mhyd.samplogp0)
 
@@ -596,7 +608,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         pth = press_out
 
-    return dens_m, press_out, pth
+    return dens_m.T, press_out, pth
 
 def kt_from_samples(Mhyd, model, nmore=5):
     """
@@ -697,25 +709,45 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
 
     if return_Y == True:
 
-        rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+        nout = 2 * Mhyd.nmore
 
-        deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+        nsamp = len(Mhyd.samppar)
 
-        proj_vol = deproj.deproj_vol().T
+        rref_m = (rin_m + rout_m) / 2.
 
-        area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+        rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+        rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
 
-        integ = np.dot(proj_vol, pth) / np.tile(area_proj[:, np.newaxis], (1, len(Mhyd.samppar)))
+        rref_m_p = (rin_m_p + rout_m_p) / 2.
 
-        y_num = y_prefactor * integ  # prefactor in cm2/keV
+        pth_p = np.empty((ntm + nout, nsamp))
 
-        # ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+        pth_p[:ntm, :] = pth
 
-        index_sz = np.array(index_sz).flatten()
+        slope = (np.log10(pth[ntm - 1, :]) - np.log10(pth[ntm - 10, :])) / (
+                np.log10(rref_m[ntm - 1]) - np.log10(rref_m[ntm - 10]))
 
-        # ysz = y_num[index_sz]*Mhyd.elong
+        P0 = pth[ntm - 1]
 
-        ysz = elongation_correction_np(y_num, (rin_cm + rout_cm)/2, index_sz, Mhyd.elong)
+        routmat = np.repeat(rref_m_p[ntm:], nsamp).reshape(nout, nsamp)
+
+        pth_p[ntm:, :] = P0 * (routmat / rref_m[ntm - 1]) ** slope
+
+        rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
+
+        deproj_p = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
+
+        proj_vol_p = deproj_p.deproj_vol().T
+
+        area_proj_p = np.pi * (-(rin_cm_p) ** 2 + (rout_cm_p) ** 2)
+
+        integ_p = np.dot(proj_vol_p, pth_p) / np.tile(area_proj_p[:, np.newaxis], (1, nsamp))
+
+        y_num = y_prefactor * integ_p  # prefactor in cm2/keV
+
+        ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz, Mhyd.elong)
+
+        #ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
 
         if Mhyd.sz_data.psfmat is not None:
 
@@ -1048,58 +1080,6 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
     vol_x = vx.deproj_vol().T
 
     dens_m, p3d, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
-
-    # if Mhyd.sz_data:
-    #
-    #     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-    #
-    #     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
-    #
-    #     proj_vol = deproj.deproj_vol().T
-    #
-    #     area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
-    #
-    #     area_proj = area_proj[:, np.newaxis]
-    #
-    #     integ = np.dot(proj_vol, pth) / area_proj
-    #
-    #     ynum = (y_prefactor * integ)
-    #
-    #     ysz = ynum * Mhyd.elong
-    #
-    #     if Mhyd.sz_data.psfmat is not None:
-    #
-    #         ysz = np.dot(Mhyd.sz_data.psfmat, ysz[index_sz])
-
-#    if Mhyd.sz_data is not None:
-
-#        if Mhyd.sz_data.y_sz is not None:  # Fitting the Compton y parameter
-
-            #rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
- #           rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-
-            #deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
-
-            #proj_vol = deproj.deproj_vol().T
-
- #           area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
-
- #           integ = np.dot(vol_x, pth) / np.tile(area_proj[:, np.newaxis], (1, 4000))
-
- #           y_num = y_prefactor * integ  # prefactor in cm2/keV
-
- #           ysz = y_num * np.tile(Mhyd.elong, (200, 1))
-
-#            if Mhyd.sz_data.psfmat is not None:
-
- #               ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
-        #
-       # yszm, yszl, yszh = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
-
-#    else:
-
- #       yszm, yszl, yszh = 0, 0, 0
 
     t3d = pth / dens_m
 

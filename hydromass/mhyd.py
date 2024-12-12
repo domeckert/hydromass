@@ -448,71 +448,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             # Pressure gradient
             dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
+            press_out = press00 - pm.math.dot(int_mat, dpres)
 
-            if fit_elong:
-
-                r_0s = np.max(rout_m)
-                r_0p = r_0s / elongation.eval() ** (1. / 3.)
-                # r_0m = np.array([(r_0s + r_0p) / 2.])
-                # mass_0m = Mhyd.mfact * model.func_pm(r_0m, *pmod, delta=model.delta) / Mhyd.mfact0
-
-                # Kdens_t_corr = calc_density_operator_pm(
-                #     r_0m / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc
-                # )
-                # print('r_0p, r_0s, r_0m = ', r_0p, r_0s, r_0m)
-                # print(Kdens_t_corr.eval())
-
-
-                # r_0p = np.max(rout_m)
-                # r_0s = r_0p * elongation.eval() ** (1. / 3.)
-                rm_corr = np.array([(r_0s + r_0p) / 2.], dtype=float)
-                rm_corr_arr = np.append(rref_m, rm_corr).astype(float)
-                Kdens_t_corr = calc_density_operator_pm(
-                    rm_corr / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc
-                )
-                dens_m_corr = pm.math.sqrt(pm.math.dot(Kdens_t_corr, al) / cf * transf)[-1]
-
-                # Compute enclosed mass at rm_corr
-                mcorr = (Mhyd.mfact * model.func_pm(rm_corr_arr, *pmod, delta=model.delta) / Mhyd.mfact0)[-1]
-
-                # Approximate pressure correction term
-                pcorr = (mcorr * dens_m_corr / rm_corr ** 2) * (r_0s - r_0p)
-
-                # Add correction to the original pressure calculation
-                press_out = press00 - pcorr - pm.math.dot(int_mat, dpres)
-            else:
-                # Original method when no elongation correction is applied
-                press_out = press00 - pm.math.dot(int_mat, dpres)
-
-            #if fit_elong:
-                # Define r_0p and r_0s for elongation correction
-            #    r_0p = np.max(rout_m)
-            #    r_0s = r_0p * elongation.eval() ** (1. / 3.)
-            #    rm_corr = np.array((r_0s + r_0p) / 2., dtype=float)  # Midpoint for density and mass evaluation
-
-                # Compute density operator with elongation correction
-            #    rm_corr_arr = np.append(rref_m, rm_corr).astype(float)
-            #    Kdens_t_corr = calc_density_operator_pm(
-            #        rm_corr_arr / Mhyd.amin2kpc, pardens, elongation, Mhyd.amin2kpc
-            #        )
-            #    dens_m_corr = pm.math.sqrt(pm.math.dot(Kdens_t_corr, al) / cf * transf)[-1]
-
-                # Compute enclosed mass at rm_corr
-            #    mcorr = (Mhyd.mfact * model.func_pm(rm_corr_arr, *pmod, delta=model.delta) / Mhyd.mfact0)[-1]
-
-                # Compute correction term as a constant pressure adjustment
-            #    dpcorr = - mcorr / rm_corr ** 2 * dens_m_corr * (r_0s - r_0p)
-
-            #    int_mat_corr = cumsum_mat(len(rout_m) + 1)
-
-            #    pcorr = pm.math.dot(int_mat_corr[-1, :], pm.math.concatenate([dpres, dpcorr]))
-
-                # Final pressure calculation
-            #    press_out = press00 + pcorr - pm.math.dot(int_mat, dpres)
-            #else:
-                # Original method when no elongation correction is applied
-            #    press_out = press00 - pm.math.dot(int_mat, dpres)
-            # Non-thermal pressure correction, if any
             if pnt:
                 if pnt_model == 'Angelinelli':
 
@@ -544,9 +481,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
                 sbmod = pred * elongation
-                # print(np.append(rin_m, rout_m[-1]))
-                # print(valid)
-                # sbmod = elongation_correction(pred, np.append(rin_m, rout_m[-1]), valid, elongation).flatten()
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
 
@@ -588,19 +522,33 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
 
-                    rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+                    nout = 2 * nmore
 
-                    deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
+                    rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+                    rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
 
-                    proj_vol = deproj.deproj_vol().T # * elongation # accounting for LOS stretching; volume scales as elongation
+                    rref_m_p = (rin_m_p + rout_m_p) / 2.
 
-                    area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
+                    slope = (pm.math.log(pth[ntm - 1]) - pm.math.log(pth[ntm - nout])) / (
+                            pm.math.log(rref_m[ntm - 1]) - pm.math.log(rref_m[ntm - nout]))
 
-                    integ = pm.math.dot(proj_vol, pth) / area_proj
+                    rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
+
+                    pth_out = pth[ntm - 1] * (rref_m_p[ntm:] / rref_m[ntm - 1]) ** slope
+
+                    pth_p = pm.math.concatenate([pth, pth_out], axis=0)
+
+                    deproj = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
+
+                    proj_vol = deproj.deproj_vol().T
+
+                    area_proj = np.pi * (-(rin_cm_p) ** 2 + (rout_cm_p) ** 2)
+
+                    integ = pm.math.dot(proj_vol, pth_p) / area_proj
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = elongation_correction(y_num, (rin_cm + rout_cm)/2, index_sz, elongation).flatten()
+                    yfit = elongation_correction(y_num, (rin_cm_p + rout_cm_p)/2, index_sz, elongation).flatten()
 
                     if Mhyd.sz_data.psfmat is not None:
 
@@ -613,8 +561,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             WLdata = Mhyd.wl_data
 
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
-
-            # gmodel_elong = elongation * gmodel
 
             gmodel_elong = elongation_correction(gmodel, rm, ev, elongation).flatten()
 
