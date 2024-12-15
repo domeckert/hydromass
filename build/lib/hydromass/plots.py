@@ -600,7 +600,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         if Mhyd.pnt_model == 'Ettori':
 
-            log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
+            log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m.T * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
 
             pth = press_out - np.exp(log_pnt)
 
@@ -745,9 +745,12 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
 
         y_num = y_prefactor * integ_p  # prefactor in cm2/keV
 
-        ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz, Mhyd.elong)
+        #print("profile_values.shape:", y_num.shape)
+        #print("r_values.shape:", ((rin_cm_p + rout_cm_p)/2).shape)
+        #print("index_sz:", index_sz)
+        #print("elongation.shape:", Mhyd.elong.shape)
 
-        #ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+        ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz[0], Mhyd.elong)
 
         if Mhyd.sz_data.psfmat is not None:
 
@@ -1080,58 +1083,6 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
     vol_x = vx.deproj_vol().T
 
     dens_m, p3d, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
-
-    # if Mhyd.sz_data:
-    #
-    #     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-    #
-    #     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
-    #
-    #     proj_vol = deproj.deproj_vol().T
-    #
-    #     area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
-    #
-    #     area_proj = area_proj[:, np.newaxis]
-    #
-    #     integ = np.dot(proj_vol, pth) / area_proj
-    #
-    #     ynum = (y_prefactor * integ)
-    #
-    #     ysz = ynum * Mhyd.elong
-    #
-    #     if Mhyd.sz_data.psfmat is not None:
-    #
-    #         ysz = np.dot(Mhyd.sz_data.psfmat, ysz[index_sz])
-
-#    if Mhyd.sz_data is not None:
-
-#        if Mhyd.sz_data.y_sz is not None:  # Fitting the Compton y parameter
-
-            #rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
- #           rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-
-            #deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
-
-            #proj_vol = deproj.deproj_vol().T
-
- #           area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
-
- #           integ = np.dot(vol_x, pth) / np.tile(area_proj[:, np.newaxis], (1, 4000))
-
- #           y_num = y_prefactor * integ  # prefactor in cm2/keV
-
- #           ysz = y_num * np.tile(Mhyd.elong, (200, 1))
-
-#            if Mhyd.sz_data.psfmat is not None:
-
- #               ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
-        #
-       # yszm, yszl, yszh = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
-
-#    else:
-
- #       yszm, yszl, yszh = 0, 0, 0
 
     t3d = pth / dens_m
 

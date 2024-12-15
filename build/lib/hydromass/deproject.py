@@ -464,7 +464,7 @@ def elongation_correction(profile_values, r_values, ev, elongation):
     return corrected_profile
 
 
-def elongation_correction_np(profile_values, r_values, ev, elongation):
+#def elongation_correction_np(profile_values, r_values, ev, elongation):
     """
     Apply elongation correction to a given profile using rin, rout, and elongation factor.
 
@@ -508,6 +508,109 @@ def elongation_correction_np(profile_values, r_values, ev, elongation):
 
     # Apply elongation correction
     corrected_profile = center_values * elongation * (1 + log_gradient * elongation_term)
+
+    return corrected_profile
+
+#def elongation_correction_np(profile_values, r_values, ev, elongation):
+    """
+    Numpy function to apply elongation correction to a given spherically averaged profile to recover plane of the sky projected profile.
+    In addition to the thenao function, this function also accepts numpy arrays as input in order to treat the posterior chains.
+
+    Parameters:
+    - profile_values: numpy.ndarray, shape (M, n), profile values to correct (e.g., y profile or shear profile).
+    - r_values: numpy.ndarray, shape (M,), radius values corresponding to the profiles.
+    - ev: numpy.ndarray, shape (m,), indices of the radial points to correct.
+    - elongation: numpy.ndarray, shape (n,), elongation values for each MCMC sample.
+
+    Returns:
+    - corrected_profile: numpy.ndarray, shape (m, n), profile values after elongation correction.
+    """
+    # If elongation is 1 for all samples, skip correction and return the original values
+    if np.all(elongation == 1):
+        return profile_values[ev, :]
+
+    elongation_term = elongation ** (1/3) - 1
+
+    # Ensure ev is an array of integers
+    if isinstance(ev, int):
+        ev = np.array([ev])
+    elif isinstance(ev, (list, tuple)):
+        ev = np.array(ev)
+
+    # Select the required points from profile_values and r_values
+    left_values = profile_values[ev - 1, :]  # shape (m, n)
+    right_values = profile_values[ev + 1, :]  # shape (m, n)
+    center_values = profile_values[ev, :]  # shape (m, n)
+
+    left_r = r_values[ev - 1]  # shape (m,)
+    right_r = r_values[ev + 1]  # shape (m,)
+    center_r = r_values[ev]  # shape (m,)
+
+    # Compute left and right gradients
+    print('shape of center_values',center_values.shape)
+    print('shape of left_values',left_values.shape)
+    print('shape of center_r',center_r.shape)
+    print('shape of left_r',left_r.shape)
+    print('shape of center_r[:, None]',center_r[:, None].shape)
+    print('shape of left_r[:, None]',left_r[:, None].shape)
+    left_gradient = (np.log(center_values) - np.log(left_values)) / (np.log(center_r[:, None]) - np.log(left_r[:, None]))  # shape (m, n)
+    right_gradient = (np.log(right_values) - np.log(center_values)) / (np.log(right_r[:, None]) - np.log(center_r[:, None]))  # shape (m, n)
+
+    # Average the gradients
+    log_gradient = 0.5 * (left_gradient + right_gradient)  # shape (m, n)
+
+    # Apply elongation correction
+    corrected_profile = center_values * elongation[None, :] * (1 + log_gradient * elongation_term[None, :])  # shape (m, n)
+
+    return corrected_profile
+
+
+def elongation_correction_np(profile_values, r_values, ev, elongation):
+    """
+    Numpy function to apply elongation correction to a given spherically averaged profile to recover plane of the sky projected profile.
+    In addition to the thenao function, this function also accepts numpy arrays as input in order to treat the posterior chains.
+
+    Parameters:
+    - profile_values: numpy.ndarray, shape (M, n), profile values to correct (e.g., y profile or shear profile).
+    - r_values: numpy.ndarray, shape (M,), radius values corresponding to the profiles.
+    - ev: numpy.ndarray, shape (m,), indices of the radial points to correct.
+    - elongation: numpy.ndarray, shape (n,), elongation values for each MCMC sample.
+
+    Returns:
+    - corrected_profile: numpy.ndarray, shape (m, n), profile values after elongation correction.
+    """
+    if np.all(elongation == 1):
+        return profile_values[ev, :]
+
+    elongation_term = elongation ** (1/3) - 1
+
+    if isinstance(ev, int):
+        ev = np.array([ev])
+    elif isinstance(ev, (list, tuple)):
+        ev = np.array(ev)
+
+    left_values = profile_values[ev - 1, :]  # shape (m, n)
+    right_values = profile_values[ev + 1, :]  # shape (m, n)
+    center_values = profile_values[ev, :]  # shape (m, n)
+
+    left_r = r_values[ev - 1]  # shape (m,)
+    right_r = r_values[ev + 1]  # shape (m,)
+    center_r = r_values[ev]  # shape (m,)
+
+    # Expand radial arrays to match the profile dimensions
+    left_r = left_r[:, None]  # shape (m, 1)
+    right_r = right_r[:, None]  # shape (m, 1)
+    center_r = center_r[:, None]  # shape (m, 1)
+
+    # Compute left and right gradients
+    left_gradient = (np.log(center_values) - np.log(left_values)) / (np.log(center_r) - np.log(left_r))
+    right_gradient = (np.log(right_values) - np.log(center_values)) / (np.log(right_r) - np.log(center_r))
+
+    # Average the gradients
+    log_gradient = 0.5 * (left_gradient + right_gradient)
+
+    # Apply elongation correction
+    corrected_profile = center_values * elongation[None, :] * (1 + log_gradient * elongation_term[None, :])
 
     return corrected_profile
 

@@ -600,7 +600,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         if Mhyd.pnt_model == 'Ettori':
 
-            log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
+            log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m.T * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
 
             pth = press_out - np.exp(log_pnt)
 
@@ -745,9 +745,12 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
 
         y_num = y_prefactor * integ_p  # prefactor in cm2/keV
 
-        ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz, Mhyd.elong)
+        #print("profile_values.shape:", y_num.shape)
+        #print("r_values.shape:", ((rin_cm_p + rout_cm_p)/2).shape)
+        #print("index_sz:", index_sz)
+        #print("elongation.shape:", Mhyd.elong.shape)
 
-        #ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+        ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz[0], Mhyd.elong)
 
         if Mhyd.sz_data.psfmat is not None:
 
