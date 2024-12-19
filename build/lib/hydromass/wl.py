@@ -196,6 +196,7 @@ def WLmodel_np(WLdata, model, pmod, n_draw=None, random_state=None):
     return gplus_all, rm, ev
 
 
+
 #def WLmodel_np(WLdata, model, pmod):
     """
     Numpy function. Computes the tangential shear g+ for a given model and set of parameters.
