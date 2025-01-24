@@ -149,88 +149,69 @@ def WLmodel(WLdata, model, pmod):
     gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
     return gplus, rm, ev
 
+# def WLmodel_elong(WLdata, model, pmod, elong):
+#     """
+#     Theano function. Computes the tangential shear g+ for a given model and set of parameters.
+#     :param WLdata: object, weak lensing data
+#     :param model: object, mass model (e.g. NFW, Einasto)
+#     :param pmod: array-like, model parameters (e.g. [c200, r200] for NFW)
+#     return: gplus, array-like, tangential shear
+#             rm, array-like, mean radii for the numerical integration
+#             ev, array-like, indices for the evaluation of the mass profile"""
+#     radplus, rm, ev = get_radplus(WLdata.radii_wl)
+#     rho_out = model.rho_pm(radplus, *pmod) * WLdata.rho_crit
+#     sig = rho_to_sigma(radplus, rho_out)
+#     sig_elong = elongation_correction(sig, rm, np.arange((len(rm)))[1:-1], elong)
+#     dsigma = dsigma_trap(sig_elong, radplus[1:-1])
+#     gplus = get_shear(sig_elong, dsigma, WLdata.msigmacrit, WLdata.fl)
+#     return gplus, rm, ev
 
-def WLmodel_np(WLdata, model, pmod, n_draw=None, random_state=None):
-    """
-    Computes the tangential shear g+ for one or multiple sets of model parameters.
-    Optionally, a random subset of samples can be drawn.
 
-    :param WLdata: object, weak lensing data
-    :param model: object, mass model (e.g. NFW, Einasto)
-    :param pmod: array-like, either a 1D array of one parameter set (e.g., [c200, r200])
-                 or a 2D array with multiple sets of parameters.
-    :param n_draw: int, optional, number of random samples to draw from pmod.
-                   If None, all samples are used.
-    :param random_state: int or np.random.Generator, optional, seed for reproducibility.
-    :return:
-        gplus_all: 2D array of tangential shear, shape (M, n_draw), where M = len(rm), n_draw = selected parameter sets
-        rm: array-like, mean radii for the numerical integration
-        ev: array-like, indices for the evaluation of the mass profile
-    """
-    radplus, rm, ev = get_radplus(WLdata.radii_wl)
+# def WLmodel_np(WLdata, model, pmod, elong, n_draw=None, random_state=None):
+#     """
+#     Computes the tangential shear g+ for one or multiple sets of model parameters.
+#     Optionally, a random subset of samples can be drawn.
+
+#     :param WLdata: object, weak lensing data
+#     :param model: object, mass model (e.g. NFW, Einasto)
+#     :param pmod: array-like, either a 1D array of one parameter set (e.g., [c200, r200])
+#                  or a 2D array with multiple sets of parameters.
+#     :param n_draw: int, optional, number of random samples to draw from pmod.
+#                    If None, all samples are used.
+#     :param random_state: int or np.random.Generator, optional, seed for reproducibility.
+#     :return:
+#         gplus_all: 2D array of tangential shear, shape (M, n_draw), where M = len(rm), n_draw = selected parameter sets
+#         rm: array-like, mean radii for the numerical integration
+#         ev: array-like, indices for the evaluation of the mass profile
+#     """
+#     radplus, rm, ev = get_radplus(WLdata.radii_wl)
     
-    # Ensure pmod is 2D for consistency
-    pmod = np.atleast_2d(pmod)  # Converts 1D array to 2D if needed
-    n_samples = pmod.shape[0]
+#     # Ensure pmod is 2D for consistency
+#     pmod = np.atleast_2d(pmod)  # Converts 1D array to 2D if needed
+#     n_samples = pmod.shape[0]
     
-    # Select samples if n_draw is specified
-    if n_draw is not None and n_draw < n_samples:
-        rng = np.random.default_rng(random_state)
-        indices = rng.choice(n_samples, n_draw, replace=False)
-        pmod = pmod[indices]
-        n_samples = pmod.shape[0]
+#     # Select samples if n_draw is specified
+#     if n_draw is not None and n_draw < n_samples:
+#         rng = np.random.default_rng(random_state)
+#         indices = rng.choice(n_samples, n_draw, replace=False)
+#         pmod = pmod[indices]
+#         n_samples = pmod.shape[0]
     
-    # Initialize the result array
-    gplus_all = np.zeros((len(rm), n_samples))
+#     # Initialize the result array
+#     gplus_all = np.zeros((len(rm), n_samples))
     
-    # Loop over all parameter sets
-    for i in tqdm(range(n_samples)):
-        rho_out = model.rho_np(radplus, *pmod[i]) * WLdata.rho_crit
-        sig = rho_to_sigma_np(radplus, rho_out)
-        _, dsigma = dsigma_trap_np(sig, radplus)
-        gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
+#     # Loop over all parameter sets
+#     for i in tqdm(range(n_samples)):
+#         rho_out = model.rho_np(radplus, *pmod[i]) * WLdata.rho_crit
+#         sig = rho_to_sigma_np(radplus, rho_out)
+#         _, dsigma = dsigma_trap_np(sig, radplus)
+#         gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
         
-        # Extract values at the evaluation radii
-        gplus_all[:, i] = gplus
+#         # Extract values at the evaluation radii
+#         gplus_all[:, i] = gplus
     
-    return gplus_all, rm, ev
+#     return gplus_all, rm, ev
 
-
-
-#def WLmodel_np(WLdata, model, pmod):
-    """
-    Numpy function. Computes the tangential shear g+ for a given model and set of parameters.
-    :param WLdata: object, weak lensing data
-    :param model: object, mass model (e.g. NFW, Einasto)
-    :param pmod: array-like, model parameters (e.g. [c200, r200] for NFW)
-    return: gplus, array-like, tangential shear
-            rm, array-like, mean radii for the numerical integration
-            ev, array-like, indices for the evaluation of the mass profile"""
-    radplus, rm, ev = get_radplus(WLdata.radii_wl)
-    rho_out = model.rho_np(radplus, *pmod) * WLdata.rho_crit
-    sig = rho_to_sigma_np(radplus, rho_out)
-    dsigma, _ = dsigma_trap_np(sig, radplus)
-    gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
-    return gplus, rm, ev
-
-#def WLmodel_np_plotting(WLdata, model, pmod, elong):
-    """
-    Numpy function. Computes the tangential shear g+ for a given model and set of parameters.
-    :param WLdata: object, weak lensing data
-    :param model: object, mass model (e.g. NFW, Einasto)
-    :param pmod: array-like, model parameters (e.g. [c200, r200] for NFW)
-    return: gplus, array-like, tangential shear
-            rm, array-like, mean radii for the numerical integration
-            ev, array-like, indices for the evaluation of the mass profile"""
-    radplus, rm, ev = get_radplus(WLdata.radii_wl)
-    rho_out = model.rho_np(radplus, *pmod) * WLdata.rho_crit
-    sig = rho_to_sigma_np(radplus, rho_out)
-    dsigma, _ = dsigma_trap_np(sig, radplus)
-    gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
-    gplus_elong = elongation_correction_np(gplus, rm, np.arange(len(rm)), elong)
-    print(np.shape(gplus_elong))
-    print(gplus_elong)
-    return gplus_elong, rm, ev
 
 def WLmodel_profiles_np(WLdata, model, pmod, rmin, rmax, npt):
     """
