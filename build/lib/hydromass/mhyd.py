@@ -524,8 +524,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
 
-                    rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-
                     nout = 2 * nmore
 
                     rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
