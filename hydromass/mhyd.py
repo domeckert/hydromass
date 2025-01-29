@@ -466,7 +466,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     pth_test = press_out * (1. - alpha_turb)
 
-                    pnt_prof = press_out * alpha_turb
+                    pnt_test = press_out * alpha_turb
 
                 if pnt_model == 'Ettori' :
 
@@ -474,9 +474,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     pth_test = press_out - pm.math.exp(log_pnt)
 
-                    pnt_prof = pm.math.exp(log_pnt)
+                    pnt_test = pm.math.exp(log_pnt)
 
                 pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
+
+                pnt_prof = pm.math.switch(pnt_test <= 0, 1e-10, pnt_test)
 
             else:
 
@@ -959,7 +961,7 @@ class Mhyd:
 
         self.wl_data = wl_data
 
-        self.veldata = None
+        self.veldata = vel_data
 
         rho_cz = cosmo.critical_density(redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
 

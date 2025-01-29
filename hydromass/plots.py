@@ -501,9 +501,9 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     nvalm = len(rin_m)
 
-    if Mhyd.cf_prof is not None:
+    rref_m = (rin_m + rout_m) / 2.
 
-        rref_m = (rin_m + rout_m) / 2.
+    if Mhyd.cf_prof is not None:
 
         rad = Mhyd.sbprof.bins
 
@@ -514,8 +514,6 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
     else:
 
         cf_prof = Mhyd.ccf
-
-    rref_m = (rin_m + rout_m) / 2.
 
     if Mhyd.fit_bkg:
 
@@ -1101,11 +1099,17 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
 
         pnt_all = p3d - pth
 
+        sigma_all = np.sqrt(pnt_all * kev2erg * 3. / Mhyd.mup / cgsamu / dens_m) / 1e5 # km/s
+
         mpnt, mpntl, mpnth = np.percentile(pnt_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+        msigma, sigmal, sigmah = np.percentile(sigma_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     else:
 
         mpnt, mpntl, mpnth = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
+
+        msigma, sigmal, sigmah = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
 
     dict = {
         "R_IN": rin_m,
@@ -1135,6 +1139,9 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
         "P_NT": mpnt,
         "P_NT_LO": mpntl,
         "P_NT_HI": mpnth,
+        "SIGMA": msigma,
+        "SIGMA_LO": sigmal,
+        "SIGMA_HI": sigmah,
         "T_COOL": mtc,
         "T_COOL_LO": mtcl,
         "T_COOL_HI": mtch,

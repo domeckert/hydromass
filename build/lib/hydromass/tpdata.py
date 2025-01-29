@@ -764,6 +764,3 @@ class VelocityData:
             self.vtot_error = np.sqrt( (3 * self.vdisp / self.vtot)**2 * self.vdisp_error**2 +
                                        (self.vbulk / self.vtot)**2 * self.vbulk_error**2)
 
-        x = MyDeprojVol(rin, rout)
-
-        self.volume = x.deproj_vol()

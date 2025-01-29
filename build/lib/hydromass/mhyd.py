@@ -304,6 +304,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             pnt_cov = np.loadtxt(file_cov).astype(np.float32)
 
+    if Mhyd.veldata is not None and not pnt:
+
+        print('Warning: velocity data were provided but pnt is set to False. The velocity data will be ignored.')
+
     with hydro_model:
         # Model parameters
         allpmod = []
@@ -462,17 +466,25 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     pth_test = press_out * (1. - alpha_turb)
 
+                    pnt_test = press_out * alpha_turb
+
                 if pnt_model == 'Ettori' :
 
                     log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
 
                     pth_test = press_out - pm.math.exp(log_pnt)
 
+                    pnt_test = pm.math.exp(log_pnt)
+
                 pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
+
+                pnt_prof = pm.math.switch(pnt_test <= 0, 1e-10, pnt_test)
 
             else:
 
                 pth = press_out
+
+                pnt_prof = 0
 
         if not wlonly:
             # Density Likelihood
@@ -570,6 +582,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             g_obs = pm.MvNormal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, cov=WLdata.covmat)
 
+        if Mhyd.veldata is not None and pnt:
+
+            sigmav, ev = NPmodel(Mhyd=Mhyd,
+                                 rref_m=rref_m,
+                                 dens_m=dens_m,
+                                 pnt=pnt_prof,
+                                 proj_vol=vol)
+
+            sv_obs = pm.Normal('sigmav', mu=sigmav[ev], sigma=Mhyd.veldata.vtot_error, observed=Mhyd.veldata.vtot)
+
+
     tinit = time.time()
 
     print('Running HMC...')
@@ -617,6 +640,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         if Mhyd.wl_data is not None:
 
             Mhyd.ppc_wl = pm.sample_posterior_predictive(trace, var_names=['WL'])
+
+        if Mhyd.veldata is not None:
+
+            Mhyd.ppc_vel = pm.sample_posterior_predictive(trace, var_names=['sigmav'])
 
 
     print('Done.')
@@ -853,7 +880,7 @@ class Mhyd:
     :type abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl'):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl'):
 
         if abund == 'angr':
             nhc = 1 / 0.8337
@@ -933,6 +960,8 @@ class Mhyd:
         self.sz_data = sz_data
 
         self.wl_data = wl_data
+
+        self.veldata = vel_data
 
         rho_cz = cosmo.critical_density(redshift).value * cgsMpc ** 3 / Msun # critical density in Msun per Mpc^3
 
