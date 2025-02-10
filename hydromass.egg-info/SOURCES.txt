@@ -10,6 +10,7 @@ hydromass/emissivity.py
 hydromass/forward.py
 hydromass/functions.py
 hydromass/mhyd.py
+hydromass/mu.py
 hydromass/nonparametric.py
 hydromass/plots.py
 hydromass/pnt.py
@@ -23,6 +24,7 @@ hydromass.egg-info/dependency_links.txt
 hydromass.egg-info/requires.txt
 hydromass.egg-info/top_level.txt
 hydromass/data/.DS_Store
+hydromass/data/abundances.dat
 hydromass/data/coolfunc_table.fits
 hydromass/data/pnt_covmat.dat
 hydromass/data/pnt_covmat_log.dat

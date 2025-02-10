@@ -1099,7 +1099,7 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
 
         pnt_all = p3d - pth
 
-        sigma_all = np.sqrt(pnt_all * kev2erg * 3. / Mhyd.mup / cgsamu / dens_m) / 1e5 # km/s
+        sigma_all = np.nan_to_num(np.sqrt(pnt_all * kev2erg * 3. / Mhyd.mup / cgsamu / dens_m)) / 1e5 # km/s
 
         mpnt, mpntl, mpnth = np.percentile(pnt_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
