@@ -37,7 +37,13 @@ def mean_molecular_weights(infile, abund='aspl', Zs=0.3):
 
                 Ns[i] = float(tl[i+1])
 
-    tot = np.sum(Ns * atomic_weights)
+    abvec = np.ones(nele) * Zs # Abundance corrected for ratio to Solar metallicity
+
+    abvec[0] = 1 # Abundance of Hydrogen and Helium is set to 1
+
+    abvec[1] = 1
+
+    tot = np.sum(Ns * atomic_weights * abvec)
 
     Xj = Ns * atomic_weights / tot
 
@@ -45,19 +51,19 @@ def mean_molecular_weights(infile, abund='aspl', Zs=0.3):
 
     Y = Xj[1]
 
-    Z = np.sum(Xj[2:]) * Zs
+    Z = np.sum(Xj[2:])
 
     print('X:', X)
     print('Y:', Y)
     print('Z:', Z)
 
-    mup = 1/ (2*X + 3/4*Y + np.sum((1. + atomic_numbers[2:]) / atomic_weights[2:] * Zs * Xj[2:])) # Eq. 10.20 of Carroll
+    mup = 1 / np.sum((1. + atomic_numbers) / atomic_weights * abvec * Xj) # Eq. 10.20 of Carroll
 
     print('Mean molecular weight:', mup)
 
-    nhc = (np.sum(atomic_numbers[:2] * Ns[:2]) + np.sum(Zs * atomic_numbers[2:] * Ns[2:])) / (np.sum(Ns[:2]) + np.sum(Zs * Ns[2:])) # electrons / nuclei
+    nhc = np.sum(atomic_numbers * Ns * abvec) / Ns[0] # electrons / Hydrogen nuclei
 
-    print('Number ratio of electrons to ions:', nhc)
+    print('Number ratio of electrons to H:', nhc)
 
     mu_e = 2 / (1 + X) # mean molecular weight per electron
 
