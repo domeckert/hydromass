@@ -7,6 +7,7 @@ from .forward import *
 from .polytropic import *
 from .pnt import *
 from .nonparametric import *
+from .mu import mean_molecular_weights
 from astropy.io import fits
 import os
 
@@ -32,7 +33,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
                    pnt=False, pnt_model='Ettori', rmin=0., rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-                   fit_elong=True, use_jax=True, wlonly=False):
+                   fit_elong=True, use_jax=True, wlonly=False, pnt_prior='sim'):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -97,6 +98,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     :type fit_elong: bool
     :param use_jax: Use JAX optimization when sampling using the numpyro NUTS implementation. Defaults to True
     :type use_jax: bool
+    :param wlonly: Set whether the fit will be done to weak lensing data only. Defaults to False
+    :type wlonly: bool
+    :param pnt_prior: Choose whether informative priors from simulations will be applied to the Pnt profile (pnt_prior='sim'). Alternatively, flat priors will be adopted. Defaults to 'sim'.
+    :type pnt_prior: str
 
     """
     prof = Mhyd.sbprof
@@ -388,7 +393,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 if pnt_model=='Angelinelli':
 
-                    pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+                    if pnt_prior=='sim':
+                        pnt_pars = pm.MvNormal('Pnt', mu=pnt_mean, cov=pnt_cov, shape=(1,3))
+
+                    else:
+                        a0 = pm.Uniform('a0', lower=-0.5, upper=2.0)
+                        a1 = pm.Uniform('a1', lower=-1.0, upper=2.0)
+                        a2 = pm.Uniform('a2', lower=-6., upper=0.)
+
+                        pnt_pars = tt.stack([a0, a1, a2], axis=0).reshape((1, 3))
 
                     #a2 = pnt_pars[0, 2]
 
@@ -744,7 +757,17 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         if pnt_model == 'Angelinelli':
 
-            Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
+            if pnt_prior=='sim':
+
+                Mhyd.pnt_pars = np.array(trace.posterior['Pnt']).reshape(sc_coefs[0] * sc_coefs[1], 3)
+
+            else:
+
+                a0 = np.array(trace.posterior['a0']).flatten()
+                a1 = np.array(trace.posterior['a1']).flatten()
+                a2 = np.array(trace.posterior['a2']).flatten()
+
+                Mhyd.pnt_pars = np.vstack([a0,a1,a2]).T
 
             Mhyd.pnt_model = 'Angelinelli'
 
@@ -880,27 +903,30 @@ class Mhyd:
     :type abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl'):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl', Zs=1.0):
 
-        if abund == 'angr':
-            nhc = 1 / 0.8337
-            mup = 0.6125
-            mu_e = 1.1738
-        elif abund == 'aspl':
-            nhc = 1 / 0.8527
-            mup = 0.5994
-            mu_e = 1.1548
-        elif abund == 'grsa':
-            nhc = 1 / 0.8520
-            mup = 0.6000
-            mu_e = 1.1555
-        else:  # aspl default
-            nhc = 1 / 0.8527
-            mup = 0.5994
-            mu_e = 1.1548
-        self.nhc=nhc
-        self.mup=mup
-        self.mu_e=mu_e
+        file_abund = get_data_file_path('abundances.dat')
+
+        # if abund == 'angr':
+        #     nhc = 1 / 0.8337
+        #     mup = 0.6125
+        #     mu_e = 1.1738
+        # elif abund == 'aspl':
+        #     nhc = 1 / 0.8527
+        #     mup = 0.5994
+        #     mu_e = 1.1548
+        # elif abund == 'grsa':
+        #     nhc = 1 / 0.8520
+        #     mup = 0.6000
+        #     mu_e = 1.1555
+        # else:  # aspl default
+        #     nhc = 1 / 0.8527
+        #     mup = 0.5994
+        #     mu_e = 1.1548
+        # self.nhc=nhc
+        # self.mup=mup
+        # self.mu_e=mu_e
+        self.mup, self.nhc, self.mu_e = mean_molecular_weights(file_abund, abund=abund, Zs=Zs)
 
         if directory is None:
 
@@ -1064,7 +1090,7 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            pnt_model='Ettori', fit_elong=False, use_jax=True, wlonly=False):
+            pnt_model='Ettori', fit_elong=False, use_jax=True, wlonly=False, pnt_prior='sim'):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -1116,6 +1142,10 @@ class Mhyd:
         :type fit_elong: bool
         :param use_jax: Use JAX optimization when sampling using the numpyro NUTS implementation. Defaults to True
         :type use_jax: bool
+        :param wlonly: Set whether the fit will be done to weak lensing data only. Defaults to False
+        :type wlonly: bool
+        :param pnt_prior: Choose whether informative priors from simulations will be applied to the Pnt profile (pnt_prior='sim'). Alternatively, flat priors will be adopted. Defaults to 'sim'.
+        :type pnt_prior: str
         '''
 
         if model is None:
@@ -1149,7 +1179,8 @@ class Mhyd:
                        target_accept=target_accept,
                        fit_elong=fit_elong,
                        use_jax=use_jax,
-                       wlonly=wlonly)
+                       wlonly=wlonly,
+                       pnt_prior=pnt_prior)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
