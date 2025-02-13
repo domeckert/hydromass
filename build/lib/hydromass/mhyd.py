@@ -560,13 +560,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             WLdata = Mhyd.wl_data
 
-            # gmodel, rm, ev = WLmodel(WLdata, model, pmod)
+            gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
-            # gmodel_elong = elongation_correction(gmodel, rm, ev, elongation).flatten()
+            gmodel_elong = elongation_correction(gmodel, rm, ev, elongation).flatten()
 
-            gmodel_elong, rm, ev = WLmodel_elong(WLdata, model, pmod, elongation)
+            # gmodel_elong, rm, ev = WLmodel_elong(WLdata, model, pmod, elongation)
 
-            g_obs = pm.MvNormal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, cov=WLdata.covmat)
+            g_obs = pm.MvNormal('WL', mu=gmodel_elong, observed=WLdata.gplus, cov=WLdata.covmat)
 
     tinit = time.time()
 
