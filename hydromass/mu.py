@@ -65,8 +65,7 @@ def mean_molecular_weights(infile, abund='aspl', Zs=0.3):
 
     print('Number ratio of electrons to H:', nhc)
 
-    mu_e = 2 / (1 + X) # mean molecular weight per electron
-
+    mu_e = 1 / np.sum(atomic_numbers / atomic_weights * abvec * Xj)
     print('Mean molecular weight per electron:', mu_e)
 
     return mup, nhc, mu_e
