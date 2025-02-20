@@ -148,7 +148,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
         os.system('rm %s.fak' % (nrmf))
 
-    os.system('xspec < commands.xcm')
+    os.system('xspec < commands.xcm > /dev/null 2>&1')
 
     ssim = open('sim.txt')
     lsim = ssim.readlines()
