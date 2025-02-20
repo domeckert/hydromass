@@ -903,7 +903,8 @@ class Mhyd:
     :type abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl', Zs=1.0):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None,
+                 abund = 'aspl', Zs=0.3):
 
         file_abund = get_data_file_path('abundances.dat')
 
