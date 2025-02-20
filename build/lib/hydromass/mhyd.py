@@ -25,6 +25,7 @@ else:
     import pymc.sampling.jax as pmjax
 
 import pymc as pm
+import aesara.tensor as at
 from .save import *
 from .wl import WLmodel
 import arviz as az
@@ -464,10 +465,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             # Pressure gradient
             dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
+            press_out = press00 - pm.math.dot(int_mat, dpres)
 
-            press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
-
-            # Non-thermal pressure correction, if any
             if pnt:
                 if pnt_model == 'Angelinelli':
 
@@ -543,7 +542,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
-                    pfit = pth[index_sz] * elongation
+                    pfit = pth[index_sz] 
 
                     P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
@@ -575,7 +574,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = y_num[index_sz] * elongation # accounting for LOS stretching; volume scales as elongation
+                    yfit = elongation_correction(y_num, (rin_cm_p + rout_cm_p)/2, index_sz, elongation).flatten()
 
                     if Mhyd.sz_data.psfmat is not None:
 
@@ -589,11 +588,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             gmodel, rm, ev = WLmodel(WLdata, model, pmod)
 
-            gmodel_elong = elongation * gmodel
+            gmodel_elong = elongation_correction(gmodel, rm, ev, elongation).flatten()
 
-            #g_obs = pm.Normal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, sigma=WLdata.err_gplus)
+            # gmodel_elong, rm, ev = WLmodel_elong(WLdata, model, pmod, elongation)
 
-            g_obs = pm.MvNormal('WL', mu=gmodel_elong[ev], observed=WLdata.gplus, cov=WLdata.covmat)
+            g_obs = pm.MvNormal('WL', mu=gmodel_elong, observed=WLdata.gplus, cov=WLdata.covmat)
 
         if Mhyd.veldata is not None and pnt:
 
@@ -826,7 +825,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Ksb = Ksb
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
-    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
