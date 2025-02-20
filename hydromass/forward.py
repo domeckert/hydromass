@@ -440,9 +440,9 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3): #, extra=False, max_radius=2
 
     nsamp = len(Mhyd.samples)
 
-    if Mhyd.cf_prof is not None:
+    rref_m = (rin_m + rout_m) / 2.
 
-        rref_m = (rin_m + rout_m) / 2.
+    if Mhyd.cf_prof is not None:
 
         rad = Mhyd.sbprof.bins
 
@@ -454,7 +454,15 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3): #, extra=False, max_radius=2
 
         cf_prof = Mhyd.ccf
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    if Mhyd.fit_bkg:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     t3d = p3d / dens_m
 

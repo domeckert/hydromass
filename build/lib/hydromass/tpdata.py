@@ -5,6 +5,7 @@ from .deproject import MyDeprojVol
 from scipy.optimize import brentq
 from scipy.signal import convolve
 import astropy.units as u
+from. constants import ckms
 
 class SpecData:
 
@@ -707,3 +708,59 @@ class WLData:
         self.msigmacrit = sigmacrit_inv
 
         self.fl = fl
+
+
+class VelocityData:
+
+    def __init__(self,  redshift, rin, rout, vbulk, vbulk_error, vdisp=None, vdisp_error=None, cosmo=None):
+
+        if len(vbulk) != len(vbulk_error):
+            print('Error: the provided bulk velocity and error must have the same size')
+            return
+
+        if vdisp is not None and vdisp_error is None:
+            print('Please provide both velocity dispersion and its error')
+            return
+
+        if vdisp is not None:
+            if len(vdisp) != len(vdisp_error):
+                print('Error: the provided velocity dispersion and error must have the same size')
+                return
+
+        if cosmo is None:
+
+            from astropy.cosmology import Planck15 as cosmo
+
+        amin2kpc = cosmo.kpc_proper_per_arcmin(redshift).value
+
+        self.rin_vel_am = rin
+
+        self.rout_vel_am = rout
+
+        self.rin_vel = rin * amin2kpc
+
+        self.rout_vel = rout * amin2kpc
+
+        self.rref_vel = (self.rin_vel + self.rout_vel) / 2.
+
+        self.vbulk = vbulk
+
+        self.vbulk_error = vbulk_error
+
+        self.vdisp = vdisp
+
+        self.vdisp_error = vdisp_error
+
+        if vdisp is None:
+
+            self.vtot = np.abs(self.vbulk)
+
+            self.vtot_error = self.vbulk_error
+
+        else:
+
+            self.vtot = np.sqrt(3 * self.vdisp**2 + self.vbulk**2)
+
+            self.vtot_error = np.sqrt( (3 * self.vdisp / self.vtot)**2 * self.vdisp_error**2 +
+                                       (self.vbulk / self.vtot)**2 * self.vbulk_error**2)
+

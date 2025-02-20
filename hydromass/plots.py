@@ -502,9 +502,9 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     nvalm = len(rin_m)
 
-    if Mhyd.cf_prof is not None:
+    rref_m = (rin_m + rout_m) / 2.
 
-        rref_m = (rin_m + rout_m) / 2.
+    if Mhyd.cf_prof is not None:
 
         rad = Mhyd.sbprof.bins
 
@@ -681,7 +681,7 @@ def kt_from_samples(Mhyd, model, nmore=5):
     return dict
 
 
-def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
+def P_from_samples(Mhyd, model, nmore=5, return_Y=False, nout=10):
     """
     Compute model pressure profile from an existing mass reconstruction run and evaluate it at the reference SZ radii
 
@@ -694,7 +694,6 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
     """
 
     if Mhyd.sz_data is None:
-
         print('No SZ data provided')
 
         return
@@ -703,9 +702,13 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
 
     dens_m, press_tot, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
 
+    print(pth.shape)
+
     pmt, plot, phit = np.percentile(pth, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     pmed, plo, phi = pmt[index_sz], plot[index_sz], phit[index_sz]
+
+    nsamp = len(Mhyd.samppar)
 
     if return_Y == True:
 
@@ -753,7 +756,6 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y = False):
         ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz[0], Mhyd.elong)
 
         if Mhyd.sz_data.psfmat is not None:
-
             ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
 
         pmed, plo, phi = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
@@ -1123,11 +1125,17 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
 
         pnt_all = p3d - pth
 
+        sigma_all = np.nan_to_num(np.sqrt(pnt_all * kev2erg * 3. / Mhyd.mup / cgsamu / dens_m)) / 1e5 # km/s
+
         mpnt, mpntl, mpnth = np.percentile(pnt_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
+        msigma, sigmal, sigmah = np.percentile(sigma_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     else:
 
         mpnt, mpntl, mpnth = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
+
+        msigma, sigmal, sigmah = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
 
     dict = {
         "R_IN": rin_m,
@@ -1157,6 +1165,9 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
         "P_NT": mpnt,
         "P_NT_LO": mpntl,
         "P_NT_HI": mpnth,
+        "SIGMA": msigma,
+        "SIGMA_LO": sigmal,
+        "SIGMA_HI": sigmah,
         "T_COOL": mtc,
         "T_COOL_LO": mtcl,
         "T_COOL_HI": mtch,

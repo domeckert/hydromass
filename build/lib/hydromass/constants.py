@@ -18,3 +18,5 @@ cgskpc = cgsMpc / 1e3
 year = 60. * 60. * 24. * 365.
 
 y_prefactor = 1.3018537e-27  # cm2/keV
+
+ckms = const.c.to('km/s').value # km/s

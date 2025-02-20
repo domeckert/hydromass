@@ -2,6 +2,7 @@ import pkg_resources
 import os
 import numpy as np
 import pymc as pm
+from .constants import kev2erg, cgsamu
 
 def r200m_from_params(c, z):
     '''
@@ -123,4 +124,34 @@ def get_data_file_path(data_file):
     else:
 
         return os.path.abspath(file_path)
+
+
+def find_nearest(array, values):
+    array = np.asarray(array)
+
+    try:
+        len(values)
+    except:
+        idx = np.abs(array - values).argmin()
+    else:
+        idx = []
+        for i in range(len(values)):
+            idx.append((np.abs(array - values[i])).argmin())
+
+    return idx
+
+
+def NPmodel(Mhyd, rref_m, dens_m, pnt, proj_vol):
+
+    ev = find_nearest(rref_m, Mhyd.veldata.rref_vel)
+
+    sigmav = pm.math.sqrt(pnt * kev2erg * 3. / Mhyd.mup / cgsamu / dens_m) / 1e5 # km/s
+
+    vmul = pm.math.dot(proj_vol, dens_m ** 2 * sigmav ** 2)
+
+    denom = pm.math.dot(proj_vol, dens_m ** 2)
+
+    sigmav_proj = pm.math.sqrt(vmul / denom)
+
+    return sigmav_proj, ev
 
