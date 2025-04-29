@@ -26,7 +26,6 @@ else:
     import pymc.sampling.jax as pmjax
 
 import pymc as pm
-import aesara.tensor as at
 from .save import *
 from .wl import WLmodel
 import arviz as az
@@ -516,7 +515,6 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 count_obs = pm.Poisson('counts', mu=pred, observed=counts) #counts likelihood
 
             else:
-
                 sbmod = pred * elongation
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
@@ -567,13 +565,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     rref_m_p = (rin_m_p + rout_m_p) / 2.
 
                     slope = (pm.math.log(pth[ntm - 1]) - pm.math.log(pth[ntm - nout])) / (
-                                pm.math.log(rref_m[ntm - 1]) - pm.math.log(rref_m[ntm - nout]))
+                            pm.math.log(rref_m[ntm - 1]) - pm.math.log(rref_m[ntm - nout]))
 
                     rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
 
-                    pth_out = pth[ntm - 1] * (rref_m_p[ntm:] / rref_m[ntm-1]) ** slope
+                    pth_out = pth[ntm - 1] * (rref_m_p[ntm:] / rref_m[ntm - 1]) ** slope
 
-                    pth_p = pm.math.concatenate([pth, pth_out], axis = 0)
+                    pth_p = pm.math.concatenate([pth, pth_out], axis=0)
 
                     deproj = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
 

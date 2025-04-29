@@ -1,5 +1,6 @@
 MANIFEST.in
 README.md
+pyproject.toml
 setup.py
 hydromass/__init__.py
 hydromass/constants.py

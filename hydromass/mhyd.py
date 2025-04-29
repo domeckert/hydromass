@@ -26,7 +26,6 @@ else:
     import pymc.sampling.jax as pmjax
 
 import pymc as pm
-import aesara.tensor as at
 from .save import *
 from .wl import WLmodel
 import arviz as az
