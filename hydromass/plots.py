@@ -1099,17 +1099,23 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
 
         pnt_all = p3d - pth
 
+        alpha_all = pnt_all / p3d
+
         sigma_all = np.nan_to_num(np.sqrt(pnt_all * kev2erg * 3. / Mhyd.mup / cgsamu / dens_m)) / 1e5 # km/s
 
         mpnt, mpntl, mpnth = np.percentile(pnt_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
         msigma, sigmal, sigmah = np.percentile(sigma_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+        malpha, alphal, alphah = np.percentile(alpha_all, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
+
     else:
 
         mpnt, mpntl, mpnth = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
 
         msigma, sigmal, sigmah = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
+
+        malpha, alphal, alphah = np.zeros(len(mptot)), np.zeros(len(mptot)), np.zeros(len(mptot))
 
     dict = {
         "R_IN": rin_m,
@@ -1142,6 +1148,9 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
         "SIGMA": msigma,
         "SIGMA_LO": sigmal,
         "SIGMA_HI": sigmah,
+        "ALPHA_NT": malpha,
+        "ALPHA_NT_LO": alphal,
+        "ALPHA_NT_HI": alphah,
         "T_COOL": mtc,
         "T_COOL_LO": mtcl,
         "T_COOL_HI": mtch,

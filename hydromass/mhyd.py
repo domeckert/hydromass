@@ -10,6 +10,7 @@ from .nonparametric import *
 from .mu import mean_molecular_weights
 from astropy.io import fits
 import os
+import pytensor.tensor as pt
 
 isjax = False
 
@@ -105,14 +106,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
     """
     prof = Mhyd.sbprof
-    sb = prof.profile
-    esb = prof.eprof
-    rad = prof.bins
-    erad = prof.ebins
-    counts = prof.counts
-    area = prof.area
-    exposure = prof.effexp
-    bkgcounts = prof.bkgcounts
+    sb = prof.profile.astype('float32')
+    esb = prof.eprof.astype('float32')
+    rad = prof.bins.astype('float32')
+    erad = prof.ebins.astype('float32')
+    counts = prof.counts.astype('int32')
+    area = prof.area.astype('float32')
+    exposure = prof.effexp.astype('float32')
+    bkgcounts = prof.bkgcounts.astype('float32')
     nbin = prof.nbin
 
     nmin = 0
@@ -469,29 +470,39 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             # Non-thermal pressure correction, if any
             if pnt:
-                if pnt_model == 'Angelinelli':
 
-                    c200 = pmod[0]
+                if pnt_model!= 'Angelinelli' and pnt_model!='Ettori':
 
-                    r200c = pmod[1]
+                    print(f'Invalid Pnt model {pnt_model}, neglecting Pnt correction')
 
-                    alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
+                    pth = press_out
 
-                    pth_test = press_out * (1. - alpha_turb)
+                    pnt_prof = 0
 
-                    pnt_test = press_out * alpha_turb
+                else:
+                    if pnt_model == 'Angelinelli':
 
-                if pnt_model == 'Ettori' :
+                        c200 = pmod[0]
 
-                    log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+                        r200c = pmod[1]
 
-                    pth_test = press_out - pm.math.exp(log_pnt)
+                        alpha_turb = alpha_turb_pm(rref_m, r200c, c200, Mhyd.redshift, pnt_pars)
 
-                    pnt_test = pm.math.exp(log_pnt)
+                        pth_test = press_out * (1. - alpha_turb)
 
-                pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
+                        pnt_test = press_out * alpha_turb
 
-                pnt_prof = pm.math.switch(pnt_test <= 0, 1e-10, pnt_test)
+                    if pnt_model == 'Ettori' :
+
+                        log_pnt = beta_nt * pm.math.log(dens_m * 1e3) + logp0_nt * np.log(10)
+
+                        pth_test = press_out - pm.math.exp(log_pnt)
+
+                        pnt_test = pm.math.exp(log_pnt)
+
+                    pth = pm.math.switch(pth_test <= 0, 1e-10, pth_test)
+
+                    pnt_prof = pm.math.switch(pnt_test <= 0, 1e-10, pnt_test)
 
             else:
 
@@ -907,25 +918,6 @@ class Mhyd:
 
         file_abund = get_data_file_path('abundances.dat')
 
-        # if abund == 'angr':
-        #     nhc = 1 / 0.8337
-        #     mup = 0.6125
-        #     mu_e = 1.1738
-        # elif abund == 'aspl':
-        #     nhc = 1 / 0.8527
-        #     mup = 0.5994
-        #     mu_e = 1.1548
-        # elif abund == 'grsa':
-        #     nhc = 1 / 0.8520
-        #     mup = 0.6000
-        #     mu_e = 1.1555
-        # else:  # aspl default
-        #     nhc = 1 / 0.8527
-        #     mup = 0.5994
-        #     mu_e = 1.1548
-        # self.nhc=nhc
-        # self.mup=mup
-        # self.mu_e=mu_e
         self.mup, self.nhc, self.mu_e = mean_molecular_weights(file_abund, abund=abund, Zs=Zs)
 
         if directory is None:

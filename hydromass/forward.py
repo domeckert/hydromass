@@ -264,7 +264,7 @@ def P_forw_from_samples(Mhyd, Forward, nmore=5):
     return pmed, plo, phi
 
 
-def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
+def mass_forw_from_samples(Mhyd, Forward, rin=None, rout=None, npt=200, plot=False, nmore=5):
     '''
     Compute the best-fit forward mass model and its 1-sigma error envelope from a loaded Forward run. 
 
@@ -284,6 +284,26 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
+    if rin is None:
+        rin = np.min((rin_m+rout_m)/2.)
+
+        if rin == 0:
+            rin = 1.
+
+    if rout is None:
+        rout = np.max(rout_m)
+
+    bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
+
+    if rin == 1.:
+        bins[0] = 0.
+
+    rin_m = bins[:npt]
+
+    rout_m = bins[1:]
+
+    rref_m = (rin_m + rout_m) / 2.
+
     nvalm = len(rin_m)
 
     if Mhyd.cf_prof is not None:
@@ -300,7 +320,15 @@ def mass_forw_from_samples(Mhyd, Forward, plot=False, nmore=5):
 
         cf_prof = Mhyd.ccf
 
-    dens_m = np.sqrt(np.dot(Mhyd.Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
+    if Mhyd.fit_bkg:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+    else:
+
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(Mhyd.samples.T)) / cf_prof * Mhyd.transf)
 
     p3d = Forward.func_np(rout_m, Mhyd.samppar)
 

@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: hydromass
 Version: 0.7.0
 Summary: Hydrostatic mass calculator
@@ -14,3 +14,8 @@ Requires-Dist: pytensor
 Requires-Dist: pyproffit
 Requires-Dist: numpyro
 Requires-Dist: corner
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: summary
