@@ -7,11 +7,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 from scipy.ndimage import gaussian_filter
 
-def Interp(x_old,y_old,x_new):
-    s = InterpolatedUnivariateSpline(x_old, y_old, k=1)
-    y_new = s(x_new)
-    return y_new
-
 def cmap_map(function, cmap):
     """ Applies function (which should operate on vectors of shape 3: [r, g, b]), on colormap cmap.
     This routine will break any discontinuous points in a colormap.
@@ -42,7 +37,13 @@ def cmap_map(function, cmap):
 
     return mpl.colors.LinearSegmentedColormap('colormap',cdict,1024)
 
+def Interp(x_old,y_old,x_new):
+    s = InterpolatedUnivariateSpline(x_old, y_old, k=1)
+    y_new = s(x_new)
+    return y_new
+
 light_jet = cmap_map(lambda x: x*0.75 + 0.25, mpl.cm.Blues_r)
+
 
 class Contour:
     '''

@@ -639,7 +639,7 @@ class Model:
                 # #
                 #limits[1] = [300., 3000.]
 
-                limits[0] = [0., 20.]   # Adriana prior
+                limits[0] = [1., 20.]   # Adriana prior
 
                 limits[1] = [900., 4000.]
 
@@ -816,7 +816,7 @@ class Model:
             self.rho_np = rho_ein3_np
 
             if start is None:
-                self.start = [5., 700., 5.]
+                self.start = [1.8, 700., 5.]
             else:
                 try:
                     assert (len(start) == self.npar)
@@ -828,7 +828,7 @@ class Model:
 
             if sd is None:
 
-                self.sd = [3., 300., 3.]
+                self.sd = [1.5, 300., 3.]
 
             else:
 
@@ -844,7 +844,7 @@ class Model:
 
                 limits = np.empty((self.npar, 2))
 
-                limits[0] = [0., 10.]
+                limits[0] = [0., 5.]
 
                 limits[1] = [100., 1800.]
 

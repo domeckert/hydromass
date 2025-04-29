@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .deproject import *
 from .constants import *
+from .wl import *
 from .pnt import *
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
@@ -509,21 +510,35 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         tcf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
 
-        cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+        if np.isscalar(Mhyd.elong):
+
+            cf_prof = np.repeat(tcf, nsamp).reshape(nvalm, nsamp)
+
+        else:
+
+            cf_prof = tcf
 
     else:
 
         cf_prof = Mhyd.ccf
 
-    if Mhyd.fit_bkg:
+    rref_m = (rin_m + rout_m) / 2.
 
-        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+    if not np.isscalar(Mhyd.elong) and not Mhyd.fit_bkg:
+
+        dens_m = np.empty((nsamp, nvalm))
+
+        for i in range(nsamp):
+
+            Kdens_t = calc_density_operator_pm(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.elong[i], Mhyd.amin2kpc)
+
+            dens_m[i] = np.sqrt(np.dot(Kdens_t, np.exp(samples[i])) / cf_prof * Mhyd.transf)  # electron density in cm-3
 
     else:
 
-        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+        Kdens_m = calc_density_operator(rref_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
-    dens_m = np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf)
+        dens_m = np.transpose(np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf))
 
     mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
@@ -567,7 +582,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
         mass = mass + mbar.T
 
     # Pressure gradient
-    dpres = - mass / rref_mul ** 2 * dens_m.T * (rout_mul - rin_mul)
+    dpres = - mass / rref_mul ** 2 * dens_m * (rout_mul - rin_mul)
 
     press00 = np.exp(Mhyd.samplogp0)
 
@@ -585,7 +600,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         if Mhyd.pnt_model == 'Ettori':
 
-            log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
+            log_pnt = Mhyd.pnt_pars[:,1] * np.log(dens_m.T * 1e3) + Mhyd.pnt_pars[:,0] * np.log(10)
 
             pth = press_out - np.exp(log_pnt)
 
@@ -593,7 +608,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         pth = press_out
 
-    return dens_m, press_out, pth
+    return dens_m.T, press_out, pth
 
 def kt_from_samples(Mhyd, model, nmore=5):
     """
@@ -697,7 +712,9 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y=False, nout=10):
 
     if return_Y == True:
 
-        rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
+        nout = 2 * Mhyd.nmore
+
+        nsamp = len(Mhyd.samppar)
 
         rref_m = (rin_m + rout_m) / 2.
 
@@ -711,7 +728,7 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y=False, nout=10):
         pth_p[:ntm, :] = pth
 
         slope = (np.log10(pth[ntm - 1, :]) - np.log10(pth[ntm - 10, :])) / (
-                    np.log10(rref_m[ntm - 1]) - np.log10(rref_m[ntm - 10]))
+                np.log10(rref_m[ntm - 1]) - np.log10(rref_m[ntm - 10]))
 
         P0 = pth[ntm - 1]
 
@@ -731,7 +748,12 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y=False, nout=10):
 
         y_num = y_prefactor * integ_p  # prefactor in cm2/keV
 
-        ysz = y_num[index_sz] * np.tile(Mhyd.elong, (len(index_sz), 1))
+        #print("profile_values.shape:", y_num.shape)
+        #print("r_values.shape:", ((rin_cm_p + rout_cm_p)/2).shape)
+        #print("index_sz:", index_sz)
+        #print("elongation.shape:", Mhyd.elong.shape)
+
+        ysz = elongation_correction_np(y_num, (rin_cm_p + rout_cm_p)/2, index_sz[0], Mhyd.elong)
 
         if Mhyd.sz_data.psfmat is not None:
             ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
@@ -739,6 +761,62 @@ def P_from_samples(Mhyd, model, nmore=5, return_Y=False, nout=10):
         pmed, plo, phi = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
     return pmed, plo, phi
+
+
+def g_from_samples(Mhyd, model, n_draw=None, random_state=None):
+    """
+    Computes the tangential shear g+ from an existing mass reconstruction run, accounting for los elongation.
+
+    :param Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing the result of a mass model fit
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param model: A :class:`hydromass.functions.Model` object containing the definition of the mass model
+    :type model: class:`hydromass.functions.Model`
+    :param n_draw: int, optional, number of random samples to draw from pmod.
+                   If None, all samples are used.
+    :param random_state: int or np.random.Generator, optional, seed for reproducibility.
+    :return:
+        gplus_all: 2D array of tangential shear, shape (M, n_draw), where M = len(rm), n_draw = selected parameter sets
+        rm: array-like, mean radii for the numerical integration
+        ev: array-like, indices for the evaluation of the mass profile
+    """
+    WLdata = Mhyd.wl_data
+
+    pmod = Mhyd.samppar
+
+    elong = Mhyd.elong
+
+    radplus, rm, ev = get_radplus(WLdata.radii_wl)
+    
+    # Ensure pmod is 2D for consistency
+    pmod = np.atleast_2d(pmod)  # Converts 1D array to 2D if needed
+    n_samples = pmod.shape[0]
+    
+    # Select samples if n_draw is specified
+    if n_draw is not None and n_draw < n_samples:
+        rng = np.random.default_rng(random_state)
+        indices = rng.choice(n_samples, n_draw, replace=False)
+        pmod = pmod[indices]
+        n_samples = pmod.shape[0]
+    
+    # Initialize the result array
+    gplus_all = np.zeros((len(rm), n_samples))
+    
+    # Loop over all parameter sets
+    for i in tqdm(range(n_samples)):
+        rho_out = model.rho_np(radplus, *pmod[i]) * WLdata.rho_crit
+        sig = rho_to_sigma_np(radplus, rho_out)
+        _, dsigma = dsigma_trap_np(sig, radplus)
+        gplus = get_shear(sig, dsigma, WLdata.msigmacrit, WLdata.fl)
+        
+        # Extract values at the evaluation radii
+        gplus_all[:, i] = gplus
+
+    if np.isscalar(elong) and elong == 1:
+        gplus_elong = gplus_all[np.arange(len(rm)-2)+1]
+    else:
+        elong = elong[indices]
+        gplus_elong = elongation_correction_np(gplus_all, rm, np.arange(len(rm)-2)+1, elong)    
+    return gplus_elong, rm[np.arange(len(rm)-2)+1], ev
 
 
 def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
@@ -1007,58 +1085,6 @@ def prof_hires(Mhyd, model, rin=None, npt=200, Z=0.3):
     vol_x = vx.deproj_vol().T
 
     dens_m, p3d, pth = densout_pout_from_samples(Mhyd, model, rin_m, rout_m)
-
-    # if Mhyd.sz_data:
-    #
-    #     rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-    #
-    #     deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
-    #
-    #     proj_vol = deproj.deproj_vol().T
-    #
-    #     area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
-    #
-    #     area_proj = area_proj[:, np.newaxis]
-    #
-    #     integ = np.dot(proj_vol, pth) / area_proj
-    #
-    #     ynum = (y_prefactor * integ)
-    #
-    #     ysz = ynum * Mhyd.elong
-    #
-    #     if Mhyd.sz_data.psfmat is not None:
-    #
-    #         ysz = np.dot(Mhyd.sz_data.psfmat, ysz[index_sz])
-
-#    if Mhyd.sz_data is not None:
-
-#        if Mhyd.sz_data.y_sz is not None:  # Fitting the Compton y parameter
-
-            #rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
- #           rin_cm, rout_cm = rin_m * cgskpc, rout_m * cgskpc
-
-            #deproj = MyDeprojVol(rin_cm, rout_cm)  # r from kpc to cm
-
-            #proj_vol = deproj.deproj_vol().T
-
- #           area_proj = np.pi * (-(rin_cm) ** 2 + (rout_cm) ** 2)
-
- #           integ = np.dot(vol_x, pth) / np.tile(area_proj[:, np.newaxis], (1, 4000))
-
- #           y_num = y_prefactor * integ  # prefactor in cm2/keV
-
- #           ysz = y_num * np.tile(Mhyd.elong, (200, 1))
-
-#            if Mhyd.sz_data.psfmat is not None:
-
- #               ysz = np.dot(Mhyd.sz_data.psfmat, ysz)
-        #
-       # yszm, yszl, yszh = np.percentile(ysz, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
-
-#    else:
-
- #       yszm, yszl, yszh = 0, 0, 0
 
     t3d = pth / dens_m
 
