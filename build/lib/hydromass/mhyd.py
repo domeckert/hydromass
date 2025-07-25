@@ -110,10 +110,15 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     esb = prof.eprof.astype('float32')
     rad = prof.bins.astype('float32')
     erad = prof.ebins.astype('float32')
-    counts = prof.counts.astype('int32')
+    if prof.counts is not None:
+        counts = prof.counts.astype('int32')
+        bkgcounts = prof.bkgcounts.astype('float32')
+        if fit_bkg:
+            print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
+            fit_bkg = False
+
     area = prof.area.astype('float32')
     exposure = prof.effexp.astype('float32')
-    bkgcounts = prof.bkgcounts.astype('float32')
     nbin = prof.nbin
 
     nmin = 0
