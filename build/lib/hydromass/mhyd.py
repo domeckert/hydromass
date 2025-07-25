@@ -1177,7 +1177,7 @@ class Mhyd:
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
-            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
+            samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True, rmin=0, rmax=None):
 
         '''
         Optimize a parametric forward fit to the gas pressure profile using the :func:`hydromass.forward.Run_Forward_PyMC3` function
@@ -1208,6 +1208,10 @@ class Mhyd:
         :type tune: int
         :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
         :type find_map: bool
+        :param rmin: Minimum limiting radius (in arcmin) of the active region for the surface brightness. If rmin=None, no minimum radius is applied. Defaults to None.
+        :type rmin: float
+        :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied. Defaults to None.
+        :type rmax: float
         '''
         if forward is None:
 
@@ -1228,7 +1232,9 @@ class Mhyd:
                           min_beta=min_beta,
                           nmore=nmore,
                           tune=tune,
-                          find_map=find_map)
+                          find_map=find_map,
+                          rmin=rmin,
+                          rmax=rmax)
 
     def run_polytropic(self, Polytropic=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True):
