@@ -648,7 +648,7 @@ class Forward:
 
 def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
-                   tune=500, find_map=True):
+                   tune=500, find_map=True, rmin=0., rmax=None):
     """
     Set up parametric forward model fit and optimize with PyMC3. The routine takes a parametric function for the 3D gas pressure profile as input and optimizes jointly for the gas density and pressure profiles. The mass profile is then computed point by point using the analytic derivative of the model pressure profile:
 
@@ -686,17 +686,34 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
     :type tune: int
     :param find_map: Specify whether a maximum likelihood fit will be performed first to initiate the sampler. Defaults to True
     :type find_map: bool
+    :param rmin: Minimum limiting radius (in arcmin) of the active region for the surface brightness. If rmin=None, no minimum radius is applied. Defaults to None.
+    :type rmin: float
+    :param rmax: Maximum limiting radius (in arcmin) of the active region for the surface brightness. If rmax=None, no maximum radius is applied. Defaults to None.
+    :type rmax: float
     """
 
     prof = Mhyd.sbprof
-    sb = prof.profile
-    esb = prof.eprof
-    rad = prof.bins
-    erad = prof.ebins
-    counts = prof.counts
-    area = prof.area
-    exposure = prof.effexp
-    bkgcounts = prof.bkgcounts
+    sb = prof.profile.astype('float32')
+    esb = prof.eprof.astype('float32')
+    rad = prof.bins.astype('float32')
+    erad = prof.ebins.astype('float32')
+    if prof.counts is not None:
+        counts = prof.counts.astype('int32')
+        bkgcounts = prof.bkgcounts.astype('float32')
+        if fit_bkg:
+            print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
+            fit_bkg = False
+
+    area = prof.area.astype('float32')
+    exposure = prof.effexp.astype('float32')
+
+    if rmax is None:
+        rmax = np.max(rad+erad)
+
+    if rmin is None:
+        rmin = 0
+
+    valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -886,7 +903,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb)  # Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred[valid], observed=sb[valid], sigma=esb[valid])  # Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
