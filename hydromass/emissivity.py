@@ -13,7 +13,7 @@ def is_tool(name):
     return find_executable(name) is not None
 
 
-def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=2.0, unit='cr', lum_elow=0.5, lum_ehigh=2.0, arf=None):
+def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=2.0, unit='cr', lum_elow=0.5, lum_ehigh=2.0, arf=None, tmpdir='.'):
     """
 
     Function calc_emissivity, computes scaling factor between count rate and APEC/MEKAL norm using XSPEC. The tool performs an XSPEC simulation of an absorbed APEC model with parameters set by the user, and computes the expected count rate in the band of interest corresponding to an APEC normalization of unity. The corresponding number is then used as conversion between count rate and emission measure for the hydrostatic mass reconstruction step. Note that since the computed count rates are corrected for vignetting through the exposure map, the provided ARF should correspond to the on-axis (unvignetted) effective area.
@@ -62,11 +62,29 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
         return
 
+    if not os.path.exists(rmf):
+
+        print('Error: RMF file not found, aborting')
+
+        return
+
+    if arf is not None and not os.path.exists(arf):
+
+        print('Error: ARF file not found, aborting')
+
+        return
+
     H0 = cosmo.H0.value
 
     Ode = cosmo.Ode0
 
-    fsim=open('commands.xcm','w')
+    fakfile = tmpdir + '/sim.fak'
+
+    if os.path.exists(fakfile):
+
+        os.remove(fakfile)
+
+    fsim=open(tmpdir + '/commands.xcm','w')
 
     # fsim.write('query y\n')
 
@@ -102,7 +120,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     fsim.write('\n')
 
-    fsim.write('\n')
+    fsim.write(f'{fakfile}\n')
 
     fsim.write('10000, 1\n')
 
@@ -110,7 +128,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     fsim.write('ign %1.2lf-**\n' % (ehigh))
 
-    fsim.write('log sim.txt\n')
+    fsim.write(f'log {tmpdir}/sim.txt\n')
 
     if unit == 'cr':
 
@@ -124,7 +142,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     fsim.write('delcomp 1\n')
 
-    fsim.write('log lumin.txt\n')
+    fsim.write(f'log {tmpdir}/lumin.txt\n')
 
     fsim.write('lumin %1.2lf %1.2lf %g\n' % (lum_elow, lum_ehigh, z))
 
@@ -134,21 +152,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     fsim.close()
 
-    nrmf_tot = rmf.split('.')[0]
-
-    if os.path.exists('%s.fak' % (nrmf_tot)):
-
-        os.system('rm %s.fak' % (nrmf_tot))
-
-    srmf = nrmf_tot.split('/')
-
-    nrmf = srmf[len(srmf) - 1]
-
-    if os.path.exists('%s.fak' % (nrmf)):
-
-        os.system('rm %s.fak' % (nrmf))
-
-    os.system('xspec < commands.xcm')
+    os.system(f'xspec < {tmpdir}/commands.xcm')
 
     ssim = open('sim.txt')
     lsim = ssim.readlines()
