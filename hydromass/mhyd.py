@@ -1,3 +1,5 @@
+import numpy as np
+
 from .deproject import *
 from .emissivity import *
 from .functions import *
