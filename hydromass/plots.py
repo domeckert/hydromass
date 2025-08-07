@@ -340,7 +340,7 @@ def estimate_P0(Mhyd, dens='sb', outfile=None):
 
     if Mhyd.sz_data is not None:
 
-        rmaxsz = np.max(Mhyd.rout_sz)
+        rmaxsz = np.max(Mhyd.sz_data.rout_sz)
 
         if rmaxsz > maxrad:
 
