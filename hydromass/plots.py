@@ -563,7 +563,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         cs_mat = np.tril(ones_mat)
 
-        mgas = np.dot(cs_mat, dens_m * nhconv * volmat) / 1e13 / Mhyd.mfact0
+        mgas = np.dot(cs_mat, dens_m.T * nhconv * volmat) / 1e13 / Mhyd.mfact0
 
         if Mhyd.mstar is not None:
 
