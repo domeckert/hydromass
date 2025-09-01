@@ -119,8 +119,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
             fit_bkg = False
 
-    area = prof.area.astype('float32')
-    exposure = prof.effexp.astype('float32')
+    if not prof.voronoi:
+        area = prof.area.astype('float32')
+        exposure = prof.effexp.astype('float32')
     nbin = prof.nbin
 
     nmin = 0

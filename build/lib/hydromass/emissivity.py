@@ -226,7 +226,7 @@ def vikh_temp(x, pars, Tmin):
     return T0*numer/denom*t2
 
 def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.5, ehigh=2.0,
-                 unit='cr', lum_elow=0.5, lum_ehigh=2.0, arf=None, outz=None, outkt=None):
+                 unit='cr', lum_elow=0.5, lum_ehigh=2.0, arf=None, outz=None, outkt=None, tmpdir='.'):
     '''
 
     :param Mhyd: Hydromass object
@@ -364,7 +364,8 @@ def variable_ccf(Mhyd, cosmo, z, nh, rmf, method='interp', abund='aspl', elow=0.
                                          arf=arf,
                                          unit=unit,
                                          lum_elow=lum_elow,
-                                         lum_ehigh=lum_ehigh)
+                                         lum_ehigh=lum_ehigh,
+                                         tmpdir=tmpdir)
 
     else:
 

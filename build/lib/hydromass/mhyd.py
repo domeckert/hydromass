@@ -1,3 +1,5 @@
+import numpy as np
+
 from .deproject import *
 from .emissivity import *
 from .functions import *
@@ -117,8 +119,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
             print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
             fit_bkg = False
 
-    area = prof.area.astype('float32')
-    exposure = prof.effexp.astype('float32')
+    if not prof.voronoi:
+        area = prof.area.astype('float32')
+        exposure = prof.effexp.astype('float32')
     nbin = prof.nbin
 
     nmin = 0
@@ -996,7 +999,7 @@ class Mhyd:
 
 
     def emissivity(self, nh, rmf, type='single', kt=None, Z=0.3, elow=0.5, ehigh=2.0,
-                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None):
+                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None, tmpdir='.'):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 
@@ -1028,6 +1031,8 @@ class Mhyd:
         :type method: str
         :param outkt: If type='variable', name of output file including the fit to the temperature profile. If None, it is ignored. Defaults to None.
         :type outkt: str
+        :param tmpdir: Temporary directory to store XSPEC files. Defaults to '.'
+        :type tmpdir: str
         '''
 
         if kt is None:
@@ -1058,7 +1063,8 @@ class Mhyd:
                                             arf=arf,
                                             unit=unit,
                                             lum_elow=lum_elow,
-                                            lum_ehigh=lum_ehigh)
+                                            lum_ehigh=lum_ehigh,
+                                            tmpdir=tmpdir)
 
         elif type == 'variable':
 
@@ -1076,7 +1082,8 @@ class Mhyd:
                                     lum_elow=lum_elow,
                                     lum_ehigh=lum_ehigh,
                                     outz=outz,
-                                    outkt=outkt)
+                                    outkt=outkt,
+                                    tmpdir=tmpdir)
 
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
