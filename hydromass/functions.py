@@ -159,11 +159,11 @@ def f_ein3_pm(xout, c200, r200, mu, delta=200.):
 
     matrad_tril = np.tril(matrad)
 
-    fx = pm.math.dot(matrad_tril, integrand)
-
     matrad_tril[0, 0] = 0.5
 
     matrad_tril[-1, -1] = 0.5
+
+    fx = pm.math.dot(matrad_tril, integrand)
 
     return r200 ** 3 * fcc * fx
 
