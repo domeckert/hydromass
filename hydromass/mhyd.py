@@ -455,9 +455,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
-            # Evaluate mass model
-            mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
-
+            mbar = 0
             if dmonly:
 
                 nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
@@ -472,6 +470,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 else:
 
                     mbar = mgas
+
+            # Evaluate mass model
+            if model.massmod == 'MOND':
+
+                # MOND also needs baryon mass
+
+                assert mbar != 0, 'Cannot use MOND if baryons are not passed. Select dmonly=True and optionally pass mstar'
+
+                mass = model.func_pm(rref_m, *pmod, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
+
+            else:
+
+                mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta = model.delta) / Mhyd.mfact0
 
                 mass = mass + mbar
 
@@ -856,7 +867,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
 
-    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
+    #Mhyd.r3d = samppar.T[1,:] * (elong**(1/3)) #???? who tells that samppar dimension 1 is a distance? What if there is only one parameter?
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
