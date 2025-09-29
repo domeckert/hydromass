@@ -514,6 +514,14 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+    g_gas_t = mgas * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+    g_gas, g_gasl, g_gash = np.percentile(g_gas_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
+    g_tot_t = mass * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+    g_tot, g_totl, g_toth = np.percentile(g_tot_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
     dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
@@ -525,7 +533,13 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
         "MGAS_HI": mgh,
         "FGAS": fg,
         "FGAS_LO": fgl,
-        "FGAS_HI": fgh
+        "FGAS_HI": fgh,
+        "g_GAS": g_gas,
+        "g_GAS_LO": g_gasl,
+        "g_GAS_HI": g_gash,
+        "g_OBS": g_tot,
+        "g_OBS_LO": g_totl,
+        "g_OBS_HI": g_toth,
     }
 
     if plot:
