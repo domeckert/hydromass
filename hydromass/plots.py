@@ -542,13 +542,13 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         dens_m = np.transpose(np.sqrt(np.dot(Kdens_m, np.exp(samples.T)) / cf_prof * Mhyd.transf))
 
-    mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
-
     rout_mul = np.tile(rout_m, nsamp).reshape(nsamp, nvalm)
 
     rin_mul = np.tile(rin_m, nsamp).reshape(nsamp, nvalm)
 
     rref_mul = np.tile(rref_m, nsamp).reshape(nsamp, nvalm)
+
+    mbar = 0
 
     # Adding baryonic mass contribution in case of DM-only fit
     if Mhyd.dmonly:
@@ -581,7 +581,17 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
             mbar = mgas
 
+    if model.massmod != 'MOND':
+
+        mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
+
         mass = mass + mbar.T
+
+    else:
+
+        mass = model.func_np(rref_m, Mhyd.samppar, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
+
+
 
     # Pressure gradient
     dpres = - mass / rref_mul ** 2 * dens_m * (rout_mul - rin_mul)
@@ -872,8 +882,6 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
     rref_m = (rin_m + rout_m) / 2.
 
-    mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, model.delta) * 1e13
-
     nsamp = len(Mhyd.samppar)
 
     nvalm = len(rin_m)
@@ -919,6 +927,10 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
         mg, mgl, mgh = np.percentile(mgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+        g_gas_t = mgas * const_G_Msun_kpc / rout_m[:, np.newaxis]**2
+
+        g_gas, g_gasl, g_gash = np.percentile(g_gas_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
         if Mhyd.mstar is not None:
 
             r_mstar = Mhyd.mstar[:, 0]
@@ -931,27 +943,51 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             mstar_m = np.zeros(nvalm)
 
+        g_star = mstar_m * const_G_Msun_kpc / rout_m**2
+
+        mbar = mstar_m[:, np.newaxis] + mgas
+
+        g_bar_t = mbar * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+        g_bar, g_barl, g_barh = np.percentile(g_bar_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
+        if model.massmod in ['NFW+SERSIC']:
+
+            mass, mass_0, mass_1 = [Mhyd.mfact * v * 1e13 for v in model.func_np(rout_m, Mhyd.samppar, delta = model.delta, return_separate = True)]
+
+        elif model.massmod == 'MOND':
+
+            mass = model.func_np(rout_m, Mhyd.samppar, mbar = mbar)
+
+        else:
+
+            mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta = model.delta) * 1e13
+
         if Mhyd.dmonly:
 
-            mtot = mass + mgas.T + mstar_m.T
+            mtot = mass + mbar.T
 
             fgas = mgas / mtot.T
+
+            mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
+
+            g_tot_t = mtot.T * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+            g_tot, g_totl, g_toth = np.percentile(g_tot_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
 
         else:
 
             fgas = mgas / mass.T
 
+            mtotm, mtotlo, mtothi = mmed, mlo, mhi
+
+            g_tot_t = mass.T * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+            g_tot, g_totl, g_toth = np.percentile(g_tot_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
         fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
         mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
-
-        if Mhyd.dmonly:
-
-            mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
-
-        else:
-
-            mtotm, mtotlo, mtothi = mmed, mlo, mhi
 
         dict = {
             "R_IN": rin_m,
@@ -969,8 +1005,40 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
             "FGAS": fg,
             "FGAS_LO": fgl,
             "FGAS_HI": fgh,
-            "M_STAR": mstar_m
+            "M_STAR": mstar_m,
+            "g_GAS": g_gas,
+            "g_GAS_LO": g_gasl,
+            "g_GAS_HI": g_gash,
+            "g_STAR": g_star,
+            "g_BAR": g_bar,
+            "g_BAR_LO": g_barl,
+            "g_BAR_HI": g_barh,
+            "g_OBS": g_tot,
+            "g_OBS_LO": g_totl,
+            "g_OBS_HI": g_toth,
         }
+
+        if model.massmod in ['NFW+SERSIC']:
+
+            m_comp_0med, m_comp_0lo, m_comp_0hi = np.percentile(mass_0, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
+
+            m_comp_1med, m_comp_1lo, m_comp_1hi = np.percentile(mass_1, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
+
+            comp0, comp1 = model.massmod.split('+')
+
+            dict[f'M_{comp0}'] = m_comp_0med
+
+            dict[f'M_{comp0}_LO'] = m_comp_0lo
+
+            dict[f'M_{comp0}_HI'] = m_comp_0hi
+
+            dict[f'M_{comp1}'] = m_comp_1med
+
+            dict[f'M_{comp1}_LO'] = m_comp_1lo
+
+            dict[f'M_{comp1}_HI'] = m_comp_1hi
+
+
 
     else:
 
