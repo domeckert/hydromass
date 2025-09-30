@@ -581,17 +581,15 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
             mbar = mgas
 
-    if model.massmod != 'MOND':
+    if model.massmod in  ['MOND', 'GMOND']:
+
+        mass = model.func_np(rref_m, Mhyd.samppar, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
+
+    else:
 
         mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
         mass = mass + mbar.T
-
-    else:
-
-        mass = model.func_np(rref_m, Mhyd.samppar, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
-
-
 
     # Pressure gradient
     dpres = - mass / rref_mul ** 2 * dens_m * (rout_mul - rin_mul)
@@ -955,7 +953,7 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             mass, mass_0, mass_1 = [Mhyd.mfact * v * 1e13 for v in model.func_np(rout_m, Mhyd.samppar, delta = model.delta, return_separate = True)]
 
-        elif model.massmod == 'MOND':
+        elif model.massmod in ['MOND', 'GMOND']:
 
             mass = model.func_np(rout_m, Mhyd.samppar, mbar = mbar)
 

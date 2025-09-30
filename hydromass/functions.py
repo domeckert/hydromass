@@ -196,6 +196,44 @@ def f_mond_np(xout, pars, mbar = 0):
 
     return g_obs * xout[np.newaxis, :]**2 / const_G_Msun_kpc
 
+def f_gmond_pm(xout, A, log_g_0, sigma_g, mbar = 0):
+    '''
+    GMOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
+
+    :param xout:
+    :param A:
+    :param log_g_0:
+    :param mbar:
+    :return:
+    '''
+
+    log_g_bar = pm.math.log(mbar * const_G_Msun_kpc / xout**2)
+
+    log_g_obs = log_g_bar / ( 1 + A * pm.math.exp(-0.5 * ((log_g_bar - log_g_0) / sigma_g)**2) )
+
+    return pm.math.exp(log_g_obs) * xout**2 / const_G_Msun_kpc
+
+def f_gmond_np(xout, pars, mbar = 0):
+    '''
+    GMOND fitting to the mass profile. See (see :func:`hydromass.functions.f_gmond_pm`)
+    :param xout:
+    :param pars:
+    :param mbar:
+    :return:
+    '''
+
+    A = pars[:, 0]
+
+    log_g_0 = pars[:, 1]
+
+    sigma_g = pars[:, 2]
+
+    log_g_bar = np.log(mbar.T * const_G_Msun_kpc / xout[np.newaxis, :] ** 2)
+
+    log_g_obs = log_g_bar / ( 1 + A[:, np.newaxis] * np.exp(-0.5 * ((log_g_bar - log_g_0[:, np.newaxis]) / sigma_g[:, np.newaxis]) ** 2) )
+
+    return np.exp(log_g_obs) * xout[np.newaxis, :] ** 2 / const_G_Msun_kpc
+
 def f_nfw_sersic_pm(xout, c200_nfw, r200_nfw, c200_sersic, r200_sersic, b, n, alpha, delta=200.):
     '''
     Theano function for the NFW + Sersic mass model. Sersic model from Prugniel+1997 approximation.
@@ -1185,6 +1223,75 @@ class Model:
             if fix is None:
 
                 self.fix = [False]
+
+            else:
+
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+
+                self.fix = fix
+
+        elif massmod == 'GMOND':
+
+            func_pm = f_gmond_pm
+
+            func_np = f_gmond_np
+
+            self.rho_pm = None
+            self.rho_np = None
+
+            self.npar = 3
+            self.parnames = ['A', 'log_g_0', 'sigma_g']
+
+            if start is None:
+                self.start = [1, np.log(1.2e-8), 2]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+
+                self.start = start
+
+            if sd is None:
+
+                self.sd = [2., 2., 2.]
+
+            else:
+
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+
+                self.sd = sd
+
+            if limits is None:
+
+                limits = np.empty((self.npar, 2))
+                #
+                limits[0] = [0., 15.]
+                #
+                limits[1] = [-30., -14.]
+                #
+                limits[2] = [0.1, 10.]
+
+            else:
+
+                try:
+                    assert (limits.shape == (self.npar, 2))
+                except AssertionError:
+                    print('Shape of limits does not match function.')
+                    return
+
+            if fix is None:
+
+                self.fix = [False, False, False]
 
             else:
 

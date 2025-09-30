@@ -472,11 +472,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     mbar = mgas
 
             # Evaluate mass model
-            if model.massmod == 'MOND':
+            if model.massmod in ['MOND', 'GMOND']:
 
                 # MOND also needs baryon mass
 
-                assert mbar != 0, 'Cannot use MOND if baryons are not passed. Select dmonly=True and optionally pass mstar'
+                assert mbar != 0, 'Cannot use MOND/GMOND if baryons are not passed. Select dmonly=True and optionally pass mstar'
 
                 mass = model.func_pm(rref_m, *pmod, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
 
