@@ -763,14 +763,20 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     """
 
     prof = Mhyd.sbprof
-    sb = prof.profile
-    esb = prof.eprof
-    rad = prof.bins
-    erad = prof.ebins
-    counts = prof.counts
-    area = prof.area
-    exposure = prof.effexp
-    bkgcounts = prof.bkgcounts
+    sb = prof.profile.astype('float32')
+    esb = prof.eprof.astype('float32')
+    rad = prof.bins.astype('float32')
+    erad = prof.ebins.astype('float32')
+    if prof.counts is not None:
+        counts = prof.counts.astype('int32')
+        bkgcounts = prof.bkgcounts.astype('float32')
+        if fit_bkg:
+            print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
+            fit_bkg = False
+
+    if not prof.voronoi:
+        area = prof.area.astype('float32')
+        exposure = prof.effexp.astype('float32')
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -896,6 +902,8 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             proj_mat = np.dot(mat1, vol)
 
+            print(proj_mat.shape)
+
         else:
 
             proj_mat = np.dot(sum_mat, vol)
@@ -954,7 +962,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         print('T0 prior and width:',T0_est,err_T0_est)
 
-        if np.max(rout_m) > rout_m[ntm - 1]:
+        if rout_m[ntm - 1] > np.max(Mhyd.spec_data.rout_x):
             # Power law outside of the fitted range
 
             txfit = np.append(txfit, T0_est)
