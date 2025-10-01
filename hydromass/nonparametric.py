@@ -1088,7 +1088,13 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
 
+    with hydro_model:
+
+        pm.compute_log_likelihood(trace)
+
     Mhyd.trace = trace
+
+    Mhyd.hydro_model = hydro_model
 
     # Get chains and save them to file
     chain_coefs = np.array(trace.posterior['coefs'])
