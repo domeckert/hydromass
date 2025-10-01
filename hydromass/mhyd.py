@@ -36,7 +36,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
                    pnt=False, pnt_model='Ettori', rmin=0., rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-                   fit_elong=True, use_jax=True, wlonly=False, pnt_prior='sim'):
+                   fit_elong=False, use_jax=True, wlonly=False, pnt_prior='sim', fit_eta=False):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -359,6 +359,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         else:
             elongation = 1
 
+        if fit_eta:
+            eta = pm.Uniform('eta', lower=0.2, upper=5)
+        else:
+            eta = 1
+
         if not wlonly:
             # Priors for unknown model parameters
             coefs = pm.Normal('coefs', mu=testval, sigma=20, shape=npt)
@@ -473,8 +478,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             # Pressure gradient
             dpres = - mass / rref_m ** 2 * dens_m * (rout_m - rin_m)
-            press_out = press00 - pm.math.dot(int_mat, dpres)
 
+            press_out = press00 - pm.math.dot(int_mat, dpres)  # directly returns press_out
+
+            # Non-thermal pressure correction, if any
             if pnt:
 
                 if pnt_model!= 'Angelinelli' and pnt_model!='Ettori':
@@ -523,6 +530,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 count_obs = pm.Poisson('counts', mu=pred, observed=counts) #counts likelihood
 
             else:
+
                 sbmod = pred * elongation
 
                 sb_obs = pm.Normal('sb', mu=sbmod[valid], observed=sb[valid], sigma=esb[valid]) #Sx likelihood
@@ -559,7 +567,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
 
-                    pfit = pth[index_sz] 
+                    pfit = pth[index_sz]
+
+                    if fit_elong:
+                        pfit = pfit * elongation
+
+                    if fit_eta:
+                        pfit = pfit * eta
 
                     P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
 
@@ -843,6 +857,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
 
+    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
+
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
         Mhyd.ktmod = kt_mod['TSPEC']
@@ -918,7 +934,8 @@ class Mhyd:
     :type abund: str
     """
 
-    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None, abund = 'aspl', Zs=1.0):
+    def __init__(self, sbprofile=None, spec_data=None, sz_data=None, wl_data=None, vel_data=None, directory=None, redshift=None, cosmo=None,
+                 abund = 'aspl', Zs=0.3):
 
         file_abund = get_data_file_path('abundances.dat')
 
@@ -999,7 +1016,7 @@ class Mhyd:
 
 
     def emissivity(self, nh, rmf, type='single', kt=None, Z=0.3, elow=0.5, ehigh=2.0,
-                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None, tmpdir='.'):
+                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None, tmpdir='.', out_cfact_file=None, quiet=False):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 
@@ -1031,6 +1048,10 @@ class Mhyd:
         :type method: str
         :param outkt: If type='variable', name of output file including the fit to the temperature profile. If None, it is ignored. Defaults to None.
         :type outkt: str
+        :param quiet: Do not print all xspec output
+        :type quiet: bool
+        :param out_cfact_file: Output conversion factor file for variable_ccf
+        :type out_cfact_file: str
         :param tmpdir: Temporary directory to store XSPEC files. Defaults to '.'
         :type tmpdir: str
         '''
@@ -1051,7 +1072,7 @@ class Mhyd:
 
             print('Mean cluster temperature:', kt, ' keV')
 
-            self.ccf, self.lumfact = calc_emissivity(cosmo=self.cosmo,
+            self.ccf, self.lumfact, _, _, _ = calc_emissivity(cosmo=self.cosmo,
                                             z=self.redshift,
                                             nh=nh,
                                             kt=kt,
@@ -1064,7 +1085,9 @@ class Mhyd:
                                             unit=unit,
                                             lum_elow=lum_elow,
                                             lum_ehigh=lum_ehigh,
-                                            tmpdir=tmpdir)
+                                            tmpdir=tmpdir,
+                                            quiet=quiet
+                                            )
 
         elif type == 'variable':
 
@@ -1083,14 +1106,17 @@ class Mhyd:
                                     lum_ehigh=lum_ehigh,
                                     outz=outz,
                                     outkt=outkt,
-                                    tmpdir=tmpdir)
+                                    tmpdir=tmpdir,
+                                    out_cfact_file=out_cfact_file,
+                                    quiet=quiet
+                                    )
 
 
     def run(self, model=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            pnt_model='Ettori', fit_elong=False, use_jax=True, wlonly=False, pnt_prior='sim'):
+            pnt_model='Ettori', fit_elong=False, fit_eta=False, use_jax=True, wlonly=False, pnt_prior='sim'):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -1178,6 +1204,7 @@ class Mhyd:
                        init=init,
                        target_accept=target_accept,
                        fit_elong=fit_elong,
+                       fit_eta=fit_eta,
                        use_jax=use_jax,
                        wlonly=wlonly,
                        pnt_prior=pnt_prior)
