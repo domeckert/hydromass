@@ -345,7 +345,9 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
             else:
 
-                modpar = pm.ConstantDist(name, model.start[i])
+                modpar = pm.Deterministic(name, pm.math.constant(model.start[i]))
+
+                # modpar = pm.ConstantDist(name, model.start[i]) # This does not work anymore in pymc
 
             allpmod.append(modpar)
 
@@ -472,11 +474,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     mbar = mgas
 
             # Evaluate mass model
-            if model.massmod in ['MOND', 'GMOND']:
+            if model.massmod in ['MOND', 'GMOND', 'EMOND']:
 
                 # MOND also needs baryon mass
 
-                assert mbar != 0, 'Cannot use MOND/GMOND if baryons are not passed. Select dmonly=True and optionally pass mstar'
+                assert mbar != 0, 'Cannot use MOND/GMOND/EMOND if baryons are not passed. Select dmonly=True and optionally pass mstar'
 
                 mass = model.func_pm(rref_m, *pmod, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
 
@@ -704,6 +706,12 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     tend = time.time()
 
     print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
+
+    print('Computing log_likelihood')
+
+    with hydro_model:
+
+        pm.compute_log_likelihood(trace)
 
     Mhyd.trace = trace
 
