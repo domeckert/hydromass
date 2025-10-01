@@ -581,7 +581,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
             mbar = mgas
 
-    if model.massmod in  ['MOND', 'GMOND']:
+    if model.massmod in  ['MOND', 'GMOND', 'EMOND']:
 
         mass = model.func_np(rref_m, Mhyd.samppar, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
 
@@ -953,7 +953,7 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             mass, mass_0, mass_1 = [Mhyd.mfact * v * 1e13 for v in model.func_np(rout_m, Mhyd.samppar, delta = model.delta, return_separate = True)]
 
-        elif model.massmod in ['MOND', 'GMOND']:
+        elif model.massmod in ['MOND', 'GMOND', 'EMOND']:
 
             mass = model.func_np(rout_m, Mhyd.samppar, mbar = mbar)
 
