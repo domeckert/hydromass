@@ -196,20 +196,24 @@ def f_mond_np(xout, pars, mbar = 0):
 
     return g_obs * xout[np.newaxis, :]**2 / const_G_Msun_kpc
 
-def f_gmond_pm(xout, A, log_g_0, sigma_g, mbar = 0):
+def f_gmond_pm(xout, log_C, log_g_0, sigma_g, mbar = 0):
     '''
     GMOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
 
     :param xout:
-    :param A:
+    :param log_C:
     :param log_g_0:
     :param mbar:
     :return:
     '''
 
-    log_g_bar = pm.math.log(mbar * const_G_Msun_kpc / xout**2)
+    g_bar = mbar * const_G_Msun_kpc / xout**2
 
-    log_g_obs = log_g_bar / ( 1 + A * pm.math.exp(-0.5 * ((log_g_bar - log_g_0) / sigma_g)**2) )
+    log_g_bar = pm.math.log(g_bar)
+
+    S = pm.math.exp(-0.5 * ((log_g_bar - log_g_0) / sigma_g) ** 2)
+
+    log_g_obs = log_g_bar * (1 - S / 2) + log_C * S
 
     return pm.math.exp(log_g_obs) * xout**2 / const_G_Msun_kpc
 
@@ -222,15 +226,75 @@ def f_gmond_np(xout, pars, mbar = 0):
     :return:
     '''
 
-    A = pars[:, 0]
+    log_C = pars[:, 0]
 
     log_g_0 = pars[:, 1]
 
     sigma_g = pars[:, 2]
 
-    log_g_bar = np.log(mbar.T * const_G_Msun_kpc / xout[np.newaxis, :] ** 2)
+    g_bar = mbar.T * const_G_Msun_kpc / xout[np.newaxis, :] ** 2
 
-    log_g_obs = log_g_bar / ( 1 + A[:, np.newaxis] * np.exp(-0.5 * ((log_g_bar - log_g_0[:, np.newaxis]) / sigma_g[:, np.newaxis]) ** 2) )
+    log_g_bar = np.log(g_bar)
+
+    S = np.exp(-0.5 * ((log_g_bar - log_g_0[:, np.newaxis]) / sigma_g[:, np.newaxis]) ** 2)
+
+    log_g_obs = log_g_bar * (1 - S / 2) + log_C[:, np.newaxis] * S
+
+    return np.exp(log_g_obs) * xout[np.newaxis, :] ** 2 / const_G_Msun_kpc
+
+def f_emond_pm(xout, alpha1, alpha2, log_g1, log_g2, mbar = 0):
+    '''
+    EckertMOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
+
+    :param xout:
+    :param alpha1:
+    :param alpha2:
+    :param g1:
+    :param g2:
+    :param mbar:
+    :return:
+    '''
+
+    g1 = pm.math.exp(log_g1)
+
+    g2 = pm.math.exp(log_g2)
+
+    g_bar = mbar * const_G_Msun_kpc / xout**2
+
+    log_g_bar = pm.math.log(g_bar)
+
+    log_g_obs = log_g_bar + alpha1 * pm.math.log(1 + g1 / g_bar) + (alpha2 - alpha1) * pm.math.log(1 + g2 / g_bar)
+
+    return pm.math.exp(log_g_obs) * xout**2 / const_G_Msun_kpc
+
+def f_emond_np(xout, pars, mbar = 0):
+    '''
+    EckertMOND fitting to the mass profile. See (see :func:`hydromass.functions.f_gmond_pm`)
+    :param xout:
+    :param pars:
+    :param mbar:
+    :return:
+    '''
+
+    alpha1 = pars[:, 0]
+
+    alpha2 = pars[:, 1]
+
+    log_g1 = pars[:, 2]
+
+    log_g2 = pars[:, 3]
+
+    g1 = np.exp(log_g1)
+
+    g2 = np.exp(log_g2)
+
+    g_bar = mbar.T * const_G_Msun_kpc / xout[np.newaxis, :] ** 2
+
+    log_g_bar = np.log(g_bar)
+
+    log_g_obs = (log_g_bar +
+                 alpha1[:, np.newaxis] * np.log(1 + g1[:, np.newaxis] / g_bar) +
+                 (alpha2[:, np.newaxis] - alpha1[:, np.newaxis]) * np.log(1 + g2[:, np.newaxis] / g_bar))
 
     return np.exp(log_g_obs) * xout[np.newaxis, :] ** 2 / const_G_Msun_kpc
 
@@ -1182,7 +1246,7 @@ class Model:
             self.parnames = ['g_cross']
 
             if start is None:
-                self.start = [np.log(1.2e-10)]
+                self.start = [np.log(1.2e-8)]
             else:
                 try:
                     assert (len(start) == self.npar)
@@ -1210,7 +1274,7 @@ class Model:
 
                 limits = np.empty((self.npar, 2))
                 #
-                limits[0] = [-30., -14.]
+                limits[0] = [-23., -14.]
 
             else:
 
@@ -1244,10 +1308,10 @@ class Model:
             self.rho_np = None
 
             self.npar = 3
-            self.parnames = ['A', 'log_g_0', 'sigma_g']
+            self.parnames = ['log_C', 'log_g_0', 'sigma_g']
 
             if start is None:
-                self.start = [1, np.log(1.2e-8), 2]
+                self.start = [np.log(1e-4), np.log(1.2e-8), 2]
             else:
                 try:
                     assert (len(start) == self.npar)
@@ -1275,11 +1339,11 @@ class Model:
 
                 limits = np.empty((self.npar, 2))
                 #
-                limits[0] = [0., 15.]
+                limits[0] = [np.log(1e-5), np.log(1e-3)]
                 #
-                limits[1] = [-30., -14.]
+                limits[1] = [-23., -14.]
                 #
-                limits[2] = [0.1, 10.]
+                limits[2] = [0.1, 5.]
 
             else:
 
@@ -1292,6 +1356,77 @@ class Model:
             if fix is None:
 
                 self.fix = [False, False, False]
+
+            else:
+
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+
+                self.fix = fix
+
+        elif massmod == 'EMOND':
+
+            func_pm = f_emond_pm
+
+            func_np = f_emond_np
+
+            self.rho_pm = None
+            self.rho_np = None
+
+            self.npar = 4
+            self.parnames = ['alpha1', 'alpha2', 'log_g1', 'log_g2']
+
+            if start is None:
+                self.start = [1.4, -1.2, np.log(2.3e-8), np.log(1.2e-9)]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+
+                self.start = start
+
+            if sd is None:
+
+                self.sd = [2., 2., 2., 2.]
+
+            else:
+
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+
+                self.sd = sd
+
+            if limits is None:
+
+                limits = np.empty((self.npar, 2))
+                #
+                limits[0] = [-1., 3.]
+                #
+                limits[1] = [-3., 1.]
+                #
+                limits[2] = [-23., -14.]
+                #
+                limits[3] = [-23., -14.]
+
+            else:
+
+                try:
+                    assert (limits.shape == (self.npar, 2))
+                except AssertionError:
+                    print('Shape of limits does not match function.')
+                    return
+
+            if fix is None:
+
+                self.fix = [False, False, False, False]
 
             else:
 
