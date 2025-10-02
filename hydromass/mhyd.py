@@ -325,6 +325,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         # Model parameters
         allpmod = []
 
+        initvals = dict()
+
         for i in range(model.npar):
 
             name = model.parnames[i]
@@ -342,6 +344,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     print('using uniform priors')
                     modpar = pm.Uniform(name, lower=lim[0], upper=lim[1])
 
+                initvals[name] = model.start[i]
 
             else:
 
@@ -656,7 +659,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         if find_map:
 
-            start = pm.find_MAP()
+            start = pm.find_MAP(start=initvals)
 
             if not isjax or not use_jax:
 
@@ -1344,7 +1347,7 @@ class Mhyd:
 
     def run_GP(self, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
-            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False, T0extend=None):
+            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False, T0extend=None, rmin=None, rmax=None):
 
         '''
         Run a non-parametric log-normal mixture reconstruction. See :func:`hydromass.nonparametric.Run_NonParametric_PyMC3`
@@ -1398,7 +1401,10 @@ class Mhyd:
                                 smax=smax,
                                 ngauss=ngauss,
                                 extend=extend,
-                                T0extend=T0extend)
+                                T0extend=T0extend,
+                                rmin = rmin,
+                                rmax = rmax
+                                )
 
     def SaveModel(self, model, outfile=None):
         '''
