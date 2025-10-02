@@ -514,6 +514,14 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
 
     fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
+    g_gas_t = mgas * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+    g_gas, g_gasl, g_gash = np.percentile(g_gas_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
+    g_tot_t = mass * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
+
+    g_tot, g_totl, g_toth = np.percentile(g_tot_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
+
     dict = {
         "R_IN": rin_m,
         "R_OUT": rout_m,
@@ -525,7 +533,13 @@ def mass_GP_from_samples(Mhyd, rin=None, rout=None, npt=200, plot=False):
         "MGAS_HI": mgh,
         "FGAS": fg,
         "FGAS_LO": fgl,
-        "FGAS_HI": fgh
+        "FGAS_HI": fgh,
+        "g_GAS": g_gas,
+        "g_GAS_LO": g_gasl,
+        "g_GAS_HI": g_gash,
+        "g_OBS": g_tot,
+        "g_OBS_LO": g_totl,
+        "g_OBS_HI": g_toth,
     }
 
     if plot:
@@ -724,7 +738,7 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
                    samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
                    tune=500, bin_fact=1.0, smin=None, smax=None, ngauss=100, find_map=True,
-                   extend=False, T0extend=None):
+                   extend=False, T0extend=None, rmin=0., rmax=None):
     """
     Run non-parametric log-normal mixture reconstruction. Following Eckert et al. (2022), the temperature profile is described as a linear combination of a large number of log-normal functions, whereas the gas density profile is decomposed on a basis of King functions. The number of log-normal functions as well as the smoothing scales can be adjusted by the user.
 
@@ -777,6 +791,28 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     if not prof.voronoi:
         area = prof.area.astype('float32')
         exposure = prof.effexp.astype('float32')
+    sb = prof.profile.astype('float32')
+    esb = prof.eprof.astype('float32')
+    rad = prof.bins.astype('float32')
+    erad = prof.ebins.astype('float32')
+    if prof.counts is not None:
+        counts = prof.counts.astype('int32')
+        bkgcounts = prof.bkgcounts.astype('float32')
+        if fit_bkg:
+            print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
+            fit_bkg = False
+
+    if not prof.voronoi:
+        area = prof.area.astype('float32')
+        exposure = prof.effexp.astype('float32')
+
+    if rmax is None:
+        rmax = np.max(rad+erad)
+
+    if rmin is None:
+        rmin = 0
+
+    valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -902,8 +938,6 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             proj_mat = np.dot(mat1, vol)
 
-            print(proj_mat.shape)
-
         else:
 
             proj_mat = np.dot(sum_mat, vol)
@@ -1012,7 +1046,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb)  # Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred[valid], observed=sb[valid], sigma=esb[valid])  # Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
@@ -1082,7 +1116,13 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
     print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
 
+    with hydro_model:
+
+        pm.compute_log_likelihood(trace)
+
     Mhyd.trace = trace
+
+    Mhyd.hydro_model = hydro_model
 
     # Get chains and save them to file
     chain_coefs = np.array(trace.posterior['coefs'])
