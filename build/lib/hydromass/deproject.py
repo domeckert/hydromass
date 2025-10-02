@@ -4,6 +4,7 @@ from .constants import *
 from astropy.io import fits
 import time
 import pymc as pm
+import sys
 
 # Function to calculate a linear operator transforming parameter vector into predicted model counts
 
@@ -569,7 +570,7 @@ class MyDeprojVol:
                 volmat[ishell,iring]=volconst * (f1*ro[ishell]**3 - f2*ri[ishell]**3)
 
                 if volmat[ishell,iring] < 0.0:
-                    exit()
+                    sys.exit()
 
         volume2=np.copy(volmat)
         return volume2

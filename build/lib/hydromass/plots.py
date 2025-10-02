@@ -170,6 +170,8 @@ def rads_more(Mhyd, nmore=5, extend=False):
 
         rout_more = np.append(rout_more, rout_2add)
 
+        ntm = len(rout_more)
+
     rin_more = np.roll(rout_more, 1)
 
     rin_more[0] = 0

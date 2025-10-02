@@ -704,8 +704,9 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
             print('The fit_bkg option can only be used when fitting counts, which are not available. Reverting to default')
             fit_bkg = False
 
-    area = prof.area.astype('float32')
-    exposure = prof.effexp.astype('float32')
+    if not prof.voronoi:
+        area = prof.area.astype('float32')
+        exposure = prof.effexp.astype('float32')
 
     if rmax is None:
         rmax = np.max(rad+erad)
