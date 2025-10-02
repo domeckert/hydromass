@@ -777,14 +777,14 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     """
 
     prof = Mhyd.sbprof
-    sb = prof.profile
-    esb = prof.eprof
-    rad = prof.bins
-    erad = prof.ebins
-    counts = prof.counts
-    area = prof.area
-    exposure = prof.effexp
-    bkgcounts = prof.bkgcounts
+    sb = prof.profile.astype('float32')
+    esb = prof.eprof.astype('float32')
+    rad = prof.bins.astype('float32')
+    erad = prof.ebins.astype('float32')
+    counts = prof.counts.astype('int32')
+    area = prof.area.astype('float32')
+    exposure = prof.effexp.astype('float32')
+    bkgcounts = prof.bkgcounts.astype('float32')
 
     if rmax is None:
         rmax = np.max(rad+erad)
