@@ -1166,7 +1166,10 @@ class Model:
             self.rho_np = None # rho_ein3_np
 
             if start is None:
-                self.start = [4., 1000., 8, 0.5, 3., 4., 0.855]
+                # n = 4
+                # b = 2n - 1/3 + 0.009876/n = 7.669135666666667
+                # alpha = 1 - 1/(2n) = 0.875
+                self.start = [4., 1000., 8, 0.5, 7.669135666666667, 4., 0.875]
             else:
                 try:
                     assert (len(start) == self.npar)
@@ -1202,7 +1205,7 @@ class Model:
 
                 limits[3] = [0., 100.]
 
-                limits[4] = [0., 10.]
+                limits[4] = [0., 14.]
 
                 limits[5] = [1., 10.]
 
@@ -1221,7 +1224,10 @@ class Model:
 
             if fix is None:
 
-                self.fix = [False, False, False, False, False, False, False]
+                self.fix = [False, False, False, False, True, True, True]
+
+                print('Note that in NFW+SERSIC modeling, n, b, and alpha are fixed to the n=4 case from Prugniel+1997')
+                print('   to change this behaviour change Model.fix property')
 
             else:
 
