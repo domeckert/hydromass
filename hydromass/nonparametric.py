@@ -738,7 +738,7 @@ def prof_GP_hires(Mhyd, rin=None, npt=200, Z=0.3):
 def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
                    samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
                    tune=500, bin_fact=1.0, smin=None, smax=None, ngauss=100, find_map=True,
-                   extend=False, T0extend=None):
+                   extend=False, T0extend=None, rmin=0., rmax=None):
     """
     Run non-parametric log-normal mixture reconstruction. Following Eckert et al. (2022), the temperature profile is described as a linear combination of a large number of log-normal functions, whereas the gas density profile is decomposed on a basis of King functions. The number of log-normal functions as well as the smoothing scales can be adjusted by the user.
 
@@ -785,6 +785,14 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
     area = prof.area
     exposure = prof.effexp
     bkgcounts = prof.bkgcounts
+
+    if rmax is None:
+        rmax = np.max(rad+erad)
+
+    if rmin is None:
+        rmin = 0
+
+    valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
 
     # Define maximum radius for source deprojection, assuming we have only background for r>bkglim
     if bkglim is None:
@@ -1018,7 +1026,7 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
         else:
 
-            sb_obs = pm.Normal('sb', mu=pred, observed=sb, sigma=esb)  # Sx likelihood
+            sb_obs = pm.Normal('sb', mu=pred[valid], observed=sb[valid], sigma=esb[valid])  # Sx likelihood
 
         # Temperature model and likelihood
         if Mhyd.spec_data is not None:
