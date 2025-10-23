@@ -921,7 +921,9 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sigma=Mhyd.spec_data.errt_x)  # temperature likelihood
+            valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am >= rmin, Mhyd.spec_data.rref_x_am <= rmax))
+
+            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sigma=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
