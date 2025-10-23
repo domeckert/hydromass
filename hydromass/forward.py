@@ -527,6 +527,7 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3): #, extra=False, max_radius=2
     dict={
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        'R_REF': (rin_m + rout_m) / 2,
         "P_TOT": mptot,
         "P_TOT_LO": mptotl,
         "P_TOT_HI": mptoth,
@@ -973,6 +974,12 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
     tend = time.time()
 
     print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
+
+    print('Computing log_likelihood')
+
+    with hydro_model:
+
+        pm.compute_log_likelihood(trace)
 
     Mhyd.trace = trace
 
