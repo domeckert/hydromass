@@ -48,13 +48,15 @@ def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False, rout_m=None):
     :rtype: numpy.ndarray
     """
 
-    rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rdelta), 100)
+    rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rdelta), 201)
 
     rin = np.roll(rout, 1)
 
     rin[0] = 0.
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
+    r_ref = (rin + rout) / 2
+
+    Kdens = calc_density_operator(r_ref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
 
     if Mhyd.cf_prof is not None and rout_m is not None:
 
@@ -96,7 +98,7 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     :rtype: numpy.ndarray, numpy.ndarray
     """
 
-    nvalm = 100
+    nvalm = 201
 
     rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rmax), nvalm)
 
@@ -104,7 +106,9 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
 
     rin[0] = 0.
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
+    r_ref = (rin + rout) / 2
+
+    Kdens = calc_density_operator(r_ref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
 
     if Mhyd.cf_prof is not None and rout_m is not None:
 
@@ -458,7 +462,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
+    Kdens = calc_density_operator(rref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
     if Mhyd.cf_prof is not None:
 
@@ -658,9 +662,11 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., 
 
     rin[0] = 0.
 
+    r_ref = (rin + rout) / 2
+
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
+    Kdens = calc_density_operator(r_ref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
     Kdens_grad = calc_grad_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
