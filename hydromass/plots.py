@@ -589,7 +589,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
-        mass = mass + mbar.T
+        mass = mass + np.atleast_1d(mbar).T
 
     # Pressure gradient
     dpres = - mass / rref_mul ** 2 * dens_m * (rout_mul - rin_mul)
@@ -871,6 +871,7 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
     bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
 
+    # I don't understand the purpuse of this check
     if rin == 1.:
         bins[0] = 0.
 
@@ -961,11 +962,15 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta = model.delta) * 1e13
 
+        mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
+
         if Mhyd.dmonly:
 
             mtot = mass + mbar.T
 
             fgas = mgas / mtot.T
+
+            fgas_slope = np.gradient(np.log(fgas), axis=0) / np.gradient(np.log(rout_m))[:, np.newaxis]
 
             mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
 
@@ -977,6 +982,8 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             fgas = mgas / mass.T
 
+            fgas_slope = np.gradient(np.log(fgas), axis=0) / np.gradient(np.log(rout_m))[:, np.newaxis]
+
             mtotm, mtotlo, mtothi = mmed, mlo, mhi
 
             g_tot_t = mass.T * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
@@ -985,7 +992,7 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
         fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-        mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+        fgsl, fgsll, fgslh = np.percentile(fgas_slope, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
         dict = {
             "R_IN": rin_m,
@@ -1003,6 +1010,9 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
             "FGAS": fg,
             "FGAS_LO": fgl,
             "FGAS_HI": fgh,
+            "FGAS_SLOPE": fgsl,
+            "FGAS_SLOPE_LO": fgsll,
+            "FGAS_SLOPE_HI": fgslh,
             "M_STAR": mstar_m,
             "g_GAS": g_gas,
             "g_GAS_LO": g_gasl,

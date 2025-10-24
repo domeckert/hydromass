@@ -8,6 +8,12 @@ import astropy.units as u
 from. constants import ckms
 import math
 
+
+class SBData:
+    def __init__(self, bins, ebins, profile, eprofile, area, effexp):
+        pass
+
+
 class SpecData:
 
     '''
