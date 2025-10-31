@@ -326,6 +326,8 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         # Model parameters
         allpmod = []
 
+        initvals = dict()
+
         for i in range(model.npar):
 
             name = model.parnames[i]
@@ -343,10 +345,13 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     print('using uniform priors')
                     modpar = pm.Uniform(name, lower=lim[0], upper=lim[1])
 
+                initvals[name] = model.start[i]
 
             else:
 
-                modpar = pm.ConstantDist(name, model.start[i])
+                modpar = pm.Deterministic(name, pm.math.constant(model.start[i]))
+
+                # modpar = pm.ConstantDist(name, model.start[i]) # This does not work anymore in pymc
 
             allpmod.append(modpar)
 
@@ -456,9 +461,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 dens_m = pm.math.sqrt(pm.math.dot(Kdens_m, al) / cf * transf)  # electron density in cm-3
 
-            # Evaluate mass model
-            mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta=model.delta) / Mhyd.mfact0
-
+            mbar = 0
             if dmonly:
 
                 nhconv = cgsamu * Mhyd.mu_e * cgskpc ** 3 / Msun  # Msun/kpc^3
@@ -473,6 +476,19 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 else:
 
                     mbar = mgas
+
+            # Evaluate mass model
+            if model.massmod in ['MOND', 'GMOND', 'EMOND']:
+
+                # MOND also needs baryon mass
+
+                assert mbar != 0, 'Cannot use MOND/GMOND/EMOND if baryons are not passed. Select dmonly=True and optionally pass mstar'
+
+                mass = model.func_pm(rref_m, *pmod, mbar = mbar * 1e13 * Mhyd.mfact0) / Mhyd.mfact0 / 1e13
+
+            else:
+
+                mass = Mhyd.mfact * model.func_pm(rref_m, *pmod, delta = model.delta) / Mhyd.mfact0
 
                 mass = mass + mbar
 
@@ -644,7 +660,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
         if find_map:
 
-            start = pm.find_MAP()
+            start = pm.find_MAP(start=initvals)
 
             if not isjax or not use_jax:
 
@@ -694,6 +710,12 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     tend = time.time()
 
     print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
+
+    print('Computing log_likelihood')
+
+    with hydro_model:
+
+        pm.compute_log_likelihood(trace)
 
     Mhyd.trace = trace
 
@@ -857,7 +879,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         Mhyd.Kdens_m = Kdens_m
     Mhyd.elong = elong
 
-    Mhyd.r3d = samppar.T[1,:] * (elong**(1/3))
+    #Mhyd.r3d = samppar.T[1,:] * (elong**(1/3)) #???? who tells that samppar dimension 1 is a distance? What if there is only one parameter?
 
     if Mhyd.spec_data is not None and not wlonly:
         kt_mod = kt_from_samples(Mhyd, model, nmore=nmore)
@@ -1327,7 +1349,7 @@ class Mhyd:
 
     def run_GP(self, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5, tune=500, find_map=True,
-            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False, T0extend=None):
+            bin_fact=1.0, smin=None, smax=None, ngauss=100, extend=False, T0extend=None, rmin=None, rmax=None):
 
         '''
         Run a non-parametric log-normal mixture reconstruction. See :func:`hydromass.nonparametric.Run_NonParametric_PyMC3`
@@ -1381,7 +1403,10 @@ class Mhyd:
                                 smax=smax,
                                 ngauss=ngauss,
                                 extend=extend,
-                                T0extend=T0extend)
+                                T0extend=T0extend,
+                                rmin = rmin,
+                                rmax = rmax
+                                )
 
     def SaveModel(self, model, outfile=None):
         '''

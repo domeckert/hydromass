@@ -3,6 +3,7 @@ import scipy.special as special
 import pymc as pm
 import pytensor as theano
 import pytensor.tensor as tt
+from .constants import const_G_Msun_kpc, cgsG
 
 
 class ArcTan(tt.Op):
@@ -163,6 +164,283 @@ def f_ein3_pm(xout, c200, r200, mu, delta=200.):
 
     return r200 ** 3 * fcc * fx
 
+def f_mond_pm(xout, g_cross, mbar = 0):
+    '''
+    MOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
+
+    :param xout:
+    :param g_cross:
+    :return:
+    '''
+
+    g_bar = mbar * const_G_Msun_kpc / xout**2
+
+    g_obs = g_bar / (1 - pm.math.exp(-pm.math.sqrt(g_bar / pm.math.exp(g_cross))))
+
+    return g_obs * xout**2 / const_G_Msun_kpc
+
+def f_mond_np(xout, pars, mbar = 0):
+    '''
+    MOND fitting to the mass profile. See (see :func:`hydromass.functions.f_mond_pm`)
+
+    :param xout:
+    :param g_cross:
+    :return:
+    '''
+
+    g_cross = pars[:, 0]
+
+    g_bar = mbar.T * const_G_Msun_kpc / xout[np.newaxis, :]**2
+
+    g_obs = g_bar / (1 - np.exp(-np.sqrt(g_bar / np.exp(g_cross[:, np.newaxis]))))
+
+    return g_obs * xout[np.newaxis, :]**2 / const_G_Msun_kpc
+
+def f_gmond_pm(xout, log_C, log_g_0, sigma_g, mbar = 0):
+    '''
+    GMOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
+
+    :param xout:
+    :param log_C:
+    :param log_g_0:
+    :param mbar:
+    :return:
+    '''
+
+    g_bar = mbar * const_G_Msun_kpc / xout**2
+
+    log_g_bar = pm.math.log(g_bar)
+
+    S = pm.math.exp(-0.5 * ((log_g_bar - log_g_0) / sigma_g) ** 2)
+
+    log_g_obs = log_g_bar * (1 - S / 2) + log_C * S
+
+    return pm.math.exp(log_g_obs) * xout**2 / const_G_Msun_kpc
+
+def f_gmond_np(xout, pars, mbar = 0):
+    '''
+    GMOND fitting to the mass profile. See (see :func:`hydromass.functions.f_gmond_pm`)
+    :param xout:
+    :param pars:
+    :param mbar:
+    :return:
+    '''
+
+    log_C = pars[:, 0]
+
+    log_g_0 = pars[:, 1]
+
+    sigma_g = pars[:, 2]
+
+    g_bar = mbar.T * const_G_Msun_kpc / xout[np.newaxis, :] ** 2
+
+    log_g_bar = np.log(g_bar)
+
+    S = np.exp(-0.5 * ((log_g_bar - log_g_0[:, np.newaxis]) / sigma_g[:, np.newaxis]) ** 2)
+
+    log_g_obs = log_g_bar * (1 - S / 2) + log_C[:, np.newaxis] * S
+
+    return np.exp(log_g_obs) * xout[np.newaxis, :] ** 2 / const_G_Msun_kpc
+
+def f_emond_pm(xout, alpha1, alpha2, log_g1, log_g2, mbar = 0):
+    '''
+    EckertMOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
+
+    :param xout:
+    :param alpha1:
+    :param alpha2:
+    :param g1:
+    :param g2:
+    :param mbar:
+    :return:
+    '''
+
+    g1 = pm.math.exp(log_g1)
+
+    g2 = pm.math.exp(log_g2)
+
+    g_bar = mbar * const_G_Msun_kpc / xout**2
+
+    log_g_bar = pm.math.log(g_bar)
+
+    log_g_obs = log_g_bar + alpha1 * pm.math.log(1 + g1 / g_bar) + (alpha2 - alpha1) * pm.math.log(1 + g2 / g_bar)
+
+    return pm.math.exp(log_g_obs) * xout**2 / const_G_Msun_kpc
+
+def f_emond_np(xout, pars, mbar = 0):
+    '''
+    EckertMOND fitting to the mass profile. See (see :func:`hydromass.functions.f_gmond_pm`)
+    :param xout:
+    :param pars:
+    :param mbar:
+    :return:
+    '''
+
+    alpha1 = pars[:, 0]
+
+    alpha2 = pars[:, 1]
+
+    log_g1 = pars[:, 2]
+
+    log_g2 = pars[:, 3]
+
+    g1 = np.exp(log_g1)
+
+    g2 = np.exp(log_g2)
+
+    g_bar = mbar.T * const_G_Msun_kpc / xout[np.newaxis, :] ** 2
+
+    log_g_bar = np.log(g_bar)
+
+    log_g_obs = (log_g_bar +
+                 alpha1[:, np.newaxis] * np.log(1 + g1[:, np.newaxis] / g_bar) +
+                 (alpha2[:, np.newaxis] - alpha1[:, np.newaxis]) * np.log(1 + g2[:, np.newaxis] / g_bar))
+
+    return np.exp(log_g_obs) * xout[np.newaxis, :] ** 2 / const_G_Msun_kpc
+
+def f_nfw_sersic_pm(xout, c200_nfw, r200_nfw, c200_sersic, r200_sersic, b, n, alpha, delta=200.):
+    '''
+    Theano function for the NFW + Sersic mass model. Sersic model from Prugniel+1997 approximation.
+    Eq. B6 in https://articles.adsabs.harvard.edu/pdf/1997A%26A...321..111P
+
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\int_{0}^{r} 4 \\pi r^2 \\rho(r) dr
+
+    with
+
+    .. math::
+        \\rho(r) = \\rho_\\mathrm{Sersic}(r) + \\rho_\\mathrm{NFW}(r)
+
+    with NFW density see :func:`hydromass.functions.f_nfw_pm`, and Sersic density:
+
+    .. math::
+
+        \\rho_\\mathrm{Sersic}(r) = \\left( \\frac{r}{R_{\\Delta}} \\right)^{-\\alpha}  \\exp \\left[ - b \\left( \\left( \\frac{r}{R_{\\Delta}}
+        \\right) ^ {1
+        /n}
+        \\right) \\right]
+
+    and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200_nfw: concentration
+    :param r200_nfw: Scale radius
+    :param c200_sersic: concentration
+    :param r200_sersic: Scale radius
+    :param b: Sersic b
+    :param n: Sersic n
+    :param delta: Overdensity
+    :return: Enclosed mass
+
+    '''
+
+    # Sersic first: note that it is just EIN3 but with extra renaming, e.g. 2/alpha=2*mu=bn, alpha=1/n
+    fcc = delta / 3. * c200_sersic ** 3 / (pm.math.log(1. + c200_sersic) - c200_sersic / (1. + c200_sersic))
+
+    npt = len(xout)
+
+    dr = (xout - np.roll(xout, 1))
+
+    dr[0] = xout[0]
+
+    x = (xout - dr / 2.) / r200_sersic
+
+    integrand = ( x ** (2-alpha) ) * pm.math.exp(- b * x ** (1. / n)) * dr / r200_sersic
+
+    matrad = np.ones((npt, npt))
+
+    matrad_tril = np.tril(matrad)
+
+    fx = pm.math.dot(matrad_tril, integrand)
+
+    massmod_sersic = r200_sersic ** 3 * fcc * fx
+
+    # Now NFW
+
+    fcc = delta / 3. * c200_nfw ** 3 / (pm.math.log(1. + c200_nfw) - c200_nfw / (1. + c200_nfw))
+
+    x = xout / r200_nfw * c200_nfw
+
+    fx = pm.math.log(1. + x) - x / (1. + x)
+
+    massmod_nfw = r200_nfw ** 3 * fcc / c200_nfw ** 3 * fx
+
+    return  massmod_sersic + massmod_nfw
+
+
+
+def f_nfw_sersic_np(xout, pars, delta=200., return_separate = False):
+    '''
+    Numpy function for the NFW + Sersic mass model (see :func:`hydromass.functions.f_nfw_sersic_pm`)
+
+    :param xout: Radius
+    :type xout: numpy.ndarray
+    :param pars: 2D array with the chains of parameters of the mass model (cdelta, rs, and mu)
+    :type pars: numpy.ndarray
+    :param delta: Overdensity
+    :type delta: float
+    :return: Enclosed mass
+    :rtype: numpy.ndarray
+
+    '''
+
+    c200_nfw = pars[:, 0]
+
+    r200_nfw = pars[:, 1]
+
+    c200_sersic = pars[:, 2]
+
+    r200_sersic = pars[:, 3]
+
+    b = pars[:, 4]
+
+    n = pars[:, 5]
+
+    alpha = pars[:, 6]
+
+    # Sersic first: note that it is just EIN3 but with extra renaming, e.g. 2/alpha=2*mu=bn, alpha=1/n
+    fcc = delta / 3. * c200_sersic ** 3 / (np.log(1. + c200_sersic) - c200_sersic / (1. + c200_sersic))
+
+    npt = len(xout)
+
+    dr = (xout - np.roll(xout, 1))
+
+    dr[0] = xout[0]
+
+    x = (xout - dr / 2.)[np.newaxis, :] / r200_sersic[:, np.newaxis]
+
+    integrand = (x ** (2 - alpha[:, np.newaxis])) * np.exp(- b[:, np.newaxis] * x ** (1. / n[:, np.newaxis])) * dr[np.newaxis, :] / r200_sersic[:, np.newaxis]
+
+    matrad = np.ones((npt, npt))
+
+    matrad_tril = np.tril(matrad)
+
+    fx = np.dot(matrad_tril, integrand.T).T
+
+    massmod_sersic = r200_sersic[:, np.newaxis] ** 3 * fcc[:, np.newaxis] * fx
+
+    # Now NFW
+
+    fcc = delta / 3. * c200_nfw ** 3 / (np.log(1. + c200_nfw) - c200_nfw / (1. + c200_nfw))
+
+    x = xout[np.newaxis, :] / r200_nfw[:, np.newaxis] * c200_nfw[:, np.newaxis]
+
+    fx = np.log(1. + x) - x / (1. + x)
+
+    massmod_nfw = r200_nfw[:, np.newaxis] ** 3 * fcc[:, np.newaxis] / c200_nfw[:, np.newaxis] ** 3 * fx
+
+    if not return_separate:
+
+        return  massmod_sersic + massmod_nfw
+
+    else:
+
+        return massmod_sersic + massmod_nfw, massmod_nfw, massmod_sersic
 
 def f_ein2_np(xout, pars, delta=200.):
     '''
@@ -635,13 +913,9 @@ class Model:
 
                 limits = np.empty((self.npar, 2))
                 #
-                #limits[0] = [0., 15.]
-                # #
-                #limits[1] = [300., 3000.]
-
-                limits[0] = [1., 20.]   # Adriana prior
-
-                limits[1] = [900., 4000.]
+                limits[0] = [0.5, 15.]
+                #
+                limits[1] = [300., 3000.]
 
             else:
 
@@ -875,6 +1149,300 @@ class Model:
 
                 self.fix = fix
 
+        elif massmod == 'NFW+SERSIC':
+
+            # Using Prugniel & Simien 1997 Eq. B6 approximation for the density of the Sersic model.
+
+            func_pm = f_nfw_sersic_pm
+
+            func_np = f_nfw_sersic_np
+
+            self.npar = 7
+
+            self.parnames = ['cdelta_nfw', 'rdelta_nfw', 'cdelta_sersic', 'rdelta_sersic', 'b', 'n', 'alpha']
+
+            self.rho_pm = None # rho_ein3_pm
+
+            self.rho_np = None # rho_ein3_np
+
+            if start is None:
+                # n = 4
+                # b = 2n - 1/3 + 0.009876/n = 7.669135666666667
+                # alpha = 1 - 1/(2n) = 0.875
+                self.start = [4., 1000., 8, 0.5, 7.669135666666667, 4., 0.875]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+
+                self.start = start
+
+            if sd is None:
+
+                self.sd = [2., 500., 6., 50., 4., 4., 1.]
+
+            else:
+
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+
+                self.sd = sd
+
+            if limits is None:
+
+                limits = np.empty((self.npar, 2))
+
+                limits[0] = [0., 15.]
+
+                limits[1] = [100., 1800.]
+
+                limits[2] = [4., 100.]
+
+                limits[3] = [0., 100.]
+
+                limits[4] = [0., 14.]
+
+                limits[5] = [1., 10.]
+
+                limits[6] = [0., 3.]
+
+            else:
+
+                try:
+                    assert (limits.shape == (self.npar, 2))
+
+                except AssertionError:
+
+                    print('Shape of limits does not match function.')
+
+                    return
+
+            if fix is None:
+
+                self.fix = [False, False, False, False, True, True, True]
+
+                print('Note that in NFW+SERSIC modeling, n, b, and alpha are fixed to the n=4 case from Prugniel+1997')
+                print('   to change this behaviour change Model.fix property')
+
+            else:
+
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+
+                self.fix = fix
+
+        elif massmod == 'MOND':
+
+            func_pm = f_mond_pm
+
+            func_np = f_mond_np
+
+            self.rho_pm = None
+            self.rho_np = None
+
+            self.npar = 1
+            self.parnames = ['g_cross']
+
+            if start is None:
+                self.start = [np.log(1.2e-8)]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+
+                self.start = start
+
+            if sd is None:
+
+                self.sd = [2.]
+
+            else:
+
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+
+                self.sd = sd
+
+            if limits is None:
+
+                limits = np.empty((self.npar, 2))
+                #
+                limits[0] = [-23., -14.]
+
+            else:
+
+                try:
+                    assert (limits.shape == (self.npar, 2))
+                except AssertionError:
+                    print('Shape of limits does not match function.')
+                    return
+
+            if fix is None:
+
+                self.fix = [False]
+
+            else:
+
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+
+                self.fix = fix
+
+        elif massmod == 'GMOND':
+
+            func_pm = f_gmond_pm
+
+            func_np = f_gmond_np
+
+            self.rho_pm = None
+            self.rho_np = None
+
+            self.npar = 3
+            self.parnames = ['log_C', 'log_g_0', 'sigma_g']
+
+            if start is None:
+                self.start = [np.log(1e-4), np.log(1.2e-8), 2]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+
+                self.start = start
+
+            if sd is None:
+
+                self.sd = [2., 2., 2.]
+
+            else:
+
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+
+                self.sd = sd
+
+            if limits is None:
+
+                limits = np.empty((self.npar, 2))
+                #
+                limits[0] = [np.log(1e-5), np.log(1e-3)]
+                #
+                limits[1] = [-23., -14.]
+                #
+                limits[2] = [0.1, 5.]
+
+            else:
+
+                try:
+                    assert (limits.shape == (self.npar, 2))
+                except AssertionError:
+                    print('Shape of limits does not match function.')
+                    return
+
+            if fix is None:
+
+                self.fix = [False, False, False]
+
+            else:
+
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+
+                self.fix = fix
+
+        elif massmod == 'EMOND':
+
+            func_pm = f_emond_pm
+
+            func_np = f_emond_np
+
+            self.rho_pm = None
+            self.rho_np = None
+
+            self.npar = 4
+            self.parnames = ['alpha1', 'alpha2', 'log_g1', 'log_g2']
+
+            if start is None:
+                self.start = [1.4, -1.2, np.log(2.3e-8), np.log(1.2e-9)]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+
+                self.start = start
+
+            if sd is None:
+
+                self.sd = [2., 2., 2., 2.]
+
+            else:
+
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+
+                self.sd = sd
+
+            if limits is None:
+
+                limits = np.empty((self.npar, 2))
+                #
+                limits[0] = [-1., 3.]
+                #
+                limits[1] = [-3., 1.]
+                #
+                limits[2] = [-23., -14.]
+                #
+                limits[3] = [-23., -14.]
+
+            else:
+
+                try:
+                    assert (limits.shape == (self.npar, 2))
+                except AssertionError:
+                    print('Shape of limits does not match function.')
+                    return
+
+            if fix is None:
+
+                self.fix = [False, False, False, False]
+
+            else:
+
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+
+                self.fix = fix
 
         elif massmod == 'BUR':
 
@@ -1014,7 +1582,7 @@ class Model:
 
 
         else:
-            print('Error: Unknown mass model %s . Available mass models: NFW, ISO, EIN2, EIN3, BUR, HER.' % (massmod))
+            print('Error: Unknown mass model %s . Available mass models: NFW, ISO, EIN2, EIN3, BUR, HER, NFW+SERSIC.' % (massmod))
 
             return
 
