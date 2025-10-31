@@ -1016,7 +1016,8 @@ class Mhyd:
 
 
     def emissivity(self, nh, rmf, type='single', kt=None, Z=0.3, elow=0.5, ehigh=2.0,
-                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None, tmpdir='.', out_cfact_file=None, quiet=False):
+                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp',
+                   outkt=None, tmpdir='.', out_cfact_file=None, quiet=False):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 
