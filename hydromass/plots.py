@@ -548,7 +548,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
     rref_mul = np.tile(rref_m, nsamp).reshape(nsamp, nvalm)
 
-    mbar = 0
+    mbar = np.zeros(nvalm)
 
     # Adding baryonic mass contribution in case of DM-only fit
     if Mhyd.dmonly:
@@ -977,8 +977,6 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             fgas = mgas / mass.T
 
-            mtotm, mtotlo, mtothi = mmed, mlo, mhi
-
             g_tot_t = mass.T * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
 
             g_tot, g_totl, g_toth = np.percentile(g_tot_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
@@ -986,6 +984,10 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
         fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
         mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+
+        if not Mhyd.dmonly:
+
+            mtotm, mtotlo, mtothi = mmed, mlo, mhi
 
         dict = {
             "R_IN": rin_m,
