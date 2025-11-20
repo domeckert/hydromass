@@ -80,6 +80,9 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     Ode = cosmo.Ode0
 
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
+
     fakfile = tmpdir + '/sim.fak'
 
     if os.path.exists(fakfile):
