@@ -19,10 +19,11 @@ def SaveModel(Mhyd, model, outfile=None):
     if outfile is None:
         outfile = Mhyd.dir + '/output_model.fits'
 
-    if Mhyd.samples is None and not Mhyd.wlonly:
-        print('Nothing to save, exiting')
+    if not Mhyd.wlonly:
+        if Mhyd.samples is None:
+            print('Nothing to save, exiting')
 
-        return
+            return
 
     if model is None:
         print('No model provided, exiting')
