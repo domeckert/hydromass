@@ -38,7 +38,7 @@ def SaveModel(Mhyd, model, outfile=None):
     if not Mhyd.wlonly:
         denshdu = fits.ImageHDU(Mhyd.samples, name='DENSITY')
     else:
-        denshdu = fits.ImageHDU(np.zeros(1), name='DENSITY')
+        denshdu = fits.ImageHDU(np.zeros((1,1)), name='DENSITY')
 
     headsamp = denshdu.header
 
@@ -80,7 +80,7 @@ def SaveModel(Mhyd, model, outfile=None):
     if not Mhyd.wlonly:
         col = fits.Column(name='logP0', format='E', array=Mhyd.samplogp0)
 
-    cols.append(col)
+        cols.append(col)
 
     # col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
     #
