@@ -526,6 +526,11 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         lxdelta[i] = np.interp(rdelta[i], rref, cslum)
 
+        rce = 0.15 * rdelta[i]
+        nocore = np.where(rref>=rce)
+        cslum_ce = np.cumsum(lumin[nocore])
+        lxcedelta[i] = np.interp(rdelta[i], rref[nocore], cslum_ce)
+
         p3d = Forward.func_np(rout, tpar)
 
         reg = np.where(rref <= rdelta[i])
@@ -553,6 +558,8 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
     fgd, fgdlo, fgdhi = np.percentile(fgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     lxd, lxdlo, lxdhi = np.percentile(lxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    lxced, lxcedlo, lxcedhi = np.percentile(lxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     ktd, ktdlo, ktdhi = np.percentile(ktdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
@@ -587,6 +594,9 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         "LX_DELTA": lxd,
         "LX_DELTA_LO": lxdlo,
         "LX_DELTA_HI": lxdhi,
+        "LXCE_DELTA": lxced,
+        "LXCE_DELTA_LO": lxcedlo,
+        "LXCE_DELTA_HI": lxcedhi,
         "KT_DELTA": ktd,
         "KT_DELTA_LO": ktdlo,
         "KT_DELTA_HI": ktdhi,
