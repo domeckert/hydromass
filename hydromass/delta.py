@@ -817,9 +817,11 @@ def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000., thin=10):
 
         fout.write('%s    %g  (%g , %g)\n' % (model.parnames[i], medpar, parlo, parhi) )
 
-    medp0, p0l, p0h = np.percentile(np.exp(Mhyd.samplogp0), [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+    if not Mhyd.wlonly:
 
-    fout.write('p0  %.3e (%.3e , %.3e)\n' % (medp0, p0l, p0h) )
+        medp0, p0l, p0h = np.percentile(np.exp(Mhyd.samplogp0), [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+        fout.write('p0  %.3e (%.3e , %.3e)\n' % (medp0, p0l, p0h) )
 
     fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas\n")
 
