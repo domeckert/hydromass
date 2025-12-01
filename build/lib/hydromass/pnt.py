@@ -1,4 +1,4 @@
-import pkg_resources
+import importlib_resources
 import os
 import numpy as np
 import pymc as pm
@@ -115,7 +115,9 @@ def get_data_file_path(data_file):
 
     try:
 
-        file_path = pkg_resources.resource_filename("hydromass", 'data/%s' % data_file)
+        ref = importlib_resources.files('hydromass') / 'data/' / data_file
+        with importlib_resources.as_file(ref) as path:
+            return str(path)
 
     except KeyError:
 
@@ -123,7 +125,7 @@ def get_data_file_path(data_file):
 
     else:
 
-        return os.path.abspath(file_path)
+        return os.path.abspath(importlib_resources.path(ref))
 
 
 def find_nearest(array, values):

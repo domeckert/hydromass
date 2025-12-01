@@ -18,6 +18,7 @@ def calc_gp_operator(npt, rads, rin, rout, bin_fact=1.0, smin=None, smax=None):
 
     .. math::
 
+
         G_i(r) = \\frac{1}{\\sqrt{2\\pi}\\sigma_i}\\exp \\left( \\frac{(r - \\mu_{i})^2}{2\\sigma_i^2} \\right)
 
     :param npt: Number of Gaussians to decompose the model into

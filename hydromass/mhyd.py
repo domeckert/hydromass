@@ -566,7 +566,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
                 rmin_spec = 0.
-                rmax_spec = np.max(Mhyd.spec_data.rref_x_am)
+                rmax_spec = np.max(Mhyd.spec_data.rout_x_am)
 
                 if rmin is not None:
                     rmin_spec = rmin
@@ -605,23 +605,21 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                     slope = (pm.math.log(pth[ntm - 1]) - pm.math.log(pth[ntm - nout])) / (
                             pm.math.log(rref_m[ntm - 1]) - pm.math.log(rref_m[ntm - nout]))
 
-                    rin_cm_p, rout_cm_p = rin_m_p * cgskpc, rout_m_p * cgskpc
-
                     pth_out = pth[ntm - 1] * (rref_m_p[ntm:] / rref_m[ntm - 1]) ** slope
 
                     pth_p = pm.math.concatenate([pth, pth_out], axis=0)
 
-                    deproj = MyDeprojVol(rin_cm_p, rout_cm_p)  # r from kpc to cm
+                    deproj = MyDeprojVol(rin_m_p, rout_m_p) # r from kpc to cm
 
                     proj_vol = deproj.deproj_vol().T
 
-                    area_proj = np.pi * (-(rin_cm_p) ** 2 + (rout_cm_p) ** 2)
+                    area_proj = np.pi * (-(rin_m_p) ** 2 + (rout_m_p) ** 2)
 
-                    integ = pm.math.dot(proj_vol, pth_p) / area_proj
+                    integ = pm.math.dot(proj_vol, pth_p) / area_proj * cgskpc
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = elongation_correction(y_num, (rin_cm_p + rout_cm_p)/2, index_sz, elongation).flatten()
+                    yfit = elongation_correction(y_num, (rin_m_p + rout_m_p)/2*cgskpc, index_sz, elongation).flatten()
 
                     if Mhyd.sz_data.psfmat is not None:
 
@@ -1038,7 +1036,8 @@ class Mhyd:
 
 
     def emissivity(self, nh, rmf, type='single', kt=None, Z=0.3, elow=0.5, ehigh=2.0,
-                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp', outkt=None, tmpdir='.', out_cfact_file=None, quiet=False):
+                   arf=None, unit='cr', lum_elow=0.5, lum_ehigh=2.0, outz=None, method='interp',
+                   outkt=None, tmpdir='.', out_cfact_file=None, quiet=False):
         '''
         Compute the conversion between count rate and emissivity using XSPEC by run the :func:`hydromass.emissivity.calc_emissivity` function. Requires XSPEC to be available in PATH.
 

@@ -6,6 +6,7 @@ from scipy.optimize import brentq
 from scipy.signal import convolve
 import astropy.units as u
 from. constants import ckms
+import math
 
 class SpecData:
 
@@ -217,149 +218,156 @@ class SpecData:
         :param psfmin: Minimum PSF value (relative to the maximum) below which the effect of the PSF is neglected. Increasing psfmin speeds up the computation at the cost of a lower precision.
         :type psfmin: float
         '''
+        settable_parameters = [psffile, psfimage, psffunc]  # Put all parameters that can be set between psffile, psfimage, psffunc in a list
+        n_set_parameters = sum(p is not None for p in settable_parameters)  # Count non-None values
+
+        if n_set_parameters != 1:
+            raise ValueError("You must set exactly one of 'psffile', 'psffunc', or 'psfimage'.")
 
         rad = (self.rin_x_am + self.rout_x_am) / 2.
 
         erad = (self.rout_x_am - self.rin_x_am) / 2.
+        nbin = len(rad)
 
-        if psffile is None and psfimage is None and psffunc is None:
+        psfout = np.zeros((nbin, nbin))
 
-            print('No PSF model given')
+        npexp = 2 * int((rad[nbin - 1] + erad[nbin - 1]) / pixsize) + 1
+
+        exposure = np.ones((npexp, npexp))
+
+        y, x = np.indices(exposure.shape)
+
+        rads = np.hypot(x - npexp / 2., y - npexp / 2.) * pixsize  # arcmin
+
+        kernel = None
+
+        if psffile is not None:
+            print(f'Using {psffile = }')
+            with fits.open(psffile) as fpsf:
+                psfFITSimage = fpsf[0].data.astype(float)
+                psfFITSheader = fpsf[0].header
+            #
+            if 'CDELT2' in psfFITSheader:
+                psfFITSpixsize = np.abs(float(psfFITSheader['CDELT2']))
+                if 'CUNIT1' in psfFITSheader:
+                    CUNIT1 = psfFITSheader['CUNIT1'] # can be deg arcmin arcsec: # convert in arcmin to be consistent with data
+                    if CUNIT1.lower() == 'deg':
+                        psfFITSpixsize = psfFITSpixsize * 60
+                    elif CUNIT1.lower() == 'arcmin':
+                        psfFITSpixsize = psfFITSpixsize
+                    elif CUNIT1.lower() == 'arcsec':
+                        psfFITSpixsize = psfFITSpixsize / 60
+                    else:
+                        raise ValueError(f'{CUNIT1} not recognised: use [\'deg\', \'arcmin\', \'arcsec\']')
+                else:
+                    print('CUNIT1 not found in header. Assuming it is deg')
+                    psfFITSpixsize = psfFITSpixsize * 60
+            else:
+                raise IndexError('CDELT2 not found in psffile')
+            #
+            psfpixsize = psfFITSpixsize
+            psfimage = psfFITSimage
+            # from here onward it becomes identical to have set psfimage=np.ndarray + psfpixsize=value
+            if not math.isclose(psfpixsize, pixsize, rel_tol=1e-9):
+                print('Error: pixel size in PSF image different from the one in the dataset')
+                return
+            norm = np.sum(psfimage)
+            kernel = psfimage / norm
+        elif psfimage is not None:
+            if psfpixsize is None or psfpixsize <= 0.0:
+                print('Error: no pixel size is provided for the PSF image')
+                return
+            if not math.isclose(psfpixsize, pixsize, rel_tol=1e-9):
+                print('Error: pixel size in PSF image different from the one in the dataset')
+                return
+            norm = np.sum(psfimage)
+            kernel = psfimage / norm
+        else:# then it means psffunc must have been not None
+            kernel = psffunc(rads)
+
+            norm = np.sum(kernel)
+
+            frmax = lambda x: psffunc(x) * 2. * np.pi * x / norm - psfmin
+
+            if frmax(exposure.shape[0] / 2) < 0.:
+
+                rmax = brentq(frmax, 1., exposure.shape[0]) / pixsize  # pixsize
+
+                npix = int(rmax)
+
+            else:
+                npix = int(exposure.shape[0] / 2)
+
+            yp, xp = np.indices((2 * npix + 1, 2 * npix + 1))
+
+            rpix = np.sqrt((xp - npix) ** 2 + (yp - npix) ** 2) * pixsize
+
+            kernel = psffunc(rpix)
+
+            norm = np.sum(kernel)
+
+            kernel = kernel / norm
+
+
+
+        if kernel is None:
+
+            print('No kernel provided, bye bye')
 
             return
 
-        else:
-            if psffile is not None:
+        # Sort pixels into radial bins
+        tol = 0.5e-5
 
-                fpsf = fits.open(psffile)
+        sort_list = []
 
-                psfimage = fpsf[0].data.astype(float)
+        for n in range(nbin):
 
-                if psfpixsize is not None:
+            if n == 0:
 
-                    psfpixsize = float(psfimage[0].header['CDELT2'])
+                sort_list.append(np.where(np.logical_and(rads >= 0, rads < np.round(rad[n] + erad[n], 5) + tol)))
 
-                    if psfpixsize == 0.0:
+            else:
 
-                        print('Error: no pixel size is provided for the PSF image and the CDELT2 keyword is not set')
+                sort_list.append(np.where(np.logical_and(rads >= np.round(rad[n] - erad[n], 5) + tol,
+                                                         rads < np.round(rad[n] + erad[n], 5) + tol)))
 
-                        return
+        # Calculate average of PSF image pixel-by-pixel and sort it by radial bins
+        for n in range(nbin):
 
-                fpsf.close()
+            # print('Working with bin',n+1)
+            region = sort_list[n]
 
-            if psfimage is not None:
+            npt = len(x[region])
 
-                if psfpixsize is None or psfpixsize <= 0.0:
+            imgt = np.zeros(exposure.shape)
 
-                    print('Error: no pixel size is provided for the PSF image')
+            if sourcemodel is None or sourcemodel.params is None:
 
-                    return
+                imgt[region] = 1. / npt
 
-            nbin = len(rad)
+            else:
 
-            psfout = np.zeros((nbin, nbin))
+                imgt[region] = sourcemodel.model(rads[region], *sourcemodel.params)
 
-            npexp = 2 * int((rad[nbin - 1] + erad[nbin - 1]) / pixsize) + 1
+                norm = np.sum(imgt[region])
 
-            exposure = np.ones((npexp, npexp))
+                imgt[region] = imgt[region] / norm
 
-            y, x = np.indices(exposure.shape)
+            # FFT-convolve image with kernel
+            blurred = convolve(imgt, kernel, mode='same')
 
-            rads = np.hypot(x - npexp / 2., y - npexp / 2.) * pixsize  # arcmin
+            numnoise = np.where(blurred < 1e-15)
 
-            kernel = None
+            blurred[numnoise] = 0.0
 
-            if psffunc is not None:
+            for p in range(nbin):
 
-                kernel = psffunc(rads)
+                sn = sort_list[p]
 
-                norm = np.sum(kernel)
+                psfout[n, p] = np.sum(blurred[sn])
 
-                frmax = lambda x: psffunc(x) * 2. * np.pi * x / norm - psfmin
-
-                if frmax(exposure.shape[0] / 2) < 0.:
-
-                    rmax = brentq(frmax, 1., exposure.shape[0]) / pixsize  # pixsize
-
-                    npix = int(rmax)
-
-                else:
-                    npix = int(exposure.shape[0] / 2)
-
-                yp, xp = np.indices((2 * npix + 1, 2 * npix + 1))
-
-                rpix = np.sqrt((xp - npix) ** 2 + (yp - npix) ** 2) * pixsize
-
-                kernel = psffunc(rpix)
-
-                norm = np.sum(kernel)
-
-                kernel = kernel / norm
-
-            if psfimage is not None:
-
-                norm = np.sum(psfimage)
-
-                kernel = psfimage / norm
-
-            if kernel is None:
-
-                print('No kernel provided, bye bye')
-
-                return
-
-            # Sort pixels into radial bins
-            tol = 0.5e-5
-
-            sort_list = []
-
-            for n in range(nbin):
-
-                if n == 0:
-
-                    sort_list.append(np.where(np.logical_and(rads >= 0, rads < np.round(rad[n] + erad[n], 5) + tol)))
-
-                else:
-
-                    sort_list.append(np.where(np.logical_and(rads >= np.round(rad[n] - erad[n], 5) + tol,
-                                                             rads < np.round(rad[n] + erad[n], 5) + tol)))
-
-            # Calculate average of PSF image pixel-by-pixel and sort it by radial bins
-            for n in range(nbin):
-
-                # print('Working with bin',n+1)
-                region = sort_list[n]
-
-                npt = len(x[region])
-
-                imgt = np.zeros(exposure.shape)
-
-                if sourcemodel is None or sourcemodel.params is None:
-
-                    imgt[region] = 1. / npt
-
-                else:
-
-                    imgt[region] = sourcemodel.model(rads[region], *sourcemodel.params)
-
-                    norm = np.sum(imgt[region])
-
-                    imgt[region] = imgt[region] / norm
-
-                # FFT-convolve image with kernel
-                blurred = convolve(imgt, kernel, mode='same')
-
-                numnoise = np.where(blurred < 1e-15)
-
-                blurred[numnoise] = 0.0
-
-                for p in range(nbin):
-
-                    sn = sort_list[p]
-
-                    psfout[n, p] = np.sum(blurred[sn])
-
-            self.psfmat = psfout
+        self.psfmat = psfout
 
 
 class SZData:
@@ -647,16 +655,18 @@ class WLData:
 
     :param redshift: Source redshift
     :type redshift: float
-    :param sz_data: Link to a FITS file containing the SZ pressure profile to be read. If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None
-    :type sz_data: str
-    :param rin: 1-D array including the inner boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :param rin: 1-D array including the inner boundary definition of the WL bins (in arcmin). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
     :type rin: numpy.ndarray
-    :param rout: 1-D array including the outer boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :param rout: 1-D array including the outer boundary definition of the SZ bins (in arcmin). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
     :type rin: numpy.ndarray
-    :param psz: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
-    :type psz: numpy.ndarray
-    :param covmat_sz: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
-    :type covmat_sz: numpy.ndarray
+    :param gplus: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type gplus: numpy.ndarray
+    :param err_gplus:
+    :type err_gplus:
+    :param covmat: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type covmat: numpy.ndarray
+    :param sigmacrit_inv: Mean critical surface mass density as
+    :type sigmacrit_inv: astropy.cosmology
     :param cosmo: Astropy cosmology object including the cosmology definition
     :type cosmo: astropy.cosmology
     '''

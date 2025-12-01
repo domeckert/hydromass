@@ -80,6 +80,9 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
     Ode = cosmo.Ode0
 
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
+
     fakfile = tmpdir + '/sim.fak'
 
     if os.path.exists(fakfile):
@@ -167,7 +170,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
         os.system(f'xspec < {tmpdir}/commands.xcm')
 
-    ssim = open('sim.txt')
+    ssim = open(f'{tmpdir}/sim.txt')
     lsim = ssim.readlines()
     ssim.close()
 
@@ -193,7 +196,7 @@ def calc_emissivity(cosmo, z, nh, kt, rmf, abund='aspl', Z=0.3, elow=0.5, ehigh=
 
             flux = float(line.split()[5].replace('(',''))
 
-    slum = os.popen('grep Luminosity lumin.txt', 'r')
+    slum = os.popen(f'grep Luminosity {tmpdir}/lumin.txt', 'r')
 
     llum = slum.readline()
 

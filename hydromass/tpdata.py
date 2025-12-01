@@ -661,16 +661,18 @@ class WLData:
 
     :param redshift: Source redshift
     :type redshift: float
-    :param sz_data: Link to a FITS file containing the SZ pressure profile to be read. If None, the values should be passed directly as numpy arrays through the rin, rout, kt, err_kt_low, and err_kt_high arguments. Defaults to None
-    :type sz_data: str
-    :param rin: 1-D array including the inner boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :param rin: 1-D array including the inner boundary definition of the WL bins (in arcmin). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
     :type rin: numpy.ndarray
-    :param rout: 1-D array including the outer boundary definition of the SZ bins (in kpc). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :param rout: 1-D array including the outer boundary definition of the SZ bins (in arcmin). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
     :type rin: numpy.ndarray
-    :param psz: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
-    :type psz: numpy.ndarray
-    :param covmat_sz: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
-    :type covmat_sz: numpy.ndarray
+    :param gplus: 1-D array containing the SZ pressure profile (in keV cm^-3). If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type gplus: numpy.ndarray
+    :param err_gplus:
+    :type err_gplus:
+    :param covmat: 2-D array containing the covariance matrix on the SZ pressure profile. If None, the data should be passed as a FITS file using the sz_data argument. Defaults to None
+    :type covmat: numpy.ndarray
+    :param sigmacrit_inv: Mean critical surface mass density as
+    :type sigmacrit_inv: astropy.cosmology
     :param cosmo: Astropy cosmology object including the cosmology definition
     :type cosmo: astropy.cosmology
     '''
