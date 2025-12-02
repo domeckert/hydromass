@@ -1060,7 +1060,9 @@ def Run_NonParametric_PyMC3(Mhyd, bkglim=None, nmcmc=1000, fit_bkg=False, back=N
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=txfit, sigma=err_txfit)  # temperature likelihood
+            valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am >= rmin, Mhyd.spec_data.rref_x_am <= rmax))
+
+            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=txfit[valspec], sigma=err_txfit[valspec])  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
