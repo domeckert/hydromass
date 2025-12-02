@@ -566,7 +566,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                 tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
                 rmin_spec = 0.
-                rmax_spec = np.max(Mhyd.spec_data.rref_x_am)
+                rmax_spec = np.max(Mhyd.spec_data.rout_x_am)
 
                 if rmin is not None:
                     rmin_spec = rmin

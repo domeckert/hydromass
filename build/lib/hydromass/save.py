@@ -1,3 +1,5 @@
+import numpy as np
+
 from .plots import *
 from .functions import *
 from .nonparametric import *
@@ -17,10 +19,11 @@ def SaveModel(Mhyd, model, outfile=None):
     if outfile is None:
         outfile = Mhyd.dir + '/output_model.fits'
 
-    if Mhyd.samples is None:
-        print('Nothing to save, exiting')
+    if not Mhyd.wlonly:
+        if Mhyd.samples is None:
+            print('Nothing to save, exiting')
 
-        return
+            return
 
     if model is None:
         print('No model provided, exiting')
@@ -32,7 +35,10 @@ def SaveModel(Mhyd, model, outfile=None):
 
     hdus = fits.HDUList(hdus=[fits.PrimaryHDU()])
 
-    denshdu = fits.ImageHDU(Mhyd.samples, name='DENSITY')
+    if not Mhyd.wlonly:
+        denshdu = fits.ImageHDU(Mhyd.samples, name='DENSITY')
+    else:
+        denshdu = fits.ImageHDU(np.zeros((1,1)), name='DENSITY')
 
     headsamp = denshdu.header
 
@@ -71,9 +77,10 @@ def SaveModel(Mhyd, model, outfile=None):
 
         cols.append(col)
 
-    col = fits.Column(name='logP0', format='E', array=Mhyd.samplogp0)
+    if not Mhyd.wlonly:
+        col = fits.Column(name='logP0', format='E', array=Mhyd.samplogp0)
 
-    cols.append(col)
+        cols.append(col)
 
     # col = fits.Column(name='LogLike', format='E', array=Mhyd.totlike)
     #
@@ -265,139 +272,140 @@ def ReloadModel(Mhyd, infile, mstar=None):
 
         Mhyd.samppar[:, i] = dpar[name]
 
-    Mhyd.samplogp0 = dpar['logP0']
+    if not Mhyd.wlonly:
+        Mhyd.samplogp0 = dpar['logP0']
 
     if Mhyd.pnt:
 
         Mhyd.pnt_pars = fin['NT'].data
 
     # Now recreate operators
+    if not Mhyd.wlonly:
+        prof = Mhyd.sbprof
 
-    prof = Mhyd.sbprof
+        rad = prof.bins
 
-    rad = prof.bins
+        area = prof.area
 
-    area = prof.area
+        exposure = prof.effexp
 
-    exposure = prof.effexp
+        sourcereg = np.where(rad < Mhyd.bkglim)
 
-    sourcereg = np.where(rad < Mhyd.bkglim)
+        pars = list_params(rad, sourcereg, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
 
-    pars = list_params(rad, sourcereg, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
+        Mhyd.pars = pars
 
-    Mhyd.pars = pars
+        Mhyd.sourcereg = sourcereg
 
-    Mhyd.sourcereg = sourcereg
+        npt = len(pars)
 
-    npt = len(pars)
+        if prof.psfmat is not None:
+            psfmat = np.transpose(prof.psfmat)
+        else:
+            psfmat = np.eye(prof.nbin)
 
-    if prof.psfmat is not None:
-        psfmat = np.transpose(prof.psfmat)
-    else:
-        psfmat = np.eye(prof.nbin)
+        Mhyd.pardens = list_params_density(rad, sourcereg, Mhyd.amin2kpc, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
 
-    Mhyd.pardens = list_params_density(rad, sourcereg, Mhyd.amin2kpc, Mhyd.nrc, Mhyd.nbetas, Mhyd.min_beta)
+        # Compute linear combination kernel
+        if Mhyd.fit_bkg:
 
-    # Compute linear combination kernel
-    if Mhyd.fit_bkg:
-
-        Mhyd.K = calc_linear_operator(rad, sourcereg, pars, area, exposure,
-                                                psfmat)  # transformation to counts
-        Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc)
-
-    else:
-
-        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
-
-        Mhyd.K = np.dot(prof.psfmat, Ksb) # transformation to surface brightness
-
-        Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
-
-    # Define the fine grid onto which the mass model will be computed
-    rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
-
-    rref_m = (rin_m + rout_m)/2.
-
-    cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
-
-    Mhyd.cf_prof = cf
-
-    if Mhyd.fit_bkg:
-
-        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
-
-    else:
-
-        Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
-                                                       withbkg=False)
-
-    if Mhyd.fit_bkg:
-
-        Ksb = calc_sb_operator(rad, sourcereg, pars)
-
-        allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
-
-        bfit = np.median(np.exp(Mhyd.samples[:, npt]))
-
-        Mhyd.bkg = bfit
-
-        allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
-
-    else:
-
-        Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
-
-        if is_elong:
-
-            elong_mat = np.tile(Mhyd.elong, Mhyd.sbprof.nbin).reshape(Mhyd.sbprof.nbin,nsamp)
-
-            allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat #** 0.5
-
-            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T)) * elong_mat #** 0.5
+            Mhyd.K = calc_linear_operator(rad, sourcereg, pars, area, exposure,
+                                                    psfmat)  # transformation to counts
+            Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc)
 
         else:
 
+            Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
+
+            Mhyd.K = np.dot(prof.psfmat, Ksb) # transformation to surface brightness
+
+            Mhyd.Kdens = calc_density_operator(rad, Mhyd.pardens, Mhyd.amin2kpc, withbkg=False)
+
+        # Define the fine grid onto which the mass model will be computed
+        rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
+
+        rref_m = (rin_m + rout_m)/2.
+
+        cf = np.interp(rref_m, rad * Mhyd.amin2kpc, Mhyd.ccf)
+
+        Mhyd.cf_prof = cf
+
+        if Mhyd.fit_bkg:
+
+            Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc)
+
+        else:
+
+            Mhyd.Kdens_m = calc_density_operator(rout_m / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc,
+                                                           withbkg=False)
+
+        if Mhyd.fit_bkg:
+
+            Ksb = calc_sb_operator(rad, sourcereg, pars)
+
             allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
 
-            allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+            bfit = np.median(np.exp(Mhyd.samples[:, npt]))
 
-    pmc = np.median(allsb, axis=1)
-    pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
-    Mhyd.sb_dec = pmc
-    Mhyd.sb_dec_lo = pmcl
-    Mhyd.sb_dec_hi = pmch
+            Mhyd.bkg = bfit
 
-    pmc = np.median(allsb_conv, axis=1)
-    pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
-    pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
-    Mhyd.sb = pmc
-    Mhyd.sb_lo = pmcl
-    Mhyd.sb_hi = pmch
+            allsb_conv = np.dot(prof.psfmat, allsb[:, :npt])
 
-    alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) * Mhyd.transf)
-    pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
-    pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
-    pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+        else:
 
-    Mhyd.dens = pmc
-    Mhyd.dens_lo = pmcl
-    Mhyd.dens_hi = pmch
+            Ksb = calc_sb_operator(rad, sourcereg, pars, withbkg=False)
 
-    if Mhyd.spec_data is not None:
-        kt_mod = kt_from_samples(Mhyd, mod, nmore=Mhyd.nmore)
-        Mhyd.ktmod = kt_mod['TSPEC']
-        Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
-        Mhyd.ktmod_hi = kt_mod['TSPEC_HI']
-        Mhyd.kt3d = kt_mod['T3D']
-        Mhyd.kt3d_lo = kt_mod['T3D_LO']
-        Mhyd.kt3d_hi = kt_mod['T3D_HI']
+            if is_elong:
 
-    if Mhyd.sz_data is not None:
-        pmed, plo, phi = P_from_samples(Mhyd, mod, nmore=Mhyd.nmore)
-        Mhyd.pmod = pmed
-        Mhyd.pmod_lo = plo
-        Mhyd.pmod_hi = phi
+                elong_mat = np.tile(Mhyd.elong, Mhyd.sbprof.nbin).reshape(Mhyd.sbprof.nbin,nsamp)
+
+                allsb = np.dot(Ksb, np.exp(Mhyd.samples.T)) * elong_mat #** 0.5
+
+                allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T)) * elong_mat #** 0.5
+
+            else:
+
+                allsb = np.dot(Ksb, np.exp(Mhyd.samples.T))
+
+                allsb_conv = np.dot(Mhyd.K, np.exp(Mhyd.samples.T))
+
+        pmc = np.median(allsb, axis=1)
+        pmcl = np.percentile(allsb, 50. - 68.3 / 2., axis=1)
+        pmch = np.percentile(allsb, 50. + 68.3 / 2., axis=1)
+        Mhyd.sb_dec = pmc
+        Mhyd.sb_dec_lo = pmcl
+        Mhyd.sb_dec_hi = pmch
+
+        pmc = np.median(allsb_conv, axis=1)
+        pmcl = np.percentile(allsb_conv, 50. - 68.3 / 2., axis=1)
+        pmch = np.percentile(allsb_conv, 50. + 68.3 / 2., axis=1)
+        Mhyd.sb = pmc
+        Mhyd.sb_lo = pmcl
+        Mhyd.sb_hi = pmch
+
+        alldens = np.sqrt(np.dot(Mhyd.Kdens, np.exp(Mhyd.samples.T)) * Mhyd.transf)
+        pmc = np.median(alldens, axis=1) / np.sqrt(Mhyd.ccf)
+        pmcl = np.percentile(alldens, 50. - 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+        pmch = np.percentile(alldens, 50. + 68.3 / 2., axis=1) / np.sqrt(Mhyd.ccf)
+
+        Mhyd.dens = pmc
+        Mhyd.dens_lo = pmcl
+        Mhyd.dens_hi = pmch
+
+        if Mhyd.spec_data is not None:
+            kt_mod = kt_from_samples(Mhyd, mod, nmore=Mhyd.nmore)
+            Mhyd.ktmod = kt_mod['TSPEC']
+            Mhyd.ktmod_lo = kt_mod['TSPEC_LO']
+            Mhyd.ktmod_hi = kt_mod['TSPEC_HI']
+            Mhyd.kt3d = kt_mod['T3D']
+            Mhyd.kt3d_lo = kt_mod['T3D_LO']
+            Mhyd.kt3d_hi = kt_mod['T3D_HI']
+
+        if Mhyd.sz_data is not None:
+            pmed, plo, phi = P_from_samples(Mhyd, mod, nmore=Mhyd.nmore)
+            Mhyd.pmod = pmed
+            Mhyd.pmod_lo = plo
+            Mhyd.pmod_hi = phi
 
     return mod
 

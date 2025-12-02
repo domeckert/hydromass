@@ -559,7 +559,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     lxd, lxdlo, lxdhi = np.percentile(lxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
-    lxced, lxcedlo, lxcedhi = np.percentile(lxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+    lxced, lxcedlo, lxcedhi = np.percentile(lxcedelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     ktd, ktdlo, ktdhi = np.percentile(ktdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 

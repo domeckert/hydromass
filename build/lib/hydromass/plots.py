@@ -1042,6 +1042,8 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
     else:
 
+        mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta=model.delta) * 1e13
+
         mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
 
         dict = {

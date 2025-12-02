@@ -476,7 +476,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
-    lxdelta, ktdelta = np.empty(nsamp), np.empty(nsamp)
+    lxdelta, lxcedelta, ktdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
 
@@ -526,6 +526,11 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         lxdelta[i] = np.interp(rdelta[i], rref, cslum)
 
+        rce = 0.15 * rdelta[i]
+        nocore = np.where(rref>=rce)
+        cslum_ce = np.cumsum(lumin[nocore])
+        lxcedelta[i] = np.interp(rdelta[i], rref[nocore], cslum_ce)
+
         p3d = Forward.func_np(rout, tpar)
 
         reg = np.where(rref <= rdelta[i])
@@ -553,6 +558,8 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
     fgd, fgdlo, fgdhi = np.percentile(fgdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     lxd, lxdlo, lxdhi = np.percentile(lxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    lxced, lxcedlo, lxcedhi = np.percentile(lxcedelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     ktd, ktdlo, ktdhi = np.percentile(ktdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
@@ -587,6 +594,9 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         "LX_DELTA": lxd,
         "LX_DELTA_LO": lxdlo,
         "LX_DELTA_HI": lxdhi,
+        "LXCE_DELTA": lxced,
+        "LXCE_DELTA_LO": lxcedlo,
+        "LXCE_DELTA_HI": lxcedhi,
         "KT_DELTA": ktd,
         "KT_DELTA_LO": ktdlo,
         "KT_DELTA_HI": ktdhi,
@@ -807,9 +817,11 @@ def write_all_mdelta(Mhyd, model, outfile=None, r0=500., rmax=4000., thin=10):
 
         fout.write('%s    %g  (%g , %g)\n' % (model.parnames[i], medpar, parlo, parhi) )
 
-    medp0, p0l, p0h = np.percentile(np.exp(Mhyd.samplogp0), [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+    if not Mhyd.wlonly:
 
-    fout.write('p0  %.3e (%.3e , %.3e)\n' % (medp0, p0l, p0h) )
+        medp0, p0l, p0h = np.percentile(np.exp(Mhyd.samplogp0), [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+        fout.write('p0  %.3e (%.3e , %.3e)\n' % (medp0, p0l, p0h) )
 
     fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas\n")
 
@@ -915,7 +927,7 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500., thin=10):
     fout = open(outfile, 'w')
 
     fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas"
-               "                       Lx                                     Tx                         Yx\n")
+               "                       Lx                                     Lx,ce                                     Tx                         Yx\n")
 
     delta_vals = [2500, 1000, 500, 200]
 
@@ -923,11 +935,11 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500., thin=10):
 
         res, covmat = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, r0=r0, thin=thin)
 
-        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)\n" % (
+        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)   %.4E (%.4E , %.4E)    %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
         res['MGAS_DELTA'], res['MGAS_DELTA_LO'], res['MGAS_DELTA_HI'], res['FGAS_DELTA'], res['FGAS_DELTA_LO'], res['FGAS_DELTA_HI'],
-        res['LX_DELTA'], res['LX_DELTA_LO'], res['LX_DELTA_HI'], res['KT_DELTA'], res['KT_DELTA_LO'], res['KT_DELTA_HI'],
-        res['YX_DELTA'], res['YX_DELTA_LO'], res['YX_DELTA_HI']))
+        res['LX_DELTA'], res['LX_DELTA_LO'], res['LX_DELTA_HI'], res['LXCE_DELTA'], res['LXCE_DELTA_LO'], res['LXCE_DELTA_HI'],
+        res['KT_DELTA'], res['KT_DELTA_LO'], res['KT_DELTA_HI'], res['YX_DELTA'], res['YX_DELTA_LO'], res['YX_DELTA_HI']))
 
         outcov = '%s/covmat_%d.fits' % (Mhyd.dir, delta)
 
