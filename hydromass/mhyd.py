@@ -36,7 +36,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                    samplefile=None,nrc=None,nbetas=6,min_beta=0.6, nmore=5,
                    p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True,
                    pnt=False, pnt_model='Ettori', rmin=0., rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-                   fit_elong=False, use_jax=True, wlonly=False, pnt_prior='sim', fit_eta=False):
+                   fit_elong=False, use_jax=True, wlonly=False, pnt_prior='sim', fit_eta=False, fix_beta_pnt=False):
     """
 
     Set up hydrostatic mass model and optimize with PyMC3. The routine takes a parametric mass model as input and integrates the hydrostatic equilibrium equation to predict the 3D pressure profile:
@@ -105,7 +105,10 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
     :type wlonly: bool
     :param pnt_prior: Choose whether informative priors from simulations will be applied to the Pnt profile (pnt_prior='sim'). Alternatively, flat priors will be adopted. Defaults to 'sim'.
     :type pnt_prior: str
-
+    :param fit_eta: Fit for $\\eta_T = P_X/P_{SZ}$ according to the definition of Kozmanyan et al. 2019. Defaults to False.
+    :type fit_eta: bool
+    :param fix_beta_pnt: When fitting for non-thermal pressure, fix the $\\beta_{NT}$ parameter (i.e. the slope of the polytropic relation) to the typical value of 0.9 (Ettori & Eckert 2022). Defaults to False.
+    :type fix_beta_pnt: bool
     """
     prof = Mhyd.sbprof
     sb = prof.profile.astype('float32')
@@ -134,6 +137,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
         rmin = 0
 
     valid = np.where(np.logical_and(rad>=rmin, rad<rmax))
+
+    if fit_elong and fit_eta:
+
+        print('Elongation and eta are completely degenerate, it is not possible to fit for both at the same time. Aborting.')
+        return
 
 #    if rmin is not None:
 #        valid = np.where(rad>=rmin)
@@ -440,7 +448,11 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                 if pnt_model=='Ettori':
 
-                    beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13) #0.13
+                    if not fix_beta_pnt:
+                        beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13) #0.13
+
+                    else:
+                        beta_nt = pm.Deterministic('beta_nt', 0.9)
 
                     logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2.) #-2
 
@@ -619,7 +631,14 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
 
                     y_num = y_prefactor * integ  # prefactor in cm2/keV
 
-                    yfit = elongation_correction(y_num, (rin_m_p + rout_m_p)/2*cgskpc, index_sz, elongation).flatten()
+                    if fit_elong:
+                        yfit = elongation_correction(y_num, (rin_m_p + rout_m_p)/2*cgskpc, index_sz, elongation).flatten()
+
+                    elif fit_eta:
+                        yfit = y_num / eta
+
+                    else:
+                        yfit = y_num
 
                     if Mhyd.sz_data.psfmat is not None:
 
