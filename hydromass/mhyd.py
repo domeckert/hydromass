@@ -1156,7 +1156,8 @@ class Mhyd:
             samplefile=None, nrc=None, nbetas=6, min_beta=0.6, nmore=5,
             p0_prior=None, tune=500, dmonly=False, mstar=None, find_map=True, pnt=False,
             rmin=None, rmax=None, p0_type='sb', init='ADVI', target_accept=0.9,
-            pnt_model='Ettori', fit_elong=False, fit_eta=False, use_jax=True, wlonly=False, pnt_prior='sim'):
+            pnt_model='Ettori', fit_elong=False, fit_eta=False, use_jax=True, wlonly=False, pnt_prior='sim',
+            fix_beta_pnt=False):
         '''
         Optimize the mass model using the :func:`hydromass.mhyd.Run_Mhyd_PyMC3` function.
 
@@ -1212,6 +1213,11 @@ class Mhyd:
         :type wlonly: bool
         :param pnt_prior: Choose whether informative priors from simulations will be applied to the Pnt profile (pnt_prior='sim'). Alternatively, flat priors will be adopted. Defaults to 'sim'.
         :type pnt_prior: str
+        :param fit_eta: Fit for $\\eta_T = P_X/P_{SZ}$ according to the definition of Kozmanyan et al. 2019. Defaults to False.
+        :type fit_eta: bool
+        :param fix_beta_pnt: When fitting for non-thermal pressure, fix the $\\beta_{NT}$ parameter (i.e. the slope of the polytropic relation) to the typical value of 0.9 (Ettori & Eckert 2022). Defaults to False.
+        :type fix_beta_pnt: bool
+
         '''
 
         if model is None:
@@ -1247,7 +1253,8 @@ class Mhyd:
                        fit_eta=fit_eta,
                        use_jax=use_jax,
                        wlonly=wlonly,
-                       pnt_prior=pnt_prior)
+                       pnt_prior=pnt_prior,
+                       fix_beta_pnt=fix_beta_pnt)
 
 
     def run_forward(self, forward=None, bkglim=None, nmcmc=1000, fit_bkg=False, back=None,
