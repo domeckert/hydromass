@@ -452,7 +452,7 @@ def Run_Mhyd_PyMC3(Mhyd,model,bkglim=None,nmcmc=1000,fit_bkg=False,back=None,
                         beta_nt = pm.Normal('beta_nt', mu=0.9, sigma=0.13) #0.13
 
                     else:
-                        beta_nt = pm.Deterministic('beta_nt', 0.9)
+                        beta_nt = pm.Deterministic('beta_nt', pm.math.constant(0.9))
 
                     logp0_nt = pm.Uniform('p0_nt', lower=-5, upper=-2.) #-2
 
