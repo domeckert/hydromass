@@ -48,13 +48,15 @@ def mgas_delta(rdelta, coefs, Mhyd, fit_bkg=False, rout_m=None):
     :rtype: numpy.ndarray
     """
 
-    rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rdelta), 100)
+    rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rdelta), 201)
 
     rin = np.roll(rout, 1)
 
     rin[0] = 0.
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
+    r_ref = (rin + rout) / 2
+
+    Kdens = calc_density_operator(r_ref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
 
     if Mhyd.cf_prof is not None and rout_m is not None:
 
@@ -96,7 +98,7 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
     :rtype: numpy.ndarray, numpy.ndarray
     """
 
-    nvalm = 100
+    nvalm = 201
 
     rout = np.logspace(np.log10(Mhyd.sbprof.bins[0] * Mhyd.amin2kpc), np.log10(rmax), nvalm)
 
@@ -104,7 +106,9 @@ def mbar_overdens(rmax, coefs, Mhyd, fit_bkg=False, rout_m=None):
 
     rin[0] = 0.
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
+    r_ref = (rin + rout) / 2
+
+    Kdens = calc_density_operator(r_ref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=fit_bkg)
 
     if Mhyd.cf_prof is not None and rout_m is not None:
 
@@ -458,7 +462,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
-    Kdens = calc_density_operator(rout / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
+    Kdens = calc_density_operator(rref / Mhyd.amin2kpc, Mhyd.pardens, Mhyd.amin2kpc, withbkg=Mhyd.fit_bkg)
 
     if Mhyd.cf_prof is not None:
 
@@ -476,7 +480,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     mdelta, rdelta, mgdelta, fgdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
-    lxdelta, lxcedelta, ktdelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
+    lxdelta, lxcedelta, ktdelta, ktcedelta = np.empty(nsamp), np.empty(nsamp), np.empty(nsamp), np.empty(nsamp)
 
     rhoc = Mhyd.cosmo.critical_density(Mhyd.redshift).value
 
@@ -503,7 +507,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
             der_lnP = Forward.func_der(x, tpar)
 
-            tne = np.interp(x, rout, dens)
+            tne = np.interp(x, rref, dens)
 
             mass = - der_lnP * x * cgskpc / (
                         tne * cgsG * cgsamu * Mhyd.mup) * p3d * kev2erg
@@ -531,7 +535,7 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         cslum_ce = np.cumsum(lumin[nocore])
         lxcedelta[i] = np.interp(rdelta[i], rref[nocore], cslum_ce)
 
-        p3d = Forward.func_np(rout, tpar)
+        p3d = Forward.func_np(rref, tpar)
 
         reg = np.where(rref <= rdelta[i])
 
@@ -549,6 +553,10 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
         ktdelta[i] = np.average(tproj, weights=weights[reg])
 
+        regce = np.where(rref[reg] >= 0.15 * rdelta[i])
+
+        ktcedelta[i] = np.average(tproj[regce], weights=weights[reg][regce])
+
     rd, rdlo, rdhi = np.percentile(rdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     md, mdlo, mdhi = np.percentile(mdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
@@ -562,6 +570,8 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
     lxced, lxcedlo, lxcedhi = np.percentile(lxcedelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     ktd, ktdlo, ktdhi = np.percentile(ktdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
+
+    ktced, ktcedlo, ktcedhi = np.percentile(ktcedelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
     yxdelta = mgdelta * ktdelta
 
@@ -600,6 +610,9 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
         "KT_DELTA": ktd,
         "KT_DELTA_LO": ktdlo,
         "KT_DELTA_HI": ktdhi,
+        "KTCE_DELTA": ktced,
+        "KTCE_DELTA_LO": ktcedlo,
+        "KTCE_DELTA_HI": ktcedhi,
         "YX_DELTA": yxd,
         "YX_DELTA_LO": yxdlo,
         "YX_DELTA_HI": yxdhi
@@ -667,6 +680,8 @@ def calc_rdelta_mdelta_polytropic(delta, Mhyd, Polytropic, plot=False, r0=500., 
     rin = np.roll(rout, 1)
 
     rin[0] = 0.
+
+    r_ref = (rin + rout) / 2
 
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=Mhyd.nmore)
 
@@ -927,7 +942,7 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500., thin=10):
     fout = open(outfile, 'w')
 
     fout.write("Delta  M_delta                                 R_delta            Mgas                                   fgas"
-               "                       Lx                                     Lx,ce                                     Tx                         Yx\n")
+               "                       Lx                                     Lx,ce                                   Tx                          Tx,ce                      Yx\n")
 
     delta_vals = [2500, 1000, 500, 200]
 
@@ -935,11 +950,12 @@ def write_all_mdelta_forward(Mhyd, Forward, outfile=None, r0=500., thin=10):
 
         res, covmat = calc_rdelta_mdelta_forward(delta, Mhyd, Forward, r0=r0, thin=thin)
 
-        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)   %.4E (%.4E , %.4E)    %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)\n" % (
+        fout.write("%4.0f   %.4E (%.4E , %.4E)    %.0f (%.0f , %.0f)    %.4E (%.4E , %.4E)   %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)   %.4E (%.4E , %.4E)    %.4f (%.4f , %.4f)    %.4f (%.4f , %.4f)   %.4E (%.4E , %.4E)\n" % (
         delta,  res['M_DELTA'], res['M_DELTA_LO'], res['M_DELTA_HI'], res['R_DELTA'], res['R_DELTA_LO'], res['R_DELTA_HI'],
         res['MGAS_DELTA'], res['MGAS_DELTA_LO'], res['MGAS_DELTA_HI'], res['FGAS_DELTA'], res['FGAS_DELTA_LO'], res['FGAS_DELTA_HI'],
         res['LX_DELTA'], res['LX_DELTA_LO'], res['LX_DELTA_HI'], res['LXCE_DELTA'], res['LXCE_DELTA_LO'], res['LXCE_DELTA_HI'],
-        res['KT_DELTA'], res['KT_DELTA_LO'], res['KT_DELTA_HI'], res['YX_DELTA'], res['YX_DELTA_LO'], res['YX_DELTA_HI']))
+        res['KT_DELTA'], res['KT_DELTA_LO'], res['KT_DELTA_HI'], res['KTCE_DELTA'], res['KTCE_DELTA_LO'], res['KTCE_DELTA_HI'],
+        res['YX_DELTA'], res['YX_DELTA_LO'], res['YX_DELTA_HI']))
 
         outcov = '%s/covmat_%d.fits' % (Mhyd.dir, delta)
 
