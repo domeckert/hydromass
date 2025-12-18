@@ -967,7 +967,11 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
                     yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit[index_sz])
 
-                Y_obs = pm.MvNormal('Y', mu=yfit[index_sz], observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
+                else:
+
+                    yfit = yfit[index_sz]
+
+                Y_obs = pm.MvNormal('Y', mu=yfit, observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 
     tinit = time.time()
 
@@ -1008,6 +1012,22 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
             else:
 
                 trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, target_accept=0.9)
+
+        Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
+
+        if Mhyd.spec_data is not None:
+
+            Mhyd.ppc_kt = pm.sample_posterior_predictive(trace, var_names=['kt'])
+
+        if Mhyd.sz_data is not None:
+
+            if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
+
+                Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
+
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
+                Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['Y'])
 
     print('Done.')
 

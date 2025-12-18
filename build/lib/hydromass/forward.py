@@ -527,6 +527,7 @@ def prof_forw_hires(Mhyd, Forward, nmore=5, Z=0.3): #, extra=False, max_radius=2
     dict={
         "R_IN": rin_m,
         "R_OUT": rout_m,
+        'R_REF': (rin_m + rout_m) / 2,
         "P_TOT": mptot,
         "P_TOT_LO": mptotl,
         "P_TOT_HI": mptoth,
@@ -920,13 +921,57 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             tproj = pm.math.dot(proj_mat, t3d * ei) / flux
 
-            T_obs = pm.Normal('kt', mu=tproj, observed=Mhyd.spec_data.temp_x, sigma=Mhyd.spec_data.errt_x)  # temperature likelihood
+            valspec = np.where(np.logical_and(Mhyd.spec_data.rref_x_am >= rmin, Mhyd.spec_data.rref_x_am <= rmax))
+
+            T_obs = pm.Normal('kt', mu=tproj[valspec], observed=Mhyd.spec_data.temp_x[valspec], sigma=Mhyd.spec_data.errt_x[valspec])  # temperature likelihood
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
-            pfit = p3d[index_sz]
 
-            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+            if Mhyd.sz_data.pres_sz is not None:
+                pfit = p3d[index_sz]
+
+                P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
+                nout = 2 * nmore
+
+                rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+                rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
+
+                rref_m_p = (rin_m_p + rout_m_p) / 2.
+
+                pth_p = Forward.func_pm(rref_m_p, *pmod)
+
+                deproj = MyDeprojVol(rin_m_p, rout_m_p) # r from kpc to cm
+
+                proj_vol = deproj.deproj_vol().T
+
+                area_proj = np.pi * (-(rin_m_p) ** 2 + (rout_m_p) ** 2)
+
+                integ = pm.math.dot(proj_vol, pth_p) / area_proj * cgskpc
+
+                yfit = y_prefactor * integ  # prefactor in cm2/keV
+
+                # if fit_elong:
+                #     yfit = elongation_correction(y_num, (rin_m_p + rout_m_p)/2*cgskpc, index_sz, elongation).flatten()
+                #
+                # elif fit_eta:
+                #     yfit = y_num / eta
+                #
+                # else:
+                #     yfit = y_num
+
+                if Mhyd.sz_data.psfmat is not None:
+
+                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit[index_sz])
+
+                else:
+
+                    yfit = yfit[index_sz]
+
+                Y_obs = pm.MvNormal('Y', mu=yfit, observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 
     tinit = time.time()
 
@@ -968,11 +1013,33 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
                 trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, target_accept=0.9)
 
+        Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
+        
+        if Mhyd.spec_data is not None:
+
+            Mhyd.ppc_kt = pm.sample_posterior_predictive(trace, var_names=['kt'])
+
+        if Mhyd.sz_data is not None:
+
+            if Mhyd.sz_data.pres_sz is not None: # Fitting the pressure
+
+                Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['P'])
+
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
+                Mhyd.ppc_sz = pm.sample_posterior_predictive(trace, var_names=['Y'])
+
     print('Done.')
 
     tend = time.time()
 
     print(' Total computing time is: ', (tend - tinit) / 60., ' minutes')
+
+    print('Computing log_likelihood')
+
+    with hydro_model:
+
+        pm.compute_log_likelihood(trace)
 
     Mhyd.trace = trace
 
