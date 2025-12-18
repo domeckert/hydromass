@@ -965,7 +965,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
                 if Mhyd.sz_data.psfmat is not None:
 
-                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit)
+                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit[index_sz])
 
                 Y_obs = pm.MvNormal('Y', mu=yfit[index_sz], observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 
