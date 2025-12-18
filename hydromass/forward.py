@@ -927,9 +927,47 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
         # SZ pressure model and likelihood
         if Mhyd.sz_data is not None:
-            pfit = p3d[index_sz]
 
-            P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+            if Mhyd.sz_data.pres_sz is not None:
+                pfit = p3d[index_sz]
+
+                P_obs = pm.MvNormal('P', mu=pfit, observed=Mhyd.sz_data.pres_sz, cov=Mhyd.sz_data.covmat_sz)  # SZ pressure likelihood
+
+            elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
+
+                nout = 2 * nmore
+
+                rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+                rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
+
+                rref_m_p = (rin_m_p + rout_m_p) / 2.
+
+                pth_p = Forward.func_pm(rref_m_p, *pmod)
+
+                deproj = MyDeprojVol(rin_m_p, rout_m_p) # r from kpc to cm
+
+                proj_vol = deproj.deproj_vol().T
+
+                area_proj = np.pi * (-(rin_m_p) ** 2 + (rout_m_p) ** 2)
+
+                integ = pm.math.dot(proj_vol, pth_p) / area_proj * cgskpc
+
+                yfit = y_prefactor * integ  # prefactor in cm2/keV
+
+                # if fit_elong:
+                #     yfit = elongation_correction(y_num, (rin_m_p + rout_m_p)/2*cgskpc, index_sz, elongation).flatten()
+                #
+                # elif fit_eta:
+                #     yfit = y_num / eta
+                #
+                # else:
+                #     yfit = y_num
+
+                if Mhyd.sz_data.psfmat is not None:
+
+                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit)
+
+                Y_obs = pm.MvNormal('Y', mu=yfit[index_sz], observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 
     tinit = time.time()
 
