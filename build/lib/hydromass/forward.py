@@ -1014,7 +1014,7 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
                 trace = pmjax.sample_numpyro_nuts(nmcmc, tune=tune, target_accept=0.9)
 
         Mhyd.ppc_sb = pm.sample_posterior_predictive(trace, var_names=['sb'])
-        
+
         if Mhyd.spec_data is not None:
 
             Mhyd.ppc_kt = pm.sample_posterior_predictive(trace, var_names=['kt'])

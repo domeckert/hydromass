@@ -577,14 +577,16 @@ def calc_rdelta_mdelta_forward(delta, Mhyd, Forward, plot=False, r0=500., rmax=4
 
     yxd, yxdlo, yxdhi = np.percentile(yxdelta, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.])
 
-    all_vals = np.empty((7, nsamp))
+    all_vals = np.empty((9, nsamp))
     all_vals[0] = mdelta
     all_vals[1] = rdelta
     all_vals[2] = mgdelta
     all_vals[3] = lxdelta
     all_vals[4] = ktdelta
-    all_vals[5] = yxdelta
-    all_vals[6] = fgdelta
+    all_vals[5] = lxcedelta
+    all_vals[6] = ktcedelta
+    all_vals[7] = yxdelta
+    all_vals[8] = fgdelta
 
     covmat = np.corrcoef(all_vals)
 
