@@ -1,7 +1,7 @@
 import numpy as np
 import pymc as pm
 from .deproject import *
-from .plots import rads_more, get_coolfunc, plt
+from .plots import rads_more, get_coolfunc, plt, sum_mat_sz
 from .constants import *
 
 # GNFW function should work both for numpy.ndarray and pymc3/theano formats
@@ -784,6 +784,30 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
     # Define the fine grid onto which the mass model will be computed
     rin_m, rout_m, index_x, index_sz, sum_mat, ntm = rads_more(Mhyd, nmore=nmore)
 
+    if Mhyd.sz_data.y_sz is not None:
+        nout = 2 * nmore
+
+        rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
+        rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
+
+        rref_m_p = (rin_m_p + rout_m_p) / 2.
+
+        deproj = MyDeprojVol(rin_m_p, rout_m_p)  # r from kpc to cm
+
+        proj_vol = deproj.deproj_vol().T
+
+        area_proj = np.pi * (-(rin_m_p) ** 2 + (rout_m_p) ** 2)
+
+        Mhyd.rin_m_p = rin_m_p
+        Mhyd.rout_m_p = rout_m_p
+        Mhyd.rref_m_p = rref_m_p
+        Mhyd.area_proj_p = area_proj
+        Mhyd.proj_vol_p = proj_vol
+
+        smsz, area_tot = sum_mat_sz(Mhyd, rin_m_p, rout_m_p)
+        Mhyd.sum_mat_p = smsz
+        Mhyd.area_tot_p = area_tot
+
     nptmore = len(rout_m)
 
     vx = MyDeprojVol(rin_m / Mhyd.amin2kpc, rout_m / Mhyd.amin2kpc)
@@ -935,24 +959,13 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
             elif Mhyd.sz_data.y_sz is not None: # Fitting the Compton y parameter
 
-                nout = 2 * nmore
+                pth_p = Forward.func_pm(Mhyd.rref_m_p, *pmod)
 
-                rout_m_p = np.append(rout_m, np.logspace(np.log10(np.max(rout_m) * 1.1), np.log10(10000.), nout))
-                rin_m_p = np.append(rin_m, rout_m_p[ntm - 1:ntm - 1 + nout])
-
-                rref_m_p = (rin_m_p + rout_m_p) / 2.
-
-                pth_p = Forward.func_pm(rref_m_p, *pmod)
-
-                deproj = MyDeprojVol(rin_m_p, rout_m_p) # r from kpc to cm
-
-                proj_vol = deproj.deproj_vol().T
-
-                area_proj = np.pi * (-(rin_m_p) ** 2 + (rout_m_p) ** 2)
-
-                integ = pm.math.dot(proj_vol, pth_p) / area_proj * cgskpc
+                integ = pm.math.dot(Mhyd.proj_vol_p, pth_p) / Mhyd.area_proj_p * cgskpc
 
                 yfit = y_prefactor * integ  # prefactor in cm2/keV
+
+                yprof = pm.math.dot(Mhyd.sum_mat_p, yfit) / Mhyd.area_tot_p # Integral in bin
 
                 # if fit_elong:
                 #     yfit = elongation_correction(y_num, (rin_m_p + rout_m_p)/2*cgskpc, index_sz, elongation).flatten()
@@ -965,11 +978,11 @@ def Run_Forward_PyMC3(Mhyd,Forward, bkglim=None,nmcmc=1000,fit_bkg=False,back=No
 
                 if Mhyd.sz_data.psfmat is not None:
 
-                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yfit[index_sz])
+                    yfit = pm.math.dot(Mhyd.sz_data.psfmat, yprof)
 
                 else:
 
-                    yfit = yfit[index_sz]
+                    yfit = yprof
 
                 Y_obs = pm.MvNormal('Y', mu=yfit, observed=Mhyd.sz_data.y_sz, cov=Mhyd.sz_data.covmat_sz)
 

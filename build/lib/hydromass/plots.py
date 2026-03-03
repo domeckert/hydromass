@@ -226,6 +226,46 @@ def rads_more(Mhyd, nmore=5, extend=False):
 
     return rin_more, rout_more, index_x, index_sz, sum_mat, ntm
 
+def sum_mat_sz(Mhyd, rin_m, rout_m):
+    '''
+    Function returning an integration matrix for the SZ profile.
+
+    :param Mhyd: Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing loaded SZ data.
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param rin_m: Inner radial bins
+    :type rin_m: numpy.ndarray
+    :param rout_m: Outer radial bins
+    :type rout_m: numpy.ndarray
+    :return: Integration matrix and area factor
+    :rtype: numpy.ndarray
+    '''
+
+    if Mhyd.sz_data is None:
+
+        print('No SZ data loaded, aborting')
+        return
+
+    else:
+        ntot = len(rout_m)
+
+        nsz = len(Mhyd.sz_data.rref_sz)
+
+        sum_mat_sz = np.zeros((nsz, ntot))
+
+        area_proj = np.pi * (rout_m**2 - rin_m**2)
+
+        area_tot = np.empty(nsz)
+
+        for i in range(nsz):
+            ix = np.where(np.logical_and(rin_m < Mhyd.sz_data.rout_sz[i], rin_m >= Mhyd.sz_data.rin_sz[i]))
+
+            sum_mat_sz[i, :][ix] = area_proj[ix]
+
+            area_tot[i] = np.sum(area_proj[ix])
+
+        return sum_mat_sz, area_tot
+
+
 def gnfw_p0(x,pars):
     '''
     Generalized NFW function to estimate the pressure at the outer boundary, P0
@@ -589,7 +629,7 @@ def densout_pout_from_samples(Mhyd, model, rin_m, rout_m):
 
         mass = Mhyd.mfact * model.func_np(rref_m, Mhyd.samppar, delta=model.delta) / Mhyd.mfact0
 
-        mass = mass + mbar.T
+        mass = mass + np.atleast_1d(mbar).T
 
     # Pressure gradient
     dpres = - mass / rref_mul ** 2 * dens_m * (rout_mul - rin_mul)
@@ -871,6 +911,7 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
     bins = np.logspace(np.log10(rin), np.log10(rout), npt + 1)
 
+    # I don't understand the purpuse of this check
     if rin == 1.:
         bins[0] = 0.
 
@@ -961,11 +1002,15 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             mass = Mhyd.mfact * model.func_np(rout_m, Mhyd.samppar, delta = model.delta) * 1e13
 
+        mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
+
         if Mhyd.dmonly:
 
             mtot = mass + mbar.T
 
             fgas = mgas / mtot.T
+
+            fgas_slope = np.gradient(np.log(fgas), axis=0) / np.gradient(np.log(rout_m))[:, np.newaxis]
 
             mtotm, mtotlo, mtothi = np.percentile(mtot, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 0)
 
@@ -977,13 +1022,17 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
 
             fgas = mgas / mass.T
 
+            fgas_slope = np.gradient(np.log(fgas), axis=0) / np.gradient(np.log(rout_m))[:, np.newaxis]
+
+            mtotm, mtotlo, mtothi = mmed, mlo, mhi
+
             g_tot_t = mass.T * const_G_Msun_kpc / rout_m[:, np.newaxis] ** 2
 
             g_tot, g_totl, g_toth = np.percentile(g_tot_t, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis = 1)
 
         fg, fgl, fgh = np.percentile(fgas, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
-        mmed, mlo, mhi = np.percentile(mass, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=0)
+        fgsl, fgsll, fgslh = np.percentile(fgas_slope, [50., 50. - 68.3 / 2., 50. + 68.3 / 2.], axis=1)
 
         if not Mhyd.dmonly:
 
@@ -1005,6 +1054,9 @@ def mass_from_samples(Mhyd, model, rin=None, rout=None, npt=200, plot=False):
             "FGAS": fg,
             "FGAS_LO": fgl,
             "FGAS_HI": fgh,
+            "FGAS_SLOPE": fgsl,
+            "FGAS_SLOPE_LO": fgsll,
+            "FGAS_SLOPE_HI": fgslh,
             "M_STAR": mstar_m,
             "g_GAS": g_gas,
             "g_GAS_LO": g_gasl,

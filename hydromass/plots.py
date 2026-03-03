@@ -226,6 +226,46 @@ def rads_more(Mhyd, nmore=5, extend=False):
 
     return rin_more, rout_more, index_x, index_sz, sum_mat, ntm
 
+def sum_mat_sz(Mhyd, rin_m, rout_m):
+    '''
+    Function returning an integration matrix for the SZ profile.
+
+    :param Mhyd: Mhyd: A :class:`hydromass.mhyd.Mhyd` object containing loaded SZ data.
+    :type Mhyd: class:`hydromass.mhyd.Mhyd`
+    :param rin_m: Inner radial bins
+    :type rin_m: numpy.ndarray
+    :param rout_m: Outer radial bins
+    :type rout_m: numpy.ndarray
+    :return: Integration matrix and area factor
+    :rtype: numpy.ndarray
+    '''
+
+    if Mhyd.sz_data is None:
+
+        print('No SZ data loaded, aborting')
+        return
+
+    else:
+        ntot = len(rout_m)
+
+        nsz = len(Mhyd.sz_data.rref_sz)
+
+        sum_mat_sz = np.zeros((nsz, ntot))
+
+        area_proj = np.pi * (rout_m**2 - rin_m**2)
+
+        area_tot = np.empty(nsz)
+
+        for i in range(nsz):
+            ix = np.where(np.logical_and(rin_m < Mhyd.sz_data.rout_sz[i], rin_m >= Mhyd.sz_data.rin_sz[i]))
+
+            sum_mat_sz[i, :][ix] = area_proj[ix]
+
+            area_tot[i] = np.sum(area_proj[ix])
+
+        return sum_mat_sz, area_tot
+
+
 def gnfw_p0(x,pars):
     '''
     Generalized NFW function to estimate the pressure at the outer boundary, P0
