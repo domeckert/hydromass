@@ -164,6 +164,95 @@ def f_ein3_pm(xout, c200, r200, mu, delta=200.):
 
     return r200 ** 3 * fcc * fx
 
+# gNFW mass profile, we need to integrate the density numerically since the gradient is not analytical
+#added by rseppi 16.07.2026
+def f_gnfw_pm(xout, c200, r200, gamma, beta, alpha=1., delta=200.):
+    '''
+    Theano function for the gNFW mass model,
+
+    .. math::
+
+        M(r) = f_c R_{\\Delta}^3 \\int_{0}^{r} 4 \\pi r^2 \\rho(r) dr
+
+    with
+
+    .. math::
+
+        \\rho(x) = x^{-\\gamma} \\left[ 1 + x^{\\alpha} \\right]^{-(\\beta-\\gamma)/\\alpha}
+
+    where :math:`x = r / R_{\\Delta}`, and
+
+    .. math::
+
+        f_c = \\frac{\\Delta}{3} \\frac{c^3}{\\ln(1+c)- c/(1+c)}
+
+    :param xout: Radius
+    :param c200: concentration
+    :param r200: Scale radius
+    :param mu: Einasto mu
+    :param delta: Overdensity
+    :return: Enclosed mass
+
+    '''
+    fcc = delta / 3. * c200 ** 3 / (pm.math.log(1. + c200) - c200 / (1. + c200))
+
+    npt = len(xout)
+
+    dr = (xout - np.roll(xout, 1))
+
+    dr[0] = xout[0]
+
+    x = (xout - dr / 2.) / r200
+
+    integrand = x ** (2. - gamma) * (1. + x ** alpha) ** (-(beta - gamma) / alpha) * dr / r200
+
+    matrad = np.ones((npt, npt))
+
+    matrad_tril = np.tril(matrad)
+
+    fx = pm.math.dot(matrad_tril, integrand)
+
+    return r200 ** 3 * fcc * fx
+
+#numpy function for gnfw
+def f_gnfw_np(xout, pars, delta=200.):
+    '''
+    Numpy function for the gNFW mass model (see :func:`hydromass.functions.f_gnfw_pm`)
+    '''
+    c200 = pars[:, 0]
+    r200 = pars[:, 1]
+    gamma = pars[:, 2]
+    beta = pars[:, 3]
+    alpha = pars[:, 4]
+
+    npt = len(xout)
+    npars = len(c200)
+
+    c200mul = np.repeat(c200, npt).reshape(npars, npt)
+    r200mul = np.repeat(r200, npt).reshape(npars, npt)
+    gammamul = np.repeat(gamma, npt).reshape(npars, npt)
+    betamul = np.repeat(beta, npt).reshape(npars, npt)
+    alphamul = np.repeat(alpha, npt).reshape(npars, npt)
+
+    fcc = delta / 3. * c200mul ** 3 / (np.log(1. + c200mul) - c200mul / (1. + c200mul))
+
+    xoutmul = np.tile(xout, npars).reshape(npars, npt)
+
+    dr = xoutmul - np.roll(xoutmul, 1, axis=1)
+    dr[:, 0] = xoutmul[:, 0]
+
+    x = (xoutmul - dr / 2.) / r200mul
+
+    integrand = x ** (2. - gammamul) * (1. + x) ** (-(betamul - gammamul)/alphamul) * dr / r200mul
+
+    matrad = np.ones((npt, npt))
+    matrad_tril = np.tril(matrad)
+
+    # apply the lower-triangular cumulative sum per parameter set
+    fx = np.einsum('ij,kj->ki', matrad_tril, integrand)
+
+    return r200mul ** 3 * fcc * fx
+
 def f_mond_pm(xout, g_cross, mbar = 0):
     '''
     MOND fitting to the mass profile. Since g_obs = F(g_bar), we can write HEE with equivalent MOND mass g_obs * r^2 / G
@@ -857,6 +946,7 @@ class Model:
             - 'HER': Hernquist (1990) model, :func:`hydromass.functions.f_her_pm`
             - 'ISO': Cored isothermal sphere model (King 1962), :func:`hydromass.functions.f_iso_pm`
             - 'BUR': Salucci & Burkert (2000) model, :func:`hydromass.functions.f_bur_pm`
+            - GNFW: Generalised NFW model, :func:`hydromass.functions.f_gnfw_pm`
     :type massmod: str
     :param delta: Chosen fit overdensity. Defaults to 200
     :type delta: float
@@ -1581,8 +1671,60 @@ class Model:
                 self.fix = fix
 
 
+        elif massmod == 'GNFW':
+
+            func_pm = f_gnfw_pm
+            func_np = f_gnfw_np
+
+            self.npar = 5
+            self.parnames = ['cdelta', 'rdelta', 'gamma', 'beta', 'alpha']
+
+            if start is None:
+                self.start = [4., 1000., 1., 3., 1.]
+            else:
+                try:
+                    assert (len(start) == self.npar)
+                except AssertionError:
+                    print('Number of starting parameters does not match function.')
+                    return
+                self.start = start
+
+            if sd is None:
+                self.sd = [2., 500., 0.5, 1., 0.5]
+            else:
+                try:
+                    assert (len(sd) == self.npar)
+                except AssertionError:
+                    print('Shape of sd does not match function.')
+                    return
+                self.sd = sd
+
+            if limits is None:
+                limits = np.empty((self.npar, 2))
+                limits[0] = [1., 20.]
+                limits[1] = [300., 3000.]
+                limits[2] = [0., 2.]  # gamma: keep < 2 to avoid the r->0 singularity issue
+                limits[3] = [2., 8.]
+                limits[4] = [0., 5.]
+            else:
+                try:
+                    assert (limits.shape == (self.npar, 2))
+                except AssertionError:
+                    print('Shape of limits does not match function.')
+                    return
+
+            if fix is None:
+                self.fix = [False, False, False, False, True]
+            else:
+                try:
+                    assert (len(fix) == self.npar)
+                except AssertionError:
+                    print('Shape of fix vectory does not match function.')
+                    return
+                self.fix = fix
+
         else:
-            print('Error: Unknown mass model %s . Available mass models: NFW, ISO, EIN2, EIN3, BUR, HER, NFW+SERSIC.' % (massmod))
+            print('Error: Unknown mass model %s . Available mass models: NFW, ISO, EIN2, EIN3, BUR, HER, NFW+SERSIC, GNFW.' % (massmod))
 
             return
 
